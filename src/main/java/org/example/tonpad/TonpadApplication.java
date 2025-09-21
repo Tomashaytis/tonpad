@@ -5,22 +5,11 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.ConfigurableApplicationContext;
 
-@SpringBootApplication
 public class TonpadApplication extends Application {
 
-    private ConfigurableApplicationContext context;
-
     @Override
-    public void init() {
-        context = new SpringApplicationBuilder(TonpadApplication.class).run();
-    }
-
-    @Override
-    public void start(Stage stage) throws Exception {
+    public void start(Stage stage) {
         Label helloLabel = new Label("Hello World");
         helloLabel.setStyle("-fx-font-size: 24px; -fx-text-fill: blue;");
 
@@ -38,4 +27,5 @@ public class TonpadApplication extends Application {
     public static void main(String[] args) {
         launch(args);
     }
+
 }
