@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import java.util.Set;
 
 @AllArgsConstructor
-public abstract class AbstractNodeRenderer<T extends AbstractBlock> implements NodeRenderer {
+abstract class AbstractNodeRenderer<T extends AbstractBlock> implements NodeRenderer {
 
     private final Class<T> blockClass;
 

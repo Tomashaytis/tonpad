@@ -9,6 +9,7 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import lombok.SneakyThrows;
 import org.example.tonpad.service.MarkdownService;
+import org.example.tonpad.service.impl.MarkdownServiceImpl;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ApplicationContext;
 
@@ -24,7 +25,7 @@ public class TonpadApplication extends Application {
     @Override
     public void init() {
         springContext = new SpringApplicationBuilder(Starter.class).run();
-        markdownService = springContext.getBean(MarkdownService.class);
+        markdownService = springContext.getBean(MarkdownServiceImpl.class);
     }
 
     @Override

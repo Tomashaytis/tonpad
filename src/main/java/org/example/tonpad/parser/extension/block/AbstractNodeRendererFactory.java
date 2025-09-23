@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 @AllArgsConstructor
-public abstract class AbstractNodeRendererFactory<T extends AbstractBlock> implements NodeRendererFactory {
+abstract class AbstractNodeRendererFactory<T extends AbstractBlock> implements NodeRendererFactory {
 
     private final Class<T> blockClass;
 

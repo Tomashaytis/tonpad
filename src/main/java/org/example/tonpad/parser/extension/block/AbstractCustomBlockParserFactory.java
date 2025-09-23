@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Set;
 import java.util.function.Supplier;
 
-public class AbstractCustomBlockParserFactory<T extends AbstractBlock> implements CustomBlockParserFactory {
+class AbstractCustomBlockParserFactory<T extends AbstractBlock> implements CustomBlockParserFactory {
 
     private final AbstractBlockParserFactory<T> blockParserFactory;
 

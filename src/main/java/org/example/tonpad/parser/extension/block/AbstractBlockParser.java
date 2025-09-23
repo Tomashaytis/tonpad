@@ -8,7 +8,7 @@ import com.vladsch.flexmark.util.sequence.BasedSequence;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-public class AbstractBlockParser<T extends AbstractBlock> extends com.vladsch.flexmark.parser.block.AbstractBlockParser {
+class AbstractBlockParser<T extends AbstractBlock> extends com.vladsch.flexmark.parser.block.AbstractBlockParser {
 
     private final T block;
 

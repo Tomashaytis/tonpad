@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import java.util.function.Supplier;
 
 @AllArgsConstructor
-public class AbstractBlockParserFactory<T extends AbstractBlock> implements BlockParserFactory {
+class AbstractBlockParserFactory<T extends AbstractBlock> implements BlockParserFactory {
 
     private final Supplier<T> blockProvider;
 
