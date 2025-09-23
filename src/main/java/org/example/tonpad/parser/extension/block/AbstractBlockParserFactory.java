@@ -11,22 +11,17 @@ import com.vladsch.flexmark.util.sequence.BasedSequence;
 
 public class AbstractBlockParserFactory <T extends Block> implements BlockParserFactory {
 
-    private final AbstractBlockParser blockParser;
+    private final SettingsProvider<T> settingsProvider;
 
-    private final String startTag;
-
-    private final String endTag;
-
-    public AbstractBlockParserFactory(Settings<T> settings) {
-        blockParser = new AbstractBlockParser(settings.getBlock(), settings.isContainer(), settings.isCanContain());
-        this.startTag = settings.getStartTag();
-        this.endTag = settings.getEndTag();
+    public AbstractBlockParserFactory(SettingsProvider<T> settingsProvider) {
+        this.settingsProvider = settingsProvider;
     }
 
     @Override
     public BlockStart tryStart(ParserState state, MatchedBlockParser matchedBlockParser) {
         BasedSequence line = state.getLine();
-        if (line.toString().trim().equals(startTag)) {
+        if (line.toString().trim().equals(settingsProvider.getStartTag())) {
+            AbstractBlockParser blockParser = new AbstractBlockParser(settingsProvider.createBlock(), settingsProvider.isContainer(), settingsProvider.isCanContain());
             return BlockStart.of(blockParser).atIndex(line.length());
         }
 
@@ -55,7 +50,7 @@ public class AbstractBlockParserFactory <T extends Block> implements BlockParser
         @Override
         public BlockContinue tryContinue(ParserState state) {
             BasedSequence line = state.getLine();
-            if (line.toString().trim().equals(endTag)) {
+            if (line.toString().trim().equals(settingsProvider.getEndTag())) {
                 return BlockContinue.none();
             }
 

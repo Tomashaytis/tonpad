@@ -10,18 +10,18 @@ import org.jetbrains.annotations.NotNull;
 
 public abstract class AbstractNodeRendererFactory <T extends Block> implements NodeRendererFactory {
 
-    private final Settings<T> settings;
+    private final SettingsProvider<T> settingsProvider;
 
-    public AbstractNodeRendererFactory(Settings<T> settings) {
-        this.settings = settings;
+    public AbstractNodeRendererFactory(SettingsProvider<T> settingsProvider) {
+        this.settingsProvider = settingsProvider;
     }
 
     @Override
     public @NotNull NodeRenderer apply(@NotNull DataHolder dataHolder) {
-        return new AbstractNodeRenderer<>(settings) {
+        return new AbstractNodeRenderer<>(settingsProvider) {
             @Override
             protected void render(T node, NodeRendererContext context, HtmlWriter html) {
-                html.raw( settings.getStartTag() + "\n");
+                html.raw( settingsProvider.getStartTag() + "\n");
                 renderHtml(node, context, html);
             }
         };

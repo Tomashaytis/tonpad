@@ -1,30 +1,29 @@
 package org.example.tonpad.parser.extension.block.immutable;
 
-import org.example.tonpad.parser.extension.block.AbstractBlockParserFactory;
-import org.example.tonpad.parser.extension.block.AbstractCustomBlockParserFactory;
+import com.vladsch.flexmark.html.HtmlWriter;
+import com.vladsch.flexmark.html.renderer.NodeRendererContext;
 import org.example.tonpad.parser.extension.block.AbstractExtension;
-import org.example.tonpad.parser.extension.block.AbstractNodeRendererFactory;
-import org.example.tonpad.parser.extension.block.Settings;
+import org.example.tonpad.parser.extension.block.SettingsProvider;
 
 public class ImmutableExtension extends AbstractExtension<ImmutableBlock> {
 
-    Settings<ImmutableBlock> settings = new Settings<>(
-            "immutable start",
-            "immutable end",
-            new ImmutableBlock(),
-            ImmutableBlock.class,
-            true,
-            true
-    );
-
     @Override
-    protected AbstractCustomBlockParserFactory<ImmutableBlock> getCustomBlockParserFactory() {
-        return new AbstractCustomBlockParserFactory<>(new AbstractBlockParserFactory<>(settings));
+    protected SettingsProvider<ImmutableBlock> getSettings() {
+        return new SettingsProvider<>(
+                "immutable",
+                "/immutable",
+                ImmutableBlock.class,
+                true,
+                true
+        );
     }
 
     @Override
-    protected AbstractNodeRendererFactory<ImmutableBlock> getNodeRendererFactory() {
-        return new ImmutableNodeRendererFactory(settings);
+    protected void render(ImmutableBlock node, NodeRendererContext context, HtmlWriter html) {
+        html.attr("contenteditable", "false");
+        html.withAttr().tag("div");
+        context.renderChildren(node);
+        html.tag("/div");
     }
 
 }

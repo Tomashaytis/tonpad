@@ -10,15 +10,15 @@ import java.util.Set;
 
 public abstract class AbstractNodeRenderer <T extends Block> implements NodeRenderer {
 
-    protected final Settings<T> settings;
+    protected final SettingsProvider<T> settingsProvider;
 
-    public AbstractNodeRenderer(Settings<T> settings) {
-        this.settings = settings;
+    public AbstractNodeRenderer(SettingsProvider<T> settingsProvider) {
+        this.settingsProvider = settingsProvider;
     }
 
     @Override
     public Set<NodeRenderingHandler<?>> getNodeRenderingHandlers() {
-        return Set.of(new NodeRenderingHandler<>(settings.getBlockClass(), this::render));
+        return Set.of(new NodeRenderingHandler<>(settingsProvider.getBlockClass(), this::render));
     }
 
     protected abstract void render(T node, NodeRendererContext context, HtmlWriter html);
