@@ -7,13 +7,13 @@ import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import com.vladsch.flexmark.util.misc.Extension;
 import jakarta.annotation.PostConstruct;
-import org.example.tonpad.parser.extension.block.immutable.ImmutableExtension;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class MarkdownService {
 
     private static final String STYLED_HTML_FROMATED_STRING = """
@@ -27,6 +27,8 @@ public class MarkdownService {
 
     private final MutableDataSet options = new MutableDataSet();
 
+    private final List<Extension> extensions;
+
     private Parser parser;
     private HtmlRenderer renderer;
     private FlexmarkHtmlConverter htmlConverter;
@@ -35,8 +37,6 @@ public class MarkdownService {
     private void postConstruct() {
         options.set(FlexmarkHtmlConverter.RENDER_COMMENTS, true);
 
-        List<Extension> extensions = new ArrayList<>();
-        extensions.add(new ImmutableExtension());
         options.set(Parser.EXTENSIONS, extensions);
 
         parser = Parser.builder(options).build();
