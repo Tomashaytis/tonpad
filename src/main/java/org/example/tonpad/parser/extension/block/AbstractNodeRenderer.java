@@ -1,4 +1,4 @@
-package org.example.tonpad.parser.extension.block.tmp;
+package org.example.tonpad.parser.extension.block;
 
 import com.vladsch.flexmark.html.HtmlWriter;
 import com.vladsch.flexmark.html.renderer.NodeRenderer;

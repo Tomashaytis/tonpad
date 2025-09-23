@@ -1,4 +1,4 @@
-package org.example.tonpad.parser.extension.block.tmp;
+package org.example.tonpad.parser.extension.block;
 
 import lombok.Getter;
 import lombok.SneakyThrows;

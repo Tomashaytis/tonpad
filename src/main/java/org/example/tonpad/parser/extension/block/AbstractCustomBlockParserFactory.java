@@ -1,4 +1,4 @@
-package org.example.tonpad.parser.extension.block.tmp;
+package org.example.tonpad.parser.extension.block;
 
 import com.vladsch.flexmark.parser.block.BlockParserFactory;
 import com.vladsch.flexmark.parser.block.CustomBlockParserFactory;
