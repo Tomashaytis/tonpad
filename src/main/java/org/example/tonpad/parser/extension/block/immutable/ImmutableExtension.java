@@ -9,13 +9,9 @@ public class ImmutableExtension extends AbstractExtension<ImmutableBlock> {
 
     @Override
     protected SettingsProvider<ImmutableBlock> getSettings() {
-        return new SettingsProvider<>(
-                "immutable",
-                "/immutable",
-                ImmutableBlock.class,
-                true,
-                true
-        );
+        return new SettingsProvider.SettingsProviderBuilder<>(ImmutableBlock.class)
+                .tagName("immutable")
+                .build();
     }
 
     @Override
