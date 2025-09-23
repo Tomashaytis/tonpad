@@ -24,4 +24,9 @@ Feature
 * zxc
 * я гуль
 
+<!-- immutable -->  
+* 123
+* 321
+<!-- /immutable -->
+
 asdasdasd

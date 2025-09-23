@@ -2,15 +2,14 @@ package org.example.tonpad.parser.extension.block.immutable;
 
 import com.vladsch.flexmark.html.HtmlWriter;
 import com.vladsch.flexmark.html.renderer.NodeRendererContext;
-import org.example.tonpad.parser.extension.block.AbstractExtension;
-import org.example.tonpad.parser.extension.block.SettingsProvider;
+import org.example.tonpad.parser.extension.block.tmp.AbstractExtension;
+import org.example.tonpad.parser.extension.block.tmp.SettingsProvider;
 
 public class ImmutableExtension extends AbstractExtension<ImmutableBlock> {
 
     @Override
     protected SettingsProvider<ImmutableBlock> getSettings() {
-        return new SettingsProvider.SettingsProviderBuilder<>(ImmutableBlock.class)
-                .tagName("immutable")
+        return new SettingsProvider.SettingsProviderBuilder<>("immutable", ImmutableBlock.class)
                 .build();
     }
 
