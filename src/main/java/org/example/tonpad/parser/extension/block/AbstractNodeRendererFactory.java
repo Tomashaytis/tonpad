@@ -4,24 +4,23 @@ import com.vladsch.flexmark.html.HtmlWriter;
 import com.vladsch.flexmark.html.renderer.NodeRenderer;
 import com.vladsch.flexmark.html.renderer.NodeRendererContext;
 import com.vladsch.flexmark.html.renderer.NodeRendererFactory;
-import com.vladsch.flexmark.util.ast.Block;
 import com.vladsch.flexmark.util.data.DataHolder;
+import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
-public abstract class AbstractNodeRendererFactory <T extends Block> implements NodeRendererFactory {
+@AllArgsConstructor
+abstract class AbstractNodeRendererFactory<T extends AbstractBlock> implements NodeRendererFactory {
 
-    private final SettingsProvider<T> settingsProvider;
+    private final Class<T> blockClass;
 
-    public AbstractNodeRendererFactory(SettingsProvider<T> settingsProvider) {
-        this.settingsProvider = settingsProvider;
-    }
+    private final String startTag;
 
     @Override
     public @NotNull NodeRenderer apply(@NotNull DataHolder dataHolder) {
-        return new AbstractNodeRenderer<>(settingsProvider) {
+        return new AbstractNodeRenderer<>(blockClass) {
             @Override
             protected void render(T node, NodeRendererContext context, HtmlWriter html) {
-                html.raw( settingsProvider.getStartTag() + "\n");
+                html.raw( startTag + "\n");
                 renderHtml(node, context, html);
             }
         };

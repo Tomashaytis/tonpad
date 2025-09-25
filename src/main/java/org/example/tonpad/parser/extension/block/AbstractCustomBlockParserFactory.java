@@ -2,19 +2,31 @@ package org.example.tonpad.parser.extension.block;
 
 import com.vladsch.flexmark.parser.block.BlockParserFactory;
 import com.vladsch.flexmark.parser.block.CustomBlockParserFactory;
-import com.vladsch.flexmark.util.ast.Block;
 import com.vladsch.flexmark.util.data.DataHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
+import java.util.function.Supplier;
 
-public class AbstractCustomBlockParserFactory <T extends Block> implements CustomBlockParserFactory {
+class AbstractCustomBlockParserFactory<T extends AbstractBlock> implements CustomBlockParserFactory {
 
     private final AbstractBlockParserFactory<T> blockParserFactory;
 
-    public AbstractCustomBlockParserFactory(AbstractBlockParserFactory<T> blockParserFactory) {
-        this.blockParserFactory = blockParserFactory;
+    public AbstractCustomBlockParserFactory(
+            Supplier<T> blockProvider,
+            boolean isContainer,
+            boolean canContain,
+            String startTag,
+            String endTag
+    ) {
+        this.blockParserFactory = new AbstractBlockParserFactory<>(
+                blockProvider,
+                isContainer,
+                canContain,
+                startTag,
+                endTag
+        );
     }
 
     @Override

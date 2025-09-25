@@ -4,21 +4,18 @@ import com.vladsch.flexmark.html.HtmlWriter;
 import com.vladsch.flexmark.html.renderer.NodeRenderer;
 import com.vladsch.flexmark.html.renderer.NodeRendererContext;
 import com.vladsch.flexmark.html.renderer.NodeRenderingHandler;
-import com.vladsch.flexmark.util.ast.Block;
+import lombok.AllArgsConstructor;
 
 import java.util.Set;
 
-public abstract class AbstractNodeRenderer <T extends Block> implements NodeRenderer {
+@AllArgsConstructor
+abstract class AbstractNodeRenderer<T extends AbstractBlock> implements NodeRenderer {
 
-    protected final SettingsProvider<T> settingsProvider;
-
-    public AbstractNodeRenderer(SettingsProvider<T> settingsProvider) {
-        this.settingsProvider = settingsProvider;
-    }
+    private final Class<T> blockClass;
 
     @Override
     public Set<NodeRenderingHandler<?>> getNodeRenderingHandlers() {
-        return Set.of(new NodeRenderingHandler<>(settingsProvider.getBlockClass(), this::render));
+        return Set.of(new NodeRenderingHandler<>(blockClass, this::render));
     }
 
     protected abstract void render(T node, NodeRendererContext context, HtmlWriter html);

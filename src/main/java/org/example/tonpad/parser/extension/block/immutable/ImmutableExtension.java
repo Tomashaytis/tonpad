@@ -4,18 +4,15 @@ import com.vladsch.flexmark.html.HtmlWriter;
 import com.vladsch.flexmark.html.renderer.NodeRendererContext;
 import org.example.tonpad.parser.extension.block.AbstractExtension;
 import org.example.tonpad.parser.extension.block.SettingsProvider;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ImmutableExtension extends AbstractExtension<ImmutableBlock> {
 
     @Override
     protected SettingsProvider<ImmutableBlock> getSettings() {
-        return new SettingsProvider<>(
-                "immutable",
-                "/immutable",
-                ImmutableBlock.class,
-                true,
-                true
-        );
+        return new SettingsProvider.SettingsProviderBuilder<>("immutable", ImmutableBlock.class)
+                .build();
     }
 
     @Override
