@@ -1,5 +1,6 @@
 package org.example.tonpad.controllers;
 
+import com.vladsch.flexmark.util.ast.Document;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -7,6 +8,15 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.web.WebView;
+import lombok.SneakyThrows;
+import org.example.tonpad.Starter;
+import org.example.tonpad.service.MarkdownService;
+import org.example.tonpad.service.impl.MarkdownServiceImpl;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ApplicationContext;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class MainController {
     @FXML
@@ -20,23 +30,34 @@ public class MainController {
     @FXML
     private TabPane tabPane;
 
-    private boolean isViewPaneVisible = false;
+    private ApplicationContext springContext;
+
+    private MarkdownService markdownService;
+    private boolean isLeftPaneVisible = false;
 
     @FXML
+    @SneakyThrows
     public void initialize() {
         updatePanelVisibility();
         addNewTabButton();
         showFilesButton.setOnAction(event -> toggleLeftPanel());
+
+        springContext = new SpringApplicationBuilder(Starter.class).run();
+        markdownService = springContext.getBean(MarkdownServiceImpl.class);
+        String fileContent = Files.readString(Path.of("src/main/resources/test.md"));
+        Document markdownFile = markdownService.parseMarkdownFile(fileContent);
+        String html = markdownService.renderMarkdownFileToHtml(markdownFile);
+        noteWebView.getEngine().loadContent(html);
     }
 
     @FXML
     private void toggleLeftPanel() {
-        isViewPaneVisible = !isViewPaneVisible;
+        isLeftPaneVisible = !isLeftPaneVisible;
         updatePanelVisibility();
     }
 
     private void updatePanelVisibility() {
-        if (isViewPaneVisible) {
+        if (isLeftPaneVisible) {
             AnchorPane.setLeftAnchor(noteWebView, 5.0);
             notePane.requestLayout();
             viewingPane.setVisible(true);

@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.Objects;
 
 public class TonpadApplication extends Application {
-
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/org/example/tonpad/fxml/tonpad-ui.fxml"));
