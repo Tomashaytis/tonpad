@@ -1,0 +1,50 @@
+.round-button {
+    -fx-background-radius: 50%;
+    -fx-border-radius: 50%;
+    -fx-background-color: sienna;
+    -fx-text-fill: white;
+    -fx-cursor: hand;
+    -fx-pref-width: 24px;
+    -fx-pref-height: 24px;
+    -fx-font-size: 14px;
+}
+
+.round-button:hover {
+    -fx-background-color: peru;
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.round-button:pressed {
+    -fx-background-color: tan;
+    -fx-scale-x: 0.95;
+    -fx-scale-y: 0.95;
+}
+
+.side-panel {
+    -fx-pref-width: 40px;
+    -fx-alignment: top-center;
+    -fx-background-color: ivory;
+}
+
+.viewing-panel {
+    -fx-background-color: gray;
+}
+
+.note-editor {
+    -fx-background-color: white;
+}
+
+.tab {
+    -fx-font-size: 14px;
+}
+
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: ivory;
+    -fx-font-size: 14;
+}
+
+.tab-pane > .tab-header-area > .headers-region {
+    -fx-translate-x: 10px;
+}
+
