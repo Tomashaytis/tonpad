@@ -18,7 +18,9 @@ import java.nio.file.Path;
 public class TabController {
     @Getter
     private final TabPane tabPane;
+
     private ApplicationContext springContext;
+
     private MarkdownService markdownService;
 
     public TabController(TabPane tabPane, ApplicationContext springContext) {

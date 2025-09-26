@@ -2,12 +2,14 @@ package org.example.tonpad.controllers;
 
 import javafx.scene.control.Button;
 import javafx.scene.layout.AnchorPane;
-public class LeftPanelController {
-    private final AnchorPane viewingPane;
+
+public class FileTreePanelController {
+    private final AnchorPane fileTreePane;
+
     private boolean isLeftPaneVisible = false;
 
-    public LeftPanelController(AnchorPane viewingPane, Button showFilesButton) {
-        this.viewingPane = viewingPane;
+    public FileTreePanelController(AnchorPane fileTreePane, Button showFilesButton) {
+        this.fileTreePane = fileTreePane;
         showFilesButton.setOnAction(event -> toggleLeftPanel());
         updatePanelVisibility();
     }
@@ -19,18 +21,23 @@ public class LeftPanelController {
 
     private void updatePanelVisibility() {
         if (isLeftPaneVisible) {
-            viewingPane.setVisible(true);
-            viewingPane.setManaged(true);
-            viewingPane.setPrefWidth(viewingPane.getMaxWidth());
+            showFilePanel();
+
         } else {
-            viewingPane.setVisible(false);
-            viewingPane.setManaged(false);
-            viewingPane.setPrefWidth(0);
+            hideFilePanel();
         }
     }
 
-    public boolean isLeftPaneVisible() {
-        return isLeftPaneVisible;
+    private void showFilePanel() {
+        fileTreePane.setPrefWidth(fileTreePane.getMaxWidth());
+        fileTreePane.setVisible(true);
+        fileTreePane.setManaged(true);
+    }
+
+    private void hideFilePanel() {
+        fileTreePane.setVisible(false);
+        fileTreePane.setManaged(false);
+        fileTreePane.setPrefWidth(0);
     }
 
     public void setLeftPaneVisible(boolean visible) {

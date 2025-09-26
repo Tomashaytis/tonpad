@@ -4,29 +4,46 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.VBox;
 import lombok.Getter;
 import org.springframework.context.ApplicationContext;
 
+@Getter
 public class MainController {
     @FXML
-    private AnchorPane viewingPane;
+    private AnchorPane fileTreePane;
+
     @FXML
     private TabPane tabPane;
+
     @FXML
     private Button showFilesButton;
 
     private ApplicationContext springContext;
-    @Getter
-    private LeftPanelController leftPanelController;
-    @Getter
+
+    private FileTreePanelController fileTreePanelController;
+
     private TabController tabController;
+
+    private FileTreeController fileTreeController;
 
     @FXML
     public void initialize() {
-        leftPanelController = new LeftPanelController(viewingPane, showFilesButton);
+        fileTreePanelController = new FileTreePanelController(fileTreePane, showFilesButton);
         tabController = new TabController(tabPane, springContext);
 
         setupControllers();
+    }
+
+    public void initializeFileTreePanel(VBox fileTreeVBox, FileTreeController fileTreeController) {
+        this.fileTreeController = fileTreeController;
+
+        fileTreePane.getChildren().add(fileTreeVBox);
+
+        AnchorPane.setTopAnchor(fileTreeVBox, 0.0);
+        AnchorPane.setBottomAnchor(fileTreeVBox, 0.0);
+        AnchorPane.setLeftAnchor(fileTreeVBox, 0.0);
+        AnchorPane.setRightAnchor(fileTreeVBox, 0.0);
     }
 
     private void setupControllers() {

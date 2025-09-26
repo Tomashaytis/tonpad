@@ -40,11 +40,11 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox fx:id="mainVBox" prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1">
+<VBox fx:id="mainVBox" prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.controllers.MainController">
   <children>
       <HBox fx:id="mainHBox" prefHeight="600.0" prefWidth="900.0">
          <children>
-            <VBox fx:id="leftToolsPane" maxHeight="1.7976931348623157E308" prefHeight="527.0" prefWidth="69.0" spacing="5.0" styleClass="side-panel" HBox.hgrow="NEVER">
+            <VBox fx:id="leftToolsPane" maxHeight="1.7976931348623157E308" prefHeight="567.0" prefWidth="40.0" spacing="5.0" styleClass="side-panel" HBox.hgrow="NEVER">
                <children>
                   <Button fx:id="showFilesButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="F" textAlignment="CENTER">
                      <padding>
@@ -62,20 +62,22 @@
                      </padding>
                   </Button>
                </children>
-               <padding>
-                  <Insets top="35.0" />
-               </padding>
                <HBox.margin>
                   <Insets />
                </HBox.margin>
+               <padding>
+                  <Insets top="35.0" />
+               </padding>
             </VBox>
-            <AnchorPane fx:id="viewingPane" maxWidth="180.0" minWidth="0.0" prefWidth="0.0" styleClass="viewing-panel" HBox.hgrow="NEVER" />
+            <AnchorPane fx:id="fileTreePane" maxWidth="180.0" minWidth="0.0" prefWidth="0.0" styleClass="file-tree-panel" HBox.hgrow="NEVER" />
+            <AnchorPane fx:id="searchPane" layoutX="50.0" layoutY="10.0" maxWidth="180.0" minWidth="0.0" prefWidth="0.0" styleClass="viewing-panel" />
+            <AnchorPane fx:id="tagPanel" layoutX="50.0" layoutY="10.0" maxWidth="180.0" minWidth="0.0" prefWidth="0.0" styleClass="viewing-panel" />
             <StackPane fx:id="noteStackPane" prefHeight="150.0" prefWidth="200.0" HBox.hgrow="ALWAYS">
                <children>
                   <TabPane fx:id="tabPane" prefHeight="598.0" prefWidth="823.0" tabClosingPolicy="ALL_TABS" />
                </children>
             </StackPane>
-            <VBox fx:id="rightToolsPane" prefHeight="200.0" prefWidth="100.0" spacing="5.0" styleClass="side-panel" HBox.hgrow="NEVER">
+            <VBox fx:id="rightToolsPane" prefHeight="200.0" prefWidth="40.0" spacing="5.0" styleClass="side-panel" HBox.hgrow="NEVER">
                <children>
                   <Button fx:id="settingsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="S" textAlignment="CENTER">
                      <padding>

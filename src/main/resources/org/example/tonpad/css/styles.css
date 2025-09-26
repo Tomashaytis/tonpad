@@ -1,3 +1,62 @@
+/* Стилизация leftPane */
+.side-panel {
+    -fx-alignment: top-center;
+    -fx-background-color: darkGray;
+}
+
+/* Стилизация notePane */
+.note-panel {
+    -fx-background-color: white;
+}
+
+/* Стилизация tabPane */
+.tab {
+    -fx-font-size: 14px;
+}
+
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: gainsboro;
+    -fx-font-size: 14;
+}
+
+.tab-pane > .tab-header-area > .headers-region {
+    -fx-translate-x: 10px;
+}
+
+/* Стилизация treeView */
+.file-tree-view {
+    -fx-background-color: gray;
+}
+
+.file-tree-view .tree-cell {
+    -fx-background-color: gray;
+    -fx-text-fill: white;
+}
+
+.file-tree-view .tree-cell:filled:hover {
+    -fx-background-color: #5a5a5a;
+}
+
+.file-tree-view .tree-cell:filled:selected {
+    -fx-background-color: #404040;
+    -fx-text-fill: white;
+}
+
+.file-tree-view .scroll-bar:vertical {
+    -fx-background-color: gray;
+}
+
+.file-tree-view .scroll-bar:vertical .thumb {
+    -fx-background-color: #5a5a5a;
+}
+
+/* Стилизация fileTreeToolsPane */
+.file-tools-panel {
+    -fx-alignment: top-center;
+    -fx-background-color: dimGray;
+}
+
+/* Стилизация button */
 .round-button {
     -fx-background-radius: 50%;
     -fx-border-radius: 50%;
@@ -20,31 +79,3 @@
     -fx-scale-x: 0.95;
     -fx-scale-y: 0.95;
 }
-
-.side-panel {
-    -fx-pref-width: 40px;
-    -fx-alignment: top-center;
-    -fx-background-color: ivory;
-}
-
-.viewing-panel {
-    -fx-background-color: gray;
-}
-
-.note-panel {
-    -fx-background-color: white;
-}
-
-.tab {
-    -fx-font-size: 14px;
-}
-
-.tab-pane > .tab-header-area > .tab-header-background {
-    -fx-background-color: ivory;
-    -fx-font-size: 14;
-}
-
-.tab-pane > .tab-header-area > .headers-region {
-    -fx-translate-x: 10px;
-}
-
