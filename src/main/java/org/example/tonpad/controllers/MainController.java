@@ -4,6 +4,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
 import org.springframework.context.ApplicationContext;
@@ -11,13 +13,49 @@ import org.springframework.context.ApplicationContext;
 @Getter
 public class MainController {
     @FXML
-    private AnchorPane fileTreePane;
+    private VBox mainVBox;
+
+    @FXML
+    private HBox mainHBox;
+
+    @FXML
+    private VBox leftToolsPane;
+
+    @FXML
+    private VBox rightToolsPane;
+
+    @FXML
+    private StackPane noteStackPane;
 
     @FXML
     private TabPane tabPane;
 
     @FXML
+    private AnchorPane fileTreePane;
+
+    @FXML
+    private AnchorPane searchPane;
+
+    @FXML
+    private AnchorPane tagPane;
+
+    @FXML
     private Button showFilesButton;
+
+    @FXML
+    private Button showSearchButton;
+
+    @FXML
+    private Button showTagsButton;
+
+    @FXML
+    private Button showSettingsButton;
+
+    @FXML
+    private Button enableReadingViewButton;
+
+    @FXML
+    private Button enablePlainViewButton;
 
     private ApplicationContext springContext;
 

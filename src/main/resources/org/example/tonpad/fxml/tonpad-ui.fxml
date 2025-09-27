@@ -32,9 +32,11 @@
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -->
 
+<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
@@ -50,16 +52,40 @@
                      <padding>
                         <Insets left="3.0" right="3.0" />
                      </padding>
+                     <tooltip>
+                        <Tooltip text="Show files tree">
+                           <styleClass>
+                              <String fx:value="custom-tooltip" />
+                              <String fx:value="tooltip-right" />
+                           </styleClass>
+                        </Tooltip>
+                     </tooltip>
                   </Button>
-                  <Button fx:id="searchFilesButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="S" textAlignment="CENTER">
+                  <Button fx:id="showSearchButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="S" textAlignment="CENTER">
                      <padding>
                         <Insets left="3.0" right="3.0" />
                      </padding>
+                     <tooltip>
+                        <Tooltip text="Show search panel">
+                           <styleClass>
+                              <String fx:value="custom-tooltip" />
+                              <String fx:value="tooltip-right" />
+                           </styleClass>
+                        </Tooltip>
+                     </tooltip>
                   </Button>
                   <Button fx:id="showTagsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="T" textAlignment="CENTER">
                      <padding>
                         <Insets left="3.0" right="3.0" />
                      </padding>
+                     <tooltip>
+                        <Tooltip text="Show tag panel">
+                           <styleClass>
+                              <String fx:value="custom-tooltip" />
+                              <String fx:value="tooltip-right" />
+                           </styleClass>
+                        </Tooltip>
+                     </tooltip>
                   </Button>
                </children>
                <HBox.margin>
@@ -71,7 +97,7 @@
             </VBox>
             <AnchorPane fx:id="fileTreePane" maxWidth="180.0" minWidth="0.0" prefWidth="0.0" styleClass="file-tree-panel" HBox.hgrow="NEVER" />
             <AnchorPane fx:id="searchPane" layoutX="50.0" layoutY="10.0" maxWidth="180.0" minWidth="0.0" prefWidth="0.0" styleClass="viewing-panel" />
-            <AnchorPane fx:id="tagPanel" layoutX="50.0" layoutY="10.0" maxWidth="180.0" minWidth="0.0" prefWidth="0.0" styleClass="viewing-panel" />
+            <AnchorPane fx:id="tagPane" layoutX="50.0" layoutY="10.0" maxWidth="180.0" minWidth="0.0" prefWidth="0.0" styleClass="viewing-panel" />
             <StackPane fx:id="noteStackPane" prefHeight="150.0" prefWidth="200.0" HBox.hgrow="ALWAYS">
                <children>
                   <TabPane fx:id="tabPane" prefHeight="598.0" prefWidth="823.0" tabClosingPolicy="ALL_TABS" />
@@ -79,15 +105,44 @@
             </StackPane>
             <VBox fx:id="rightToolsPane" prefHeight="200.0" prefWidth="40.0" spacing="5.0" styleClass="side-panel" HBox.hgrow="NEVER">
                <children>
-                  <Button fx:id="settingsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="S" textAlignment="CENTER">
+                  <Button fx:id="showSettingsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="S" textAlignment="CENTER">
                      <padding>
                         <Insets left="3.0" right="3.0" />
                      </padding>
+                     <tooltip>
+                        <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Open settings">
+                           <styleClass>
+                              <String fx:value="custom-tooltip" />
+                              <String fx:value="tooltip-left" />
+                           </styleClass>
+                        </Tooltip>
+                     </tooltip>
                   </Button>
-                  <Button fx:id="readingViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="R" textAlignment="CENTER">
+                  <Button fx:id="enableReadingViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="R" textAlignment="CENTER">
                      <padding>
                         <Insets left="3.0" right="3.0" />
                      </padding>
+                     <tooltip>
+                        <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Enable reading view">
+                           <styleClass>
+                              <String fx:value="custom-tooltip" />
+                              <String fx:value="tooltip-left" />
+                           </styleClass>
+                        </Tooltip>
+                     </tooltip>
+                  </Button>
+                  <Button fx:id="enablePlainViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="P" textAlignment="CENTER">
+                     <padding>
+                        <Insets left="3.0" right="3.0" />
+                     </padding>
+                     <tooltip>
+                        <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Show plain text">
+                           <styleClass>
+                              <String fx:value="custom-tooltip" />
+                              <String fx:value="tooltip-left" />
+                           </styleClass>
+                        </Tooltip>
+                     </tooltip>
                   </Button>
                </children>
                <padding>
