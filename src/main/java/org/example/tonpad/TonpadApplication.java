@@ -8,11 +8,21 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.example.tonpad.controllers.FileTreeController;
 import org.example.tonpad.controllers.MainController;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.util.Objects;
 
 public class TonpadApplication extends Application {
+
+    private ApplicationContext springContext;
+
+    @Override
+    public void init() {
+        springContext = new SpringApplicationBuilder(Starter.class).run(); //кто уберет, тот пидор
+    }
+
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader mainLoader = new FXMLLoader(
