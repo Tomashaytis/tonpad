@@ -45,9 +45,10 @@ public class FileSystemServiceImpl implements FileSystemService {
         return getFileTree(Path.of(path));
     }
 
-    private FileTree getFileTree(Path path) {
+    public FileTree getFileTree(Path path) {
         try (Stream<Path> elements = Files.list(path)) {
             List<FileTree> subtrees = new ArrayList<>();
+
             elements.forEach(el -> {
                 if (Files.isDirectory(el)) {
                     subtrees.add(getFileTree(el));
@@ -55,6 +56,7 @@ public class FileSystemServiceImpl implements FileSystemService {
                     subtrees.add(new FileTree(Path.of(path.toString(), el.getFileName().toString()), null));
                 }
             });
+
             return new FileTree(path, subtrees);
         } catch (IOException e) {
             log.error(DIR_READING_ERROR, e);
@@ -63,9 +65,11 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public List<String> getAllFilesInDir(String directory) {
-        Path path = Path.of(directory);
+        return getAllFilesInDir(Path.of(directory));
+    }
 
-        try (Stream<Path> elements = Files.list(path)) {
+    public List<String> getAllFilesInDir(Path directory) {
+        try (Stream<Path> elements = Files.list(directory)) {
             return elements.filter(Files::isRegularFile).map(i -> i.getFileName().toString()).toList();
         } catch (IOException e) {
             log.error(DIR_READING_ERROR, e);
@@ -74,10 +78,12 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public Path makeDir(String directory) {
-        Path path = Path.of(directory);
+        return makeDir(Path.of(directory));
+    }
 
+    public Path makeDir(Path directory) {
         try {
-            return Files.createDirectories(path);
+            return Files.createDirectories(directory);
         } catch (FileAlreadyExistsException e) {
             log.error(DIR_ALREADY_EXISTS_ERROR, e);
             throw new CustomIOException(DIR_ALREADY_EXISTS_ERROR, e);
@@ -88,10 +94,12 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public Path makeFile(String path) {
-        Path filePath = Path.of(path);
+        return makeFile(Path.of(path));
+    }
 
+    public Path makeFile(Path path) {
         try {
-            return Files.createFile(filePath);
+            return Files.createFile(path);
         } catch (FileAlreadyExistsException e) {
             log.error(FILE_ALREADY_EXISTS_ERROR, e);
             throw new CustomIOException(FILE_ALREADY_EXISTS_ERROR, e);
@@ -102,10 +110,12 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public List<String> readFile(String path) {
-        Path filePath = Path.of(path);
+        return readFile(Path.of(path));
+    }
 
+    public List<String> readFile(Path path) {
         try {
-            return Files.readAllLines(filePath);
+            return Files.readAllLines(path);
         } catch (IOException e) {
             log.error(FILE_READ_ERROR, e);
             throw new CustomIOException(FILE_READ_ERROR, e);
@@ -113,10 +123,12 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public void write(String path, List<String> content) {
-        Path filePath = Path.of(path);
+        write(Path.of(path), content);
+    }
 
+    public void write(Path path, List<String> content) {
         try {
-            Files.write(filePath, content);
+            Files.write(path, content);
         } catch (IOException e) {
             log.error(FILE_WRITE_ERROR, e);
             throw new CustomIOException(FILE_WRITE_ERROR, e);
@@ -124,21 +136,24 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public Path rename(String oldPath, String newPath) {
-        Path path = Path.of(oldPath);
-        Path newDir = Path.of(newPath);
+        return rename(Path.of(oldPath), Path.of(newPath));
+    }
 
-        if (!path.toFile().renameTo(newDir.toFile())) {
+    public Path rename(Path oldPath, Path newPath) {
+        if (!oldPath.toFile().renameTo(newPath.toFile())) {
             throw new CustomIOException(RENAME_ERROR);
         }
 
-        return newDir;
+        return newPath;
     }
 
     public void delete(String path) {
-        Path deletePath = Path.of(path);
+        delete(Path.of(path));
+    }
 
+    public void delete(Path path) {
         try {
-            Files.walkFileTree(deletePath, visitor);
+            Files.walkFileTree(path, visitor);
         } catch (IOException e) {
             log.error(DELETE_ERROR, e);
             throw new CustomIOException(DELETE_ERROR, e);
