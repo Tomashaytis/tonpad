@@ -88,6 +88,7 @@ public class TabController {
         content.getChildren().add(webView);
 
         newTab.setContent(content);
+        newTab.setUserData(webView);
         newTab.setOnCloseRequest(event -> {
             // Закрытие вкладки
         });

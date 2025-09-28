@@ -31,6 +31,8 @@ public class TonpadApplication extends Application {
         Parent root = mainLoader.load();
         MainController mainController = mainLoader.getController();
 
+        mainController.setSpringContext(springContext);
+
         FXMLLoader fileTreeLoader = new FXMLLoader(
                 getClass().getResource("/org/example/tonpad/fxml/file-tree-panel.fxml")
         );
@@ -45,6 +47,8 @@ public class TonpadApplication extends Application {
         );
         stage.setScene(scene);
         stage.show();
+
+        mainController.postInitialize();
     }
 
     public static void main(String[] args) {

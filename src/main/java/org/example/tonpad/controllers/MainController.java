@@ -57,31 +57,44 @@ public class MainController {
     @FXML
     private Button enablePlainViewButton;
 
+    @FXML private SearchTextController searchBarIncludeController;
+
     private ApplicationContext springContext;
 
     private FileTreePanelController fileTreePanelController;
 
     private TabController tabController;
 
+    private SearchTextController searchTextController;
+
     private FileTreeController fileTreeController;
 
     @FXML
     public void initialize() {
         fileTreePanelController = new FileTreePanelController(fileTreePane, showFilesButton);
-        tabController = new TabController(tabPane, springContext);
-
+        
         setupControllers();
     }
-
+    
     public void initializeFileTreePanel(VBox fileTreeVBox, FileTreeController fileTreeController) {
         this.fileTreeController = fileTreeController;
-
+        
         fileTreePane.getChildren().add(fileTreeVBox);
-
+        
         AnchorPane.setTopAnchor(fileTreeVBox, 0.0);
         AnchorPane.setBottomAnchor(fileTreeVBox, 0.0);
         AnchorPane.setLeftAnchor(fileTreeVBox, 0.0);
         AnchorPane.setRightAnchor(fileTreeVBox, 0.0);
+    }
+
+    public void postInitialize()
+    {
+        tabController = new TabController(tabPane, springContext);
+    
+        searchBarIncludeController.setTabPane(tabPane);
+        searchBarIncludeController.setSpringContext(springContext);
+        searchBarIncludeController.init();
+
     }
 
     private void setupControllers() {
@@ -97,5 +110,6 @@ public class MainController {
         if (tabController != null) {
             tabController.setSpringContext(springContext);
         }
+        if(searchBarIncludeController != null) searchBarIncludeController.setSpringContext(springContext);;
     }
 }
