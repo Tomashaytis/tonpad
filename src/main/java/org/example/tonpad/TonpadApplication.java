@@ -8,19 +8,29 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.example.tonpad.controllers.FileTreeController;
 import org.example.tonpad.controllers.MainController;
+import org.example.tonpad.service.MarkdownService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.util.Objects;
 
+@SpringBootApplication
+@EnableConfigurationProperties({TonpadConfig.class})
 public class TonpadApplication extends Application {
 
     private ApplicationContext springContext;
 
+    @Autowired
+    private MarkdownService markdownService;
+
     @Override
     public void init() {
-        springContext = new SpringApplicationBuilder(Starter.class).run(); //кто уберет, тот пидор
+        springContext = new SpringApplicationBuilder(getClass()).run(); //кто уберет, тот пидор
+        springContext.getAutowireCapableBeanFactory().autowireBean(this);
     }
 
     @Override
@@ -52,7 +62,7 @@ public class TonpadApplication extends Application {
     }
 
     public static void main(String[] args) {
-        launch(args);
+        Application.launch(TonpadApplication.class, args);
     }
 
 }
