@@ -29,7 +29,7 @@ public class TonpadApplication extends Application {
 
     @Override
     public void init() {
-        springContext = new SpringApplicationBuilder(getClass()).run(); //кто уберет, тот пидор
+        springContext = new SpringApplicationBuilder(getClass()).run();
         springContext.getAutowireCapableBeanFactory().autowireBean(this);
     }
 
