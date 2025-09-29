@@ -2,12 +2,15 @@ package org.example.tonpad.core.files;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 public interface FileSystemService {
 
     FileTree getFileTree(String path);
 
     FileTree getFileTree(Path path);
+
+    Optional<Path> findFileInDir(Path rootDir, String fileName);
 
     List<String> getAllFilesInDir(String directory);
 

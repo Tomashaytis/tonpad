@@ -12,6 +12,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @Service
@@ -34,6 +35,8 @@ public class FileSystemServiceImpl implements FileSystemService {
     private final static String FILE_READ_ERROR = "Ошибка при чтении файла";
 
     private final static String FILE_WRITE_ERROR = "Ошибка при записи в файл";
+
+    private final static String FILE_SEARCH_ERROR = "Ошибка при записи в файл";
 
     private final static String RENAME_ERROR = "При переименовании произошла ошибка";
 
@@ -61,6 +64,15 @@ public class FileSystemServiceImpl implements FileSystemService {
         } catch (IOException e) {
             log.error(DIR_READING_ERROR, e);
             throw new CustomIOException(DIR_READING_ERROR, e);
+        }
+    }
+
+    public Optional<Path> findFileInDir(Path rootDir, String fileName) {
+        try (Stream<Path> elems = Files.walk(rootDir)) {
+            return elems.filter(el -> el.getFileName().toString().equals(fileName)).findFirst();
+        } catch (IOException e) {
+            log.error(FILE_SEARCH_ERROR, e);
+            throw new CustomIOException(FILE_SEARCH_ERROR, e);
         }
     }
 
