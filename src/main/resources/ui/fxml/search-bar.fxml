@@ -1,0 +1,13 @@
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TextField?>
+
+<HBox fx:controller="org.example.tonpad.ui.controllers.SearchTextController"
+      fx:id="searchBar" spacing="6" visible="false" managed="false"
+      xmlns:fx="http://javafx.com/fxml/1">
+  <children>
+    <TextField fx:id="searchField" promptText="Search some..." />
+    <Button fx:id="prevHitButton" text="↑"/>
+    <Button fx:id="nextHitButton" text="↓"/>
+  </children>
+</HBox>

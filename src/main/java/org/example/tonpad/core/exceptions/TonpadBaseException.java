@@ -6,7 +6,7 @@ public class TonpadBaseException extends RuntimeException {
         super(message);
     }
 
-  public TonpadBaseException(String message, Throwable cause) {
+    public TonpadBaseException(String message, Throwable cause) {
     super(message, cause);
   }
 }

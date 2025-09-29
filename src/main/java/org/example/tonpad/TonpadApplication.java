@@ -6,9 +6,9 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import org.example.tonpad.controllers.FileTreeController;
-import org.example.tonpad.controllers.MainController;
-import org.example.tonpad.service.MarkdownService;
+import org.example.tonpad.ui.controllers.FileTreeController;
+import org.example.tonpad.ui.controllers.MainController;
+import org.example.tonpad.core.service.MarkdownService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -36,14 +36,14 @@ public class TonpadApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader mainLoader = new FXMLLoader(
-                getClass().getResource("/org/example/tonpad/fxml/tonpad-ui.fxml")
+                getClass().getResource("/ui/fxml/tonpad-ui.fxml")
         );
         mainLoader.setControllerFactory(springContext::getBean);
         Parent root = mainLoader.load();
         MainController mainController = mainLoader.getController();
 
         FXMLLoader fileTreeLoader = new FXMLLoader(
-                getClass().getResource("/org/example/tonpad/fxml/file-tree-panel.fxml")
+                getClass().getResource("/ui/fxml/file-tree-panel.fxml")
         );
         VBox fileTreeVBox = fileTreeLoader.load();
         FileTreeController fileTreeController = fileTreeLoader.getController();
@@ -52,7 +52,7 @@ public class TonpadApplication extends Application {
 
         Scene scene = new Scene(root, 900, 600);
         scene.getStylesheets().add(
-                Objects.requireNonNull(getClass().getResource("/org/example/tonpad/css/styles.css")).toExternalForm()
+                Objects.requireNonNull(getClass().getResource("/ui/css/styles.css")).toExternalForm()
         );
         stage.setScene(scene);
         stage.show();
