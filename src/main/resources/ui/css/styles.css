@@ -56,8 +56,19 @@
     -fx-background-color: dimGray;
 }
 
+/* Стилизация searchField */
+.search-field {
+    -fx-background-color: dimGray;
+}
+
+/* Стилизация searchButtonsHBox */
+.search-buttons-panel {
+    -fx-alignment: top-right;
+    -fx-background-color: gray;
+}
+
 /* Стилизация button */
-.round-button {
+.icon-button {
     -fx-background-radius: 10%;
     -fx-border-radius: 10%;
     -fx-background-color: transparent;
@@ -68,16 +79,20 @@
     -fx-font-size: 14px;
 }
 
-.round-button:hover {
+.icon-button:hover {
     -fx-background-color: lightGray;
     -fx-scale-x: 1.05;
     -fx-scale-y: 1.05;
 }
 
-.round-button:pressed {
+.icon-button:pressed {
     -fx-background-color: silver;
     -fx-scale-x: 0.95;
     -fx-scale-y: 0.95;
+}
+
+.toggled-icon-button {
+    -fx-background-color: silver;
 }
 
 /*Стилизация toolTip*/

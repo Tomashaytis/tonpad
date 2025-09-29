@@ -1,7 +1,11 @@
 package org.example.tonpad.ui.controllers;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import javafx.scene.Node;
+import javafx.scene.layout.VBox;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.core.service.SearchService.Hit;
@@ -13,7 +17,6 @@ import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -22,22 +25,18 @@ import javafx.scene.layout.HBox;
 import javafx.scene.web.WebView;
 import javafx.util.Duration;
 import org.springframework.stereotype.Component;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Component
+@RequiredArgsConstructor
 public class SearchTextController {
-    @Setter
-    private TabPane tabPane;
-
-    @Autowired
-    private SearchService searchService;
-
-    private int currentIndex = -1;
-
-    List<Hit> hits;
+    @FXML
+    private VBox searchBarVBox;
 
     @FXML
-    private HBox searchBar;
+    private HBox searchFieldHBox;
+
+    @FXML
+    private HBox searchButtonsHBox;
 
     @FXML
     private TextField searchField;
@@ -48,6 +47,18 @@ public class SearchTextController {
     @FXML
     private Button nextHitButton;
 
+    @FXML
+    private TextField searchResultsField;
+
+    @Setter
+    private MainController mainController;
+
+    private final SearchService searchService;
+
+    private int currentIndex = -1;
+
+    private final List<Hit> hits = new ArrayList<>();
+
     public void init()
     {
         setSearchShortCut();
@@ -55,23 +66,26 @@ public class SearchTextController {
         handleSearchButtons();
     }
 
-
     private void selectPrevHit()
     {
         WebView wv = getActiveWebView();
-        if(hits == null || hits.isEmpty()) return;
-        if(currentIndex <= 0) currentIndex = hits.size() - 1;
+        if (hits.isEmpty()) return;
+        if (currentIndex <= 0) currentIndex = hits.size() - 1;
         else currentIndex--;
         selectGlobalRange(wv, hits.get(currentIndex).start(), hits.get(currentIndex).end());
+
+        searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
     }
 
     private void selectNextHit()
     {
         WebView wv = getActiveWebView();
-        if(hits == null || hits.isEmpty()) return;
+        if(hits.isEmpty()) return;
         if(currentIndex < 0 || currentIndex == hits.size() - 1) currentIndex = 0;
         else currentIndex++;
         selectGlobalRange(wv, hits.get(currentIndex).start(), hits.get(currentIndex).end());
+
+        searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
     }
 
     private boolean selectGlobalRange(WebView wv, int start, int end) {
@@ -113,10 +127,7 @@ public class SearchTextController {
     {
         PauseTransition debounce = new PauseTransition(Duration.millis(400));
         debounce.setOnFinished(e -> runSearch());
-        searchField.textProperty().addListener((o, ov, nv) ->
-        {
-            debounce.playFromStart();
-        });
+        searchField.textProperty().addListener((o, ov, nv) -> debounce.playFromStart());
     }
 
     private void clearDomSelection(WebView wv) {
@@ -138,32 +149,29 @@ public class SearchTextController {
         """);
     }
 
-    private void runSearch()
-    {
+    private void runSearch() {
         WebView wv = getActiveWebView();
-        if(wv == null) 
-        {
+        if(wv == null) {
             return;
         }
     
         String query = searchField.getText().trim();
-        if(query.isEmpty())
-        {
+        if(query.isEmpty()) {
             clearHighlights();
             clearDomSelection(wv);
-            hits = List.of();
+            hits.clear();
             currentIndex = -1;
             return;
         }
         
         String visibleText = (String) wv.getEngine().executeScript("document.body.textContent");
-        this.hits = searchService.openSession(() -> visibleText, () -> 0).findAll(query);
+        this.hits.addAll(searchService.openSession(() -> visibleText, () -> 0).findAll(query));
         highlightInDom();
 
+        searchResultsField.setText("1/" + hits.size());
     }
 
-    private void clearHighlights()
-    {
+    private void clearHighlights() {
         currentIndex = -1;
         WebView wv = getActiveWebView();
         if (wv == null || docReady(wv)) return;
@@ -184,13 +192,11 @@ public class SearchTextController {
     }
 
 
-    private boolean docReady(WebView wv)
-    {
+    private boolean docReady(WebView wv) {
         return wv.getEngine().getDocument() == null || wv.getEngine().getLoadWorker().getState() != Worker.State.SUCCEEDED;
     }
 
-    private Object execJS(WebView wv, String jsBody) 
-    {
+    private Object execJS(WebView wv, String jsBody) {
         String wrapped = """
             (function(){
             try {
@@ -206,9 +212,13 @@ public class SearchTextController {
 
     private void highlightInDom() {
         WebView wv = getActiveWebView();
-        if (wv == null || docReady(wv)) return;
+        if (wv == null || docReady(wv)) {
+            return;
+        }
 
-        if (hits == null || hits.isEmpty()) { clearHighlights(); return; }
+        if (hits.isEmpty()) {
+            clearHighlights(); return;
+        }
 
         clearHighlights();
 
@@ -238,9 +248,9 @@ public class SearchTextController {
             const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, textFilter);
             let n, acc = 0;
             while (n = w.nextNode()) {
-            const len = n.data.length;
-            if (len > 0) nodes.push({ node:n, start:acc, end:acc+len });
-            acc += len;
+                const len = n.data.length;
+                if (len > 0) nodes.push({ node:n, start:acc, end:acc+len });
+                acc += len;
             }
         }
 
@@ -263,7 +273,7 @@ public class SearchTextController {
             const from = Math.max(0, rs - ns);
             const to   = Math.min(ne - ns, re - ns);
             if (from < to) {
-            (segments[ni] ||= []).push({from, to});
+                (segments[ni] ||= []).push({from, to});
             }
 
             // сдвиг: если диапазон вышел за пределы ноды — двигаем ноду; иначе — следующий диапазон
@@ -283,13 +293,13 @@ public class SearchTextController {
             const frag = document.createDocumentFragment();
             let pos = 0;
             for (let s = 0; s < segs.length; s++) {
-            const {from, to} = segs[s];
-            if (pos < from) frag.appendChild(document.createTextNode(text.slice(pos, from)));
-            const mark = document.createElement('mark');
-            mark.className = '__hit';
-            mark.textContent = text.slice(from, to);
-            frag.appendChild(mark);
-            pos = to;
+                const {from, to} = segs[s];
+                if (pos < from) frag.appendChild(document.createTextNode(text.slice(pos, from)));
+                const mark = document.createElement('mark');
+                mark.className = '__hit';
+                mark.textContent = text.slice(from, to);
+                frag.appendChild(mark);
+                pos = to;
             }
             if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
 
@@ -299,20 +309,16 @@ public class SearchTextController {
         return root.querySelectorAll('mark.__hit').length;
         """.formatted(rangesJson);
 
-
-
         Object res = execJS(wv, jsBody);
         if (res instanceof String s && s.startsWith("JS_ERROR:")) {
             System.err.println(s);
         }
     }
 
-    private static String toJsonRanges(List<Hit> hits)
-    {
+    private static String toJsonRanges(List<Hit> hits) {
         StringBuilder sb = new StringBuilder();
         sb.append('[');
-        for(int i = 0; i < hits.size(); i++)
-        {
+        for(int i = 0; i < hits.size(); i++) {
             Hit hit = hits.get(i);
             if(i > 0) sb.append(',');
             sb.append('[').append(hit.start()).append(',').append(hit.end()).append(']');
@@ -321,49 +327,55 @@ public class SearchTextController {
         return sb.toString();
     }
 
-private void setSearchShortCut() {
-    if (tabPane != null && tabPane.getScene() != null) {
-        attachAccelerators(tabPane.getScene());
-        tabPane.sceneProperty().addListener((obs, oldS, newS) -> {
-            if (newS != null) attachAccelerators(newS);
-        });
+    private void setSearchShortCut() {
+        if (mainController.getTabPane().getScene() != null) {
+            attachAccelerators(mainController.getTabPane().getScene());
+            mainController.getTabPane().sceneProperty().addListener((obs, oldS, newS) -> {
+                if (newS != null) attachAccelerators(newS);
+            });
+        }
     }
-}
 
-private void attachAccelerators(Scene scene) {
-    scene.getAccelerators().put(
-        new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN),
-        () -> Platform.runLater(this::showSearchBar)
-    );
-    scene.getAccelerators().put(
-        new KeyCodeCombination(KeyCode.ESCAPE),
-        () -> Platform.runLater(this::hideSearchBar)
-    );
-}
+    private void attachAccelerators(Scene scene) {
+        scene.getAccelerators().put(
+            new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN),
+            () -> Platform.runLater(this::showSearchBar)
+        );
 
-    private WebView getActiveWebView()
-    {
-        Tab tab = tabPane.getSelectionModel().getSelectedItem();
+        scene.getAccelerators().put(
+            new KeyCodeCombination(KeyCode.ESCAPE),
+            () -> Platform.runLater(this::hideSearchBar)
+        );
+    }
+
+    private WebView getActiveWebView() {
+        Tab tab = mainController.getTabPane().getSelectionModel().getSelectedItem();
         return (tab != null && tab.getUserData() instanceof WebView wv) ? wv : null;
     }
 
-    private void showSearchBar()
-    {
-        searchBar.setVisible(true);
-        searchBar.setManaged(true);
+    private void showSearchBar() {
+        for (Node child : mainController.getLeftStackPane().getChildren()) {
+            child.setVisible(false);
+        }
+
+        for (Node child : mainController.getLeftToolsPane().getChildren()) {
+            child.getStyleClass().remove("toggled-icon-button");
+        }
+
+        mainController.getLeftStackPane().setManaged(true);
+        mainController.getSearchInTextPane().setVisible(true);
+
         searchField.requestFocus();
         searchField.selectAll();
         runSearch();
     }
 
-    private void hideSearchBar()
-    {
-        searchBar.setVisible(false);
-        searchBar.setManaged(false);
+    private void hideSearchBar() {
+        mainController.getSearchInTextPane().setVisible(false);
+        mainController.getLeftStackPane().setManaged(false);
 
         WebView wv = getActiveWebView();
-        if(wv != null)
-        {
+        if(wv != null) {
             clearHighlights();
             clearDomSelection(wv);
         }

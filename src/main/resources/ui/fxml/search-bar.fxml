@@ -1,13 +1,90 @@
-<?import javafx.scene.layout.HBox?>
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 
-<HBox fx:controller="org.example.tonpad.ui.controllers.SearchTextController"
-      fx:id="searchBar" spacing="6" visible="false" managed="false"
-      xmlns:fx="http://javafx.com/fxml/1">
-  <children>
-    <TextField fx:id="searchField" promptText="Search some..." />
-    <Button fx:id="prevHitButton" text="↑"/>
-    <Button fx:id="nextHitButton" text="↓"/>
-  </children>
-</HBox>
+
+<VBox fx:id="searchBarVBox" prefHeight="400.0" prefWidth="184.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.SearchTextController">
+   <children>
+      <HBox fx:id="searchFieldHBox" styleClass="search-field">
+         <children>
+            <ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../icons/Search.png" />
+               </image>
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin>
+            </ImageView>
+          <TextField fx:id="searchField" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="184.0" promptText="Search some..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+         </children>
+      </HBox>
+      <HBox fx:id="searchButtonsHBox" fillHeight="false" prefHeight="444.0" prefWidth="184.0" spacing="10.0" styleClass="search-buttons-panel" VBox.vgrow="ALWAYS">
+         <children>
+            <TextField fx:id="searchResultsField" alignment="CENTER" editable="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="69.0" styleClass="search-field">
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin>
+            </TextField>
+            <AnchorPane prefHeight="30.0" prefWidth="61.0" />
+          <Button fx:id="nextHitButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="↓">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/Arrow_alt_down.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+               <tooltip>
+                  <Tooltip text="Next match">
+                     <styleClass>
+                        <String fx:value="custom-tooltip" />
+                        <String fx:value="tooltip-right" />
+                     </styleClass>
+                  </Tooltip>
+               </tooltip>
+               <HBox.margin>
+                  <Insets top="4.0" />
+               </HBox.margin>
+               <padding>
+                  <Insets right="3.0" />
+               </padding>
+            </Button>
+          <Button fx:id="prevHitButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="↑">
+               <tooltip>
+                  <Tooltip text="Previous match">
+                     <styleClass>
+                        <String fx:value="custom-tooltip" />
+                        <String fx:value="tooltip-right" />
+                     </styleClass>
+                  </Tooltip>
+               </tooltip>
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/Arrow_alt_top.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+               <padding>
+                  <Insets right="3.0" />
+               </padding>
+               <HBox.margin>
+                  <Insets top="4.0" />
+               </HBox.margin>
+            </Button>
+         </children>
+         <padding>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+         </padding>
+      </HBox>
+   </children>
+</VBox>

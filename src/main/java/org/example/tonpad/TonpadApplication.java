@@ -6,10 +6,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import org.example.tonpad.ui.controllers.FileTreeController;
 import org.example.tonpad.ui.controllers.MainController;
-import org.example.tonpad.core.service.MarkdownService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -24,9 +21,6 @@ public class TonpadApplication extends Application {
 
     private ApplicationContext springContext;
 
-    @Autowired
-    private MarkdownService markdownService;
-
     @Override
     public void init() {
         springContext = new SpringApplicationBuilder(getClass()).headless(false).run();
@@ -35,20 +29,17 @@ public class TonpadApplication extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        FXMLLoader mainLoader = new FXMLLoader(
-                getClass().getResource("/ui/fxml/tonpad-ui.fxml")
-        );
-        mainLoader.setControllerFactory(springContext::getBean);
+        FXMLLoader mainLoader = loadFxml("/ui/fxml/tonpad-ui.fxml");
         Parent root = mainLoader.load();
         MainController mainController = mainLoader.getController();
 
-        FXMLLoader fileTreeLoader = new FXMLLoader(
-                getClass().getResource("/ui/fxml/file-tree-panel.fxml")
-        );
+        FXMLLoader fileTreeLoader = loadFxml("/ui/fxml/file-tree-panel.fxml");
         VBox fileTreeVBox = fileTreeLoader.load();
-        FileTreeController fileTreeController = fileTreeLoader.getController();
+        mainController.initializeFileTreePanel(fileTreeVBox);
 
-        mainController.initializeFileTreePanel(fileTreeVBox, fileTreeController);
+        FXMLLoader searchInTextLoader = loadFxml("/ui/fxml/search-bar.fxml");
+        VBox searchBarVBox = searchInTextLoader.load();
+        mainController.initializeSearchInTextPanel(searchBarVBox);
 
         Scene scene = new Scene(root, 900, 600);
         scene.getStylesheets().add(
@@ -64,4 +55,11 @@ public class TonpadApplication extends Application {
         Application.launch(TonpadApplication.class, args);
     }
 
+    private FXMLLoader loadFxml(String filePath) {
+        FXMLLoader loader = new FXMLLoader(
+                Objects.requireNonNull(getClass().getResource(filePath))
+        );
+        loader.setControllerFactory(springContext::getBean);
+        return loader;
+    }
 }

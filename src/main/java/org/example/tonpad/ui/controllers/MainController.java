@@ -8,11 +8,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Getter
 @Component
+@RequiredArgsConstructor
 public class MainController {
     @FXML
     private VBox mainVBox;
@@ -30,6 +31,9 @@ public class MainController {
     private StackPane noteStackPane;
 
     @FXML
+    private StackPane leftStackPane;
+
+    @FXML
     private TabPane tabPane;
 
     @FXML
@@ -40,6 +44,9 @@ public class MainController {
 
     @FXML
     private AnchorPane tagPane;
+
+    @FXML
+    private AnchorPane searchInTextPane;
 
     @FXML
     private Button showFilesButton;
@@ -59,28 +66,17 @@ public class MainController {
     @FXML
     private Button enablePlainViewButton;
 
-    @Autowired
-    private SearchTextController searchBarIncludeController;
+    private final SearchTextController searchBarController;
 
-    @Autowired
-    private FileTreePanelController fileTreePanelController;
+    private final FileTreePanelController fileTreePanelController;
 
-    @Autowired
-    private TabController tabController;
+    private final TabController tabController;
 
-    @Autowired
-    private SearchTextController searchTextController;
+    private final SearchTextController searchTextController;
 
-    @Autowired
-    private FileTreeController fileTreeController;
+    private final FileTreeController fileTreeController;
 
-    @FXML
-    public void initialize() {
-    }
-
-    public void initializeFileTreePanel(VBox fileTreeVBox, FileTreeController fileTreeController) {
-        this.fileTreeController = fileTreeController;
-        
+    public void initializeFileTreePanel(VBox fileTreeVBox) {
         fileTreePane.getChildren().add(fileTreeVBox);
         
         AnchorPane.setTopAnchor(fileTreeVBox, 0.0);
@@ -89,26 +85,33 @@ public class MainController {
         AnchorPane.setRightAnchor(fileTreeVBox, 0.0);
     }
 
-    public void postInitialize()
-    {
+    public void initializeSearchInTextPanel(VBox fileTreeVBox) {
+        searchInTextPane.getChildren().add(fileTreeVBox);
+
+        AnchorPane.setTopAnchor(fileTreeVBox, 0.0);
+        AnchorPane.setBottomAnchor(fileTreeVBox, 0.0);
+        AnchorPane.setLeftAnchor(fileTreeVBox, 0.0);
+        AnchorPane.setRightAnchor(fileTreeVBox, 0.0);
+    }
+
+    public void postInitialize() {
         setupEventHandlers();
         setupControllers();
 
-        searchBarIncludeController.setTabPane(tabPane);
-        searchBarIncludeController.init();
-
+        leftStackPane.setManaged(false);
     }
 
     private void setupControllers() {
-        fileTreePanelController.setFileTreePane(fileTreePane);
+        fileTreePanelController.setMainController(this);
+        fileTreePanelController.init();
+
         tabController.setTabPane(tabPane);
+
+        searchBarController.setMainController(this);
+        searchBarController.init();
     }
 
     private void setupEventHandlers() {
         showFilesButton.setOnAction(event -> fileTreePanelController.toggleLeftPanel());
-    }
-
-    public TabController getTabManagerController() {
-        return tabController;
     }
 }

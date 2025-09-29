@@ -1,47 +1,52 @@
 package org.example.tonpad.ui.controllers;
 
-import javafx.scene.layout.AnchorPane;
+import javafx.scene.Node;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class FileTreePanelController {
-    private AnchorPane fileTreePane;
+    @Setter
+    private MainController mainController;
 
     private boolean isLeftPaneVisible = false;
-
-    public void setFileTreePane(AnchorPane fileTreePane) {
-        this.fileTreePane = fileTreePane;
-        updatePanelVisibility();
-    }
 
     public void toggleLeftPanel() {
         isLeftPaneVisible = !isLeftPaneVisible;
         updatePanelVisibility();
     }
 
-    private void updatePanelVisibility() {
-        if (isLeftPaneVisible) {
-            showFilePanel();
-
-        } else {
-            hideFilePanel();
-        }
+    public void init() {
+        updatePanelVisibility();
     }
 
     private void showFilePanel() {
-        fileTreePane.setPrefWidth(fileTreePane.getMaxWidth());
-        fileTreePane.setVisible(true);
-        fileTreePane.setManaged(true);
+        for (Node child : mainController.getLeftStackPane().getChildren()) {
+            child.setVisible(false);
+        }
+
+        for (Node child : mainController.getLeftToolsPane().getChildren()) {
+            child.getStyleClass().remove("toggled-icon-button");
+        }
+
+        mainController.getShowFilesButton().getStyleClass().add("toggled-icon-button");
+        mainController.getLeftStackPane().setManaged(true);
+        mainController.getFileTreePane().setVisible(true);
     }
 
     private void hideFilePanel() {
-        fileTreePane.setVisible(false);
-        fileTreePane.setManaged(false);
-        fileTreePane.setPrefWidth(0);
+        mainController.getShowFilesButton().getStyleClass().remove("toggled-icon-button");
+        mainController.getFileTreePane().setVisible(false);
+        mainController.getLeftStackPane().setManaged(false);
     }
 
-    public void setLeftPaneVisible(boolean visible) {
-        this.isLeftPaneVisible = visible;
-        updatePanelVisibility();
+    private void updatePanelVisibility() {
+        if (isLeftPaneVisible) {
+            showFilePanel();
+        } else {
+            hideFilePanel();
+        }
     }
 }

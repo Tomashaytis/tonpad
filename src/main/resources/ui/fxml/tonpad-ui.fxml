@@ -37,18 +37,20 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox fx:id="mainVBox" prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.MainController">
+<VBox fx:id="mainVBox" prefHeight="600.0" prefWidth="900.0" style="-fx-background-color: white;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.MainController">
   <children>
-      <HBox fx:id="mainHBox" prefHeight="600.0" prefWidth="900.0">
+      <HBox fx:id="mainHBox" prefHeight="600.0" prefWidth="900.0" VBox.vgrow="ALWAYS">
          <children>
             <VBox fx:id="leftToolsPane" maxHeight="1.7976931348623157E308" prefHeight="567.0" prefWidth="40.0" spacing="5.0" styleClass="side-panel" HBox.hgrow="NEVER">
                <children>
-                  <Button fx:id="showFilesButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="F" textAlignment="CENTER">
+                  <Button fx:id="showFilesButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="F" textAlignment="CENTER">
                      <tooltip>
                         <Tooltip text="Show files tree">
                            <styleClass>
@@ -60,8 +62,15 @@
                      <padding>
                         <Insets right="3.0" />
                      </padding>
+                     <graphic>
+                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@../icons/Folder.png" />
+                           </image>
+                        </ImageView>
+                     </graphic>
                   </Button>
-                  <Button fx:id="showSearchButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="S" textAlignment="CENTER">
+                  <Button fx:id="showSearchButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
                      <padding>
                         <Insets right="3.0" />
                      </padding>
@@ -73,8 +82,15 @@
                            </styleClass>
                         </Tooltip>
                      </tooltip>
+                     <graphic>
+                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@../icons/Folder_search.png" />
+                           </image>
+                        </ImageView>
+                     </graphic>
                   </Button>
-                  <Button fx:id="showTagsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="T" textAlignment="CENTER">
+                  <Button fx:id="showTagsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="T" textAlignment="CENTER">
                      <padding>
                         <Insets right="3.0" />
                      </padding>
@@ -86,6 +102,13 @@
                            </styleClass>
                         </Tooltip>
                      </tooltip>
+                     <graphic>
+                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@../icons/Package_favourite_alt.png" />
+                           </image>
+                        </ImageView>
+                     </graphic>
                   </Button>
                </children>
                <HBox.margin>
@@ -95,11 +118,14 @@
                   <Insets top="35.0" />
                </padding>
             </VBox>
-            <AnchorPane fx:id="fileTreePane" maxWidth="180.0" minWidth="0.0" prefWidth="0.0" styleClass="file-tree-panel" HBox.hgrow="NEVER" />
-            <AnchorPane fx:id="searchPane" layoutX="50.0" layoutY="10.0" maxWidth="180.0" minWidth="0.0" prefWidth="0.0" styleClass="viewing-panel" />
-            <AnchorPane fx:id="tagPane" layoutX="50.0" layoutY="10.0" maxWidth="180.0" minWidth="0.0" prefWidth="0.0" styleClass="viewing-panel" />
-
-            <fx:include fx:id="searchBarInclude" source="search-bar.fxml" />
+            <StackPane fx:id="leftStackPane" prefHeight="150.0" prefWidth="200.0">
+               <children>
+                  <AnchorPane fx:id="tagPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
+                  <AnchorPane fx:id="fileTreePane" minWidth="180.0" styleClass="file-tree-panel" visible="false" />
+                  <AnchorPane fx:id="searchPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
+                  <AnchorPane fx:id="searchInTextPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
+               </children>
+            </StackPane>
 
             <StackPane fx:id="noteStackPane" prefHeight="150.0" prefWidth="200.0" HBox.hgrow="ALWAYS">
                <children>
@@ -108,10 +134,7 @@
             </StackPane>
             <VBox fx:id="rightToolsPane" prefHeight="200.0" prefWidth="40.0" spacing="5.0" styleClass="side-panel" HBox.hgrow="NEVER">
                <children>
-                  <Button fx:id="showSettingsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="S" textAlignment="CENTER">
-                     <padding>
-                        <Insets left="3.0" right="3.0" />
-                     </padding>
+                  <Button fx:id="showSettingsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
                      <tooltip>
                         <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Open settings">
                            <styleClass>
@@ -120,10 +143,20 @@
                            </styleClass>
                         </Tooltip>
                      </tooltip>
-                  </Button>
-                  <Button fx:id="enableReadingViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="R" textAlignment="CENTER">
+                     <graphic>
+                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@../icons/Filter_alt.png" />
+                           </image>
+                        </ImageView>
+                     </graphic>
                      <padding>
-                        <Insets left="3.0" right="3.0" />
+                        <Insets right="3.0" />
+                     </padding>
+                  </Button>
+                  <Button fx:id="enableReadingViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="R" textAlignment="CENTER">
+                     <padding>
+                        <Insets right="3.0" />
                      </padding>
                      <tooltip>
                         <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Enable reading view">
@@ -133,10 +166,17 @@
                            </styleClass>
                         </Tooltip>
                      </tooltip>
+                     <graphic>
+                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@../icons/Book_open_alt.png" />
+                           </image>
+                        </ImageView>
+                     </graphic>
                   </Button>
-                  <Button fx:id="enablePlainViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="round-button" text="P" textAlignment="CENTER">
+                  <Button fx:id="enablePlainViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="P" textAlignment="CENTER">
                      <padding>
-                        <Insets left="3.0" right="3.0" />
+                        <Insets right="3.0" />
                      </padding>
                      <tooltip>
                         <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Show plain text">
@@ -146,6 +186,16 @@
                            </styleClass>
                         </Tooltip>
                      </tooltip>
+                     <graphic>
+                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@../icons/Paper.png" />
+                           </image>
+                        </ImageView>
+                     </graphic>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
                   </Button>
                </children>
                <padding>

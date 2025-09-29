@@ -7,7 +7,6 @@ import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.web.WebView;
 import lombok.Getter;
-import lombok.SneakyThrows;
 import org.example.tonpad.core.service.MarkdownService;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +18,7 @@ public class TabController {
     @Getter
     private TabPane tabPane;
 
-    private MarkdownService markdownService;
+    private final MarkdownService markdownService;
 
     public TabController(MarkdownService markdownService) {
         this.markdownService = markdownService;
@@ -30,7 +29,6 @@ public class TabController {
         initialize();
     }
 
-    @SneakyThrows
     private void initialize() {
         addNewTabButton();
         createInitialTab();
