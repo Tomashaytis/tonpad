@@ -1,16 +1,16 @@
 package org.example.tonpad.controllers;
 
-import javafx.scene.control.Button;
 import javafx.scene.layout.AnchorPane;
+import org.springframework.stereotype.Component;
 
+@Component
 public class FileTreePanelController {
-    private final AnchorPane fileTreePane;
+    private AnchorPane fileTreePane;
 
     private boolean isLeftPaneVisible = false;
 
-    public FileTreePanelController(AnchorPane fileTreePane, Button showFilesButton) {
+    public void setFileTreePane(AnchorPane fileTreePane) {
         this.fileTreePane = fileTreePane;
-        showFilesButton.setOnAction(event -> toggleLeftPanel());
         updatePanelVisibility();
     }
 

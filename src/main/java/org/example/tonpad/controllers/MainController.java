@@ -8,9 +8,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
-import org.springframework.context.ApplicationContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Getter
+@Component
 public class MainController {
     @FXML
     private VBox mainVBox;
@@ -57,25 +59,25 @@ public class MainController {
     @FXML
     private Button enablePlainViewButton;
 
-    @FXML private SearchTextController searchBarIncludeController;
+    @Autowired
+    private SearchTextController searchBarIncludeController;
 
-    private ApplicationContext springContext;
-
+    @Autowired
     private FileTreePanelController fileTreePanelController;
 
+    @Autowired
     private TabController tabController;
 
+    @Autowired
     private SearchTextController searchTextController;
 
+    @Autowired
     private FileTreeController fileTreeController;
 
     @FXML
     public void initialize() {
-        fileTreePanelController = new FileTreePanelController(fileTreePane, showFilesButton);
-        
-        setupControllers();
     }
-    
+
     public void initializeFileTreePanel(VBox fileTreeVBox, FileTreeController fileTreeController) {
         this.fileTreeController = fileTreeController;
         
@@ -89,27 +91,24 @@ public class MainController {
 
     public void postInitialize()
     {
-        tabController = new TabController(tabPane, springContext);
-    
+        setupEventHandlers();
+        setupControllers();
+
         searchBarIncludeController.setTabPane(tabPane);
-        searchBarIncludeController.setSpringContext(springContext);
         searchBarIncludeController.init();
 
     }
 
     private void setupControllers() {
-        // Взаимодействие контроллеров
+        fileTreePanelController.setFileTreePane(fileTreePane);
+        tabController.setTabPane(tabPane);
+    }
+
+    private void setupEventHandlers() {
+        showFilesButton.setOnAction(event -> fileTreePanelController.toggleLeftPanel());
     }
 
     public TabController getTabManagerController() {
         return tabController;
-    }
-
-    public void setSpringContext(ApplicationContext springContext) {
-        this.springContext = springContext;
-        if (tabController != null) {
-            tabController.setSpringContext(springContext);
-        }
-        if(searchBarIncludeController != null) searchBarIncludeController.setSpringContext(springContext);;
     }
 }

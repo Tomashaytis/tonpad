@@ -9,33 +9,31 @@ import javafx.scene.web.WebView;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.example.tonpad.service.MarkdownService;
-import org.example.tonpad.service.impl.MarkdownServiceImpl;
-import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+@Component
 public class TabController {
     @Getter
-    private final TabPane tabPane;
-
-    private ApplicationContext springContext;
+    private TabPane tabPane;
 
     private MarkdownService markdownService;
 
-    public TabController(TabPane tabPane, ApplicationContext springContext) {
+    public TabController(MarkdownService markdownService) {
+        this.markdownService = markdownService;
+    }
+
+    public void setTabPane(TabPane tabPane) {
         this.tabPane = tabPane;
-        this.springContext = springContext;
         initialize();
     }
 
     @SneakyThrows
     private void initialize() {
         addNewTabButton();
-        if (springContext != null) {
-            markdownService = springContext.getBean(MarkdownServiceImpl.class);
-            createInitialTab();
-        }
+        createInitialTab();
     }
 
     private void createInitialTab() {
@@ -96,12 +94,4 @@ public class TabController {
         tabPane.getTabs().add(tabPane.getTabs().size() - 1, newTab);
         tabPane.getSelectionModel().select(newTab);
     }
-
-    public void setSpringContext(ApplicationContext springContext) {
-        this.springContext = springContext;
-        if (springContext != null && markdownService == null) {
-            markdownService = springContext.getBean(MarkdownServiceImpl.class);
-        }
-    }
-
 }

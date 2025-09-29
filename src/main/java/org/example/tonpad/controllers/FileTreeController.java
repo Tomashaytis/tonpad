@@ -5,8 +5,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.HBox;
 import lombok.Getter;
+import org.springframework.stereotype.Component;
 
 @Getter
+@Component
 public class FileTreeController {
 
     @FXML

@@ -29,7 +29,7 @@ public class TonpadApplication extends Application {
 
     @Override
     public void init() {
-        springContext = new SpringApplicationBuilder(getClass()).run(); //кто уберет, тот пидор
+        springContext = new SpringApplicationBuilder(getClass()).headless(false).run();
         springContext.getAutowireCapableBeanFactory().autowireBean(this);
     }
 
@@ -38,10 +38,9 @@ public class TonpadApplication extends Application {
         FXMLLoader mainLoader = new FXMLLoader(
                 getClass().getResource("/org/example/tonpad/fxml/tonpad-ui.fxml")
         );
+        mainLoader.setControllerFactory(springContext::getBean);
         Parent root = mainLoader.load();
         MainController mainController = mainLoader.getController();
-
-        mainController.setSpringContext(springContext);
 
         FXMLLoader fileTreeLoader = new FXMLLoader(
                 getClass().getResource("/org/example/tonpad/fxml/file-tree-panel.fxml")

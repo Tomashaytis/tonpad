@@ -2,10 +2,9 @@ package org.example.tonpad.controllers;
 
 import java.util.List;
 
+import lombok.Setter;
 import org.example.tonpad.service.SearchService;
 import org.example.tonpad.service.SearchService.Hit;
-import org.example.tonpad.service.impl.SearchServiceImpl;
-import org.springframework.context.ApplicationContext;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
@@ -22,28 +21,32 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.HBox;
 import javafx.scene.web.WebView;
 import javafx.util.Duration;
+import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
+@Component
 public class SearchTextController {
+    @Setter
+    private TabPane tabPane;
 
-    private TabPane tabPane;    
-    private ApplicationContext springContext;
+    @Autowired
     private SearchService searchService;
 
     private int currentIndex = -1;
+
     List<Hit> hits;
 
-    @FXML private HBox searchBar;
-    @FXML private TextField searchField;
-    @FXML private Button prevHitButton;
-    @FXML private Button nextHitButton;
+    @FXML
+    private HBox searchBar;
 
-    public void setTabPane(TabPane tabPane) { this.tabPane = tabPane; }
+    @FXML
+    private TextField searchField;
 
-    public void setSpringContext(ApplicationContext context)
-    {
-        this.springContext = context;
-        if(context != null) this.searchService = context.getBean(SearchServiceImpl.class);
-    }
+    @FXML
+    private Button prevHitButton;
+
+    @FXML
+    private Button nextHitButton;
 
     public void init()
     {
@@ -163,7 +166,7 @@ public class SearchTextController {
     {
         currentIndex = -1;
         WebView wv = getActiveWebView();
-        if (wv == null || !docReady(wv)) return;
+        if (wv == null || docReady(wv)) return;
 
         Object res = execJS(wv, """
             const root = document.body;
@@ -183,7 +186,7 @@ public class SearchTextController {
 
     private boolean docReady(WebView wv)
     {
-        return wv.getEngine().getDocument() != null && wv.getEngine().getLoadWorker().getState() == Worker.State.SUCCEEDED;
+        return wv.getEngine().getDocument() == null || wv.getEngine().getLoadWorker().getState() != Worker.State.SUCCEEDED;
     }
 
     private Object execJS(WebView wv, String jsBody) 
@@ -203,7 +206,7 @@ public class SearchTextController {
 
     private void highlightInDom() {
         WebView wv = getActiveWebView();
-        if (wv == null || !docReady(wv)) return;
+        if (wv == null || docReady(wv)) return;
 
         if (hits == null || hits.isEmpty()) { clearHighlights(); return; }
 
@@ -321,10 +324,10 @@ public class SearchTextController {
 private void setSearchShortCut() {
     if (tabPane != null && tabPane.getScene() != null) {
         attachAccelerators(tabPane.getScene());
+        tabPane.sceneProperty().addListener((obs, oldS, newS) -> {
+            if (newS != null) attachAccelerators(newS);
+        });
     }
-    tabPane.sceneProperty().addListener((obs, oldS, newS) -> {
-        if (newS != null) attachAccelerators(newS);
-    });
 }
 
 private void attachAccelerators(Scene scene) {
