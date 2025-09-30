@@ -1,7 +1,6 @@
 package org.example.tonpad.core.parser.extension.block;
 
 import com.vladsch.flexmark.parser.block.BlockParserFactory;
-import com.vladsch.flexmark.parser.block.CustomBlockParserFactory;
 import com.vladsch.flexmark.util.data.DataHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -9,39 +8,33 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Set;
 import java.util.function.Supplier;
 
-class AbstractCustomBlockParserFactory<T extends AbstractBlock> implements CustomBlockParserFactory {
+public abstract class AbstractCustomBlockParserFactory<T extends AbstractBlock> implements com.vladsch.flexmark.parser.block.CustomBlockParserFactory {
 
-    private final AbstractBlockParserFactory<T> blockParserFactory;
+    private final String startTag;
 
-    public AbstractCustomBlockParserFactory(
-            Supplier<T> blockProvider,
-            boolean isContainer,
-            boolean canContain,
-            String startTag,
-            String endTag
-    ) {
-        this.blockParserFactory = new AbstractBlockParserFactory<>(
-                blockProvider,
-                isContainer,
-                canContain,
-                startTag,
-                endTag
-        );
+    private final String endTag;
+
+    private final Supplier<T> blockSupplier;
+
+    protected AbstractCustomBlockParserFactory(AbstractBlockSettingsProvider<T> blockSettingsProvider) {
+        startTag = blockSettingsProvider.getStartTag();
+        endTag = blockSettingsProvider.getEndTag();
+        blockSupplier = blockSettingsProvider.getBlockSupplier();
     }
 
     @Override
     public @NotNull BlockParserFactory apply(@NotNull DataHolder dataHolder) {
-        return blockParserFactory;
+        return new org.example.tonpad.core.parser.extension.block.BlockParserFactory<>(startTag, endTag, blockSupplier);
     }
 
     @Override
     public @Nullable Set<Class<?>> getAfterDependents() {
-        return null;
+        return Set.of();
     }
 
     @Override
     public @Nullable Set<Class<?>> getBeforeDependents() {
-        return null;
+        return Set.of();
     }
 
     @Override

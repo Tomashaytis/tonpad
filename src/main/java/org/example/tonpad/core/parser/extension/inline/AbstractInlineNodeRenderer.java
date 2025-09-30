@@ -1,4 +1,4 @@
-package org.example.tonpad.core.parser.extension.block;
+package org.example.tonpad.core.parser.extension.inline;
 
 import com.vladsch.flexmark.html.HtmlWriter;
 import com.vladsch.flexmark.html.renderer.NodeRenderer;
@@ -6,16 +6,19 @@ import com.vladsch.flexmark.html.renderer.NodeRendererContext;
 import com.vladsch.flexmark.html.renderer.NodeRenderingHandler;
 import lombok.RequiredArgsConstructor;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @RequiredArgsConstructor
-public abstract class AbstractNodeRenderer<T extends AbstractBlock> implements NodeRenderer {
+public abstract class AbstractInlineNodeRenderer<T extends AbstractInlineNode> implements NodeRenderer {
 
     private final Class<T> blockClass;
 
     @Override
     public Set<NodeRenderingHandler<?>> getNodeRenderingHandlers() {
-        return Set.of(new NodeRenderingHandler<>(blockClass, this::render));
+        Set<NodeRenderingHandler<?>> set = new HashSet<>();
+        set.add(new NodeRenderingHandler<>(blockClass, this::render));
+        return set;
     }
 
     protected abstract void render(T node, NodeRendererContext context, HtmlWriter html);

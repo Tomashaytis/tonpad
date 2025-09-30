@@ -35,8 +35,10 @@ public class TabController {
             String fileContent = Files.readString(Path.of("src/main/resources/test.md"));
             Document markdownFile = markdownService.parseMarkdownFile(fileContent);
             String html = markdownService.renderMarkdownFileToHtml(markdownFile);
+            String markdown = markdownService.convertHtmlToMarkdown(html);
             createTabWithContent("Initial Tab", html);
         } catch (Exception e) {
+            e.printStackTrace();
             createTabWithContent("New Tab", "<h1>Error loading content</h1>");
         }
     }
