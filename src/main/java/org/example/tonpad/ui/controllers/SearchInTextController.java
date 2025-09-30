@@ -9,6 +9,7 @@ import jakarta.annotation.PostConstruct;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -34,6 +35,12 @@ public class SearchInTextController {
 
     @FXML
     private VBox searchBarVBox;
+
+    @FXML
+    public HBox searchFieldHBox;
+
+    @FXML
+    public HBox searchButtonsHBox;
 
     @FXML
     private TextField searchField;
