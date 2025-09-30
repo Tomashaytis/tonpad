@@ -4,6 +4,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "app", ignoreUnknownFields = false)
 public record TonpadConfig(
-        String dataPath
+        String dataPath,
+        ReservedDirNames reservedNames
 ) {
+
+    public record ReservedDirNames(String templatesDir, String notesDir) {}
 }
