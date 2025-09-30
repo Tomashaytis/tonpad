@@ -1,8 +1,12 @@
 package org.example.tonpad.ui.controllers;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import jakarta.annotation.PostConstruct;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
@@ -25,6 +29,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class SearchInTextController {
+
+    static String FXML_SOURCE = "/ui/fxml/search-bar.fxml";
 
     @FXML
     private VBox searchBarVBox;
@@ -59,6 +65,21 @@ public class SearchInTextController {
         AnchorPane.setBottomAnchor(searchBarVBox, 0.0);
         AnchorPane.setLeftAnchor(searchBarVBox, 0.0);
         AnchorPane.setRightAnchor(searchBarVBox, 0.0);
+    }
+
+    public void showSearchBar() {
+        searchField.requestFocus();
+        searchField.selectAll();
+
+        runSearch();
+    }
+
+    public void hideSearchBar() {
+        WebView wv = getActiveWebView();
+        if(wv != null) {
+            clearHighlights();
+            clearDomSelection(wv);
+        }
     }
 
     private void selectPrevHit() {
@@ -325,18 +346,13 @@ public class SearchInTextController {
         return (tab != null && tab.getUserData() instanceof WebView wv) ? wv : null;
     }
 
-    public void showSearchBar() {
-        searchField.requestFocus();
-        searchField.selectAll();
-
-        runSearch();
+    @PostConstruct
+    public void postConstruct() throws IOException {
+        FXMLLoader loader = new FXMLLoader(
+                Objects.requireNonNull(getClass().getResource(FXML_SOURCE))
+        );
+        loader.setControllerFactory(i -> this);
+        loader.load();
     }
 
-    public void hideSearchBar() {
-        WebView wv = getActiveWebView();
-        if(wv != null) {
-            clearHighlights();
-            clearDomSelection(wv);
-        }
-    }
 }
