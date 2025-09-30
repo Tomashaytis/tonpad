@@ -66,8 +66,6 @@ public class MainController {
     @FXML
     private Button enablePlainViewButton;
 
-    private final SearchTextController searchBarController;
-
     private final FileTreePanelController fileTreePanelController;
 
     private final TabController tabController;
@@ -107,8 +105,8 @@ public class MainController {
 
         tabController.setTabPane(tabPane);
 
-        searchBarController.setMainController(this);
-        searchBarController.init();
+        searchTextController.setMainController(this);
+        searchTextController.init();
     }
 
     private void setupEventHandlers() {

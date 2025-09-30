@@ -154,12 +154,12 @@ public class SearchTextController {
         if(wv == null) {
             return;
         }
-    
+        hits.clear();
+
         String query = searchField.getText().trim();
         if(query.isEmpty()) {
             clearHighlights();
             clearDomSelection(wv);
-            hits.clear();
             currentIndex = -1;
             return;
         }
@@ -168,7 +168,7 @@ public class SearchTextController {
         this.hits.addAll(searchService.openSession(() -> visibleText, () -> 0).findAll(query));
         highlightInDom();
 
-        searchResultsField.setText("1/" + hits.size());
+        searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
     }
 
     private void clearHighlights() {
@@ -367,6 +367,7 @@ public class SearchTextController {
 
         searchField.requestFocus();
         searchField.selectAll();
+
         runSearch();
     }
 
