@@ -5,15 +5,18 @@ import com.vladsch.flexmark.html.renderer.NodeRenderer;
 import com.vladsch.flexmark.html.renderer.NodeRendererContext;
 import com.vladsch.flexmark.html.renderer.NodeRendererFactory;
 import com.vladsch.flexmark.util.data.DataHolder;
-import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
-@AllArgsConstructor
-abstract class AbstractNodeRendererFactory<T extends AbstractBlock> implements NodeRendererFactory {
+public abstract class AbstractNodeRendererFactory<T extends AbstractBlock> implements NodeRendererFactory {
 
     private final Class<T> blockClass;
 
     private final String startTag;
+
+    public AbstractNodeRendererFactory(AbstractBlockSettingsProvider<T> blockSettingsProvider) {
+        blockClass = blockSettingsProvider.getBlockClass();
+        startTag = blockSettingsProvider.getStartTag();
+    }
 
     @Override
     public @NotNull NodeRenderer apply(@NotNull DataHolder dataHolder) {

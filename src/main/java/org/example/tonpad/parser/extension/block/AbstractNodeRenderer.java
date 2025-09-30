@@ -4,12 +4,12 @@ import com.vladsch.flexmark.html.HtmlWriter;
 import com.vladsch.flexmark.html.renderer.NodeRenderer;
 import com.vladsch.flexmark.html.renderer.NodeRendererContext;
 import com.vladsch.flexmark.html.renderer.NodeRenderingHandler;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Set;
 
-@AllArgsConstructor
-abstract class AbstractNodeRenderer<T extends AbstractBlock> implements NodeRenderer {
+@RequiredArgsConstructor
+public abstract class AbstractNodeRenderer<T extends AbstractBlock> implements NodeRenderer {
 
     private final Class<T> blockClass;
 

@@ -37,6 +37,7 @@ public class MarkdownServiceImpl implements MarkdownService {
     @PostConstruct
     private void postConstruct() {
         options.set(FlexmarkHtmlConverter.RENDER_COMMENTS, true);
+        options.set(FlexmarkHtmlConverter.COMMENT_ORIGINAL_NON_NUMERIC_LIST_ITEM, true);
 
         options.set(Parser.EXTENSIONS, extensions);
 

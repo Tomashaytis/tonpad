@@ -13,20 +13,23 @@ How to use MkDown Markdown Editor:
 Feature
 -------
 
-<!-- immutable -->  
+<!-- immutable-block -->  
 * Import Markdown file from your pc
 * Import your HTML file and convert it to markdown
 * Export your document as a Markdown file, HTML or HTML styled file
-<!-- /immutable -->
+<!-- /immutable-block -->
+
+zxc **++[asd](https://skillbox.ru/media/code/yazyk-razmetki-markdown-shpargalka-po-sintaksisu-s-primerami/#stk-18)++** zxc фыв zxc
 
 * я гуль
-* zxc
-* zxc
+* zxc <!-- immutable-inline -->zxc<!-- /immutable-inline --> zxc
+* <!-- immutable-inline -->zxc<!-- /immutable-inline -->
 * я гуль
 
-<!-- immutable -->  
+zxc zxc
+<!-- immutable-block -->  
 * 123
 * 321
-<!-- /immutable -->
+<!-- /immutable-block -->
 
 asdasdasd
