@@ -5,6 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.example.tonpad.core.service.SearchService;
+import org.example.tonpad.core.service.SearchService.Hit;
+import org.example.tonpad.core.service.impl.SearchServiceImpl;
+import org.springframework.context.ApplicationContext;
 import jakarta.annotation.PostConstruct;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.TabPane;

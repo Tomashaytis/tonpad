@@ -9,9 +9,17 @@ import com.vladsch.flexmark.util.misc.Extension;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.service.MarkdownService;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Comment;
+import org.jsoup.nodes.Node;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +44,7 @@ public class MarkdownServiceImpl implements MarkdownService {
 
     @PostConstruct
     private void postConstruct() {
-        options.set(FlexmarkHtmlConverter.RENDER_COMMENTS, true);
-        options.set(FlexmarkHtmlConverter.COMMENT_ORIGINAL_NON_NUMERIC_LIST_ITEM, true);
+        options.set(FlexmarkHtmlConverter.RENDER_COMMENTS, false);
 
         options.set(Parser.EXTENSIONS, extensions);
 
@@ -58,7 +65,31 @@ public class MarkdownServiceImpl implements MarkdownService {
 
     @Override
     public String convertHtmlToMarkdown(String html) {
-        return htmlConverter.convert(html);
+        org.jsoup.nodes.Document doc = Jsoup.parse(html);
+        Map<String, String> commentPlaceholders = new HashMap<>();
+        Set<UUID> uuids = new HashSet<>();
+
+        for (Node node : doc.select("*").stream().flatMap(n -> n.childNodes().stream()).toList()) {
+            if (node instanceof Comment comment) {
+                UUID uuid = UUID.randomUUID();
+                while (!uuids.add(uuid)) {
+                    uuid = UUID.randomUUID();
+                }
+
+                String placeholder = "CUSTOM_TAG_PLACEHOLDER_" + uuid;
+                commentPlaceholders.put(placeholder, "<!--" + comment.getData() + "-->");
+                node.replaceWith(new org.jsoup.nodes.TextNode(placeholder));
+            }
+        }
+
+        String processedHtml = doc.html();
+        String markdown = htmlConverter.convert(processedHtml);
+
+        for (Map.Entry<String, String> entry : commentPlaceholders.entrySet()) {
+            markdown = markdown.replace(entry.getKey(), entry.getValue());
+        }
+
+        return markdown;
     }
 
 }
