@@ -62,7 +62,7 @@ public class FileSystemServiceImpl implements FileSystemService {
 
             return new FileTree(path, subtrees);
         } catch (IOException e) {
-            log.error(DIR_READING_ERROR, e);
+            log.warn(DIR_READING_ERROR, e);
             throw new CustomIOException(DIR_READING_ERROR, e);
         }
     }
@@ -71,7 +71,7 @@ public class FileSystemServiceImpl implements FileSystemService {
         try (Stream<Path> elems = Files.walk(rootDir)) {
             return elems.filter(el -> el.getFileName().toString().equals(fileName)).findFirst();
         } catch (IOException e) {
-            log.error(FILE_SEARCH_ERROR, e);
+            log.warn(FILE_SEARCH_ERROR, e);
             throw new CustomIOException(FILE_SEARCH_ERROR, e);
         }
     }
@@ -84,7 +84,7 @@ public class FileSystemServiceImpl implements FileSystemService {
         try (Stream<Path> elements = Files.list(directory)) {
             return elements.filter(Files::isRegularFile).map(i -> i.getFileName().toString()).toList();
         } catch (IOException e) {
-            log.error(DIR_READING_ERROR, e);
+            log.warn(DIR_READING_ERROR, e);
             throw new CustomIOException(DIR_READING_ERROR, e);
         }
     }
@@ -94,13 +94,15 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public Path makeDir(Path directory) {
+        if (Files.exists(directory)) {
+            log.warn(DIR_ALREADY_EXISTS_ERROR);
+            throw new CustomIOException(DIR_ALREADY_EXISTS_ERROR);
+        }
+
         try {
             return Files.createDirectories(directory);
-        } catch (FileAlreadyExistsException e) {
-            log.error(DIR_ALREADY_EXISTS_ERROR, e);
-            throw new CustomIOException(DIR_ALREADY_EXISTS_ERROR, e);
         } catch (IOException e) {
-            log.error(DIR_CREATE_ERROR, e);
+            log.warn(DIR_CREATE_ERROR, e);
             throw new CustomIOException(DIR_CREATE_ERROR, e);
         }
     }
@@ -113,36 +115,36 @@ public class FileSystemServiceImpl implements FileSystemService {
         try {
             return Files.createFile(path);
         } catch (FileAlreadyExistsException e) {
-            log.error(FILE_ALREADY_EXISTS_ERROR, e);
+            log.warn(FILE_ALREADY_EXISTS_ERROR, e);
             throw new CustomIOException(FILE_ALREADY_EXISTS_ERROR, e);
         } catch (IOException e) {
-            log.error(FILE_CREATE_ERROR, e);
+            log.warn(FILE_CREATE_ERROR, e);
             throw new CustomIOException(FILE_CREATE_ERROR, e);
         }
     }
 
-    public List<String> readFile(String path) {
+    public String readFile(String path) {
         return readFile(Path.of(path));
     }
 
-    public List<String> readFile(Path path) {
+    public String readFile(Path path) {
         try {
-            return Files.readAllLines(path);
+            return Files.readString(path);
         } catch (IOException e) {
-            log.error(FILE_READ_ERROR, e);
+            log.warn(FILE_READ_ERROR, e);
             throw new CustomIOException(FILE_READ_ERROR, e);
         }
     }
 
-    public void write(String path, List<String> content) {
+    public void write(String path, String content) {
         write(Path.of(path), content);
     }
 
-    public void write(Path path, List<String> content) {
+    public void write(Path path, String content) {
         try {
-            Files.write(path, content);
+            Files.writeString(path, content);
         } catch (IOException e) {
-            log.error(FILE_WRITE_ERROR, e);
+            log.warn(FILE_WRITE_ERROR, e);
             throw new CustomIOException(FILE_WRITE_ERROR, e);
         }
     }
@@ -167,7 +169,7 @@ public class FileSystemServiceImpl implements FileSystemService {
         try {
             Files.walkFileTree(path, visitor);
         } catch (IOException e) {
-            log.error(DELETE_ERROR, e);
+            log.warn(DELETE_ERROR, e);
             throw new CustomIOException(DELETE_ERROR, e);
         }
     }

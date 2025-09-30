@@ -24,13 +24,13 @@ public interface FileSystemService {
 
     Path makeFile(Path path);
 
-    List<String> readFile(String path);
+    String readFile(String path);
 
-    List<String> readFile(Path path);
+    String readFile(Path path);
 
-    void write(String path, List<String> content);
+    void write(String path, String content);
 
-    void write(Path path, List<String> content);
+    void write(Path path, String content);
 
     Path rename(String oldPath, String newPath);
 

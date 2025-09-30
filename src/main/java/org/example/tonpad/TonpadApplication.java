@@ -8,6 +8,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.example.tonpad.controllers.FileTreeController;
 import org.example.tonpad.controllers.MainController;
+import org.example.tonpad.core.files.directory.DirectoryServiceImpl;
 import org.example.tonpad.service.MarkdownService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -16,6 +17,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
 
 @SpringBootApplication
@@ -31,6 +33,13 @@ public class TonpadApplication extends Application {
     public void init() {
         springContext = new SpringApplicationBuilder(getClass()).run(); //кто уберет, тот пидор
         springContext.getAutowireCapableBeanFactory().autowireBean(this);
+
+        DirectoryServiceImpl asd = springContext.getBean(DirectoryServiceImpl.class);
+
+        asd.renameDir(Path.of("src/main/resources/basePath/test"), "test1");
+
+
+//        asd.createDir(Path.of("src/main/resources/basePath"), "test");
     }
 
     @Override

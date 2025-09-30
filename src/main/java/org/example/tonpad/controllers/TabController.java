@@ -1,6 +1,8 @@
 package org.example.tonpad.controllers;
 
 import com.vladsch.flexmark.util.ast.Document;
+import jakarta.annotation.PostConstruct;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
@@ -12,6 +14,7 @@ import org.example.tonpad.service.MarkdownService;
 import org.example.tonpad.service.impl.MarkdownServiceImpl;
 import org.springframework.context.ApplicationContext;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -27,6 +30,13 @@ public class TabController {
         this.tabPane = tabPane;
         this.springContext = springContext;
         initialize();
+    }
+
+    @PostConstruct
+    public void init() throws IOException {
+        FXMLLoader loader = new FXMLLoader();
+        loader.setControllerFactory(i -> this);
+        loader.load();
     }
 
     @SneakyThrows
