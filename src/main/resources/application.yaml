@@ -1,3 +1,9 @@
 spring:
   application:
     name: tonpad
+
+app:
+  data-path: "basePath"
+  reserved-names:
+    templates-dir: "templates"
+    notes-dir: "notes"
