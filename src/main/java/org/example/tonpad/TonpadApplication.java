@@ -33,13 +33,6 @@ public class TonpadApplication extends Application {
     public void init() {
         springContext = new SpringApplicationBuilder(getClass()).run(); //кто уберет, тот пидор
         springContext.getAutowireCapableBeanFactory().autowireBean(this);
-
-        DirectoryServiceImpl asd = springContext.getBean(DirectoryServiceImpl.class);
-
-        asd.renameDir(Path.of("src/main/resources/basePath/test"), "test1");
-
-
-//        asd.createDir(Path.of("src/main/resources/basePath"), "test");
     }
 
     @Override
