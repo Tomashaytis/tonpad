@@ -3,25 +3,19 @@ package org.example.tonpad.ui.controllers;
 import java.util.ArrayList;
 import java.util.List;
 
-import javafx.scene.Node;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.TabPane;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.core.service.SearchService.Hit;
 
 import javafx.animation.PauseTransition;
-import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXML;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
-import javafx.scene.layout.HBox;
 import javafx.scene.web.WebView;
 import javafx.util.Duration;
 import org.springframework.stereotype.Component;
@@ -29,15 +23,6 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class SearchTextController {
-    @FXML
-    private VBox searchBarVBox;
-
-    @FXML
-    private HBox searchFieldHBox;
-
-    @FXML
-    private HBox searchButtonsHBox;
-
     @FXML
     private TextField searchField;
 
@@ -51,7 +36,7 @@ public class SearchTextController {
     private TextField searchResultsField;
 
     @Setter
-    private MainController mainController;
+    private TabPane tabPane;
 
     private final SearchService searchService;
 
@@ -59,15 +44,12 @@ public class SearchTextController {
 
     private final List<Hit> hits = new ArrayList<>();
 
-    public void init()
-    {
-        setSearchShortCut();
+    public void init() {
         handleSearchFieldInput();
         handleSearchButtons();
     }
 
-    private void selectPrevHit()
-    {
+    private void selectPrevHit() {
         WebView wv = getActiveWebView();
         if (hits.isEmpty()) return;
         if (currentIndex <= 0) currentIndex = hits.size() - 1;
@@ -77,8 +59,7 @@ public class SearchTextController {
         searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
     }
 
-    private void selectNextHit()
-    {
+    private void selectNextHit() {
         WebView wv = getActiveWebView();
         if(hits.isEmpty()) return;
         if(currentIndex < 0 || currentIndex == hits.size() - 1) currentIndex = 0;
@@ -112,8 +93,7 @@ public class SearchTextController {
         return !(res instanceof String s && s.startsWith("JS_ERROR:")) && Boolean.TRUE.equals(res);
     }
 
-    private void handleSearchButtons()
-    {
+    private void handleSearchButtons() {
         prevHitButton.setOnAction(e -> selectPrevHit());
         nextHitButton.setOnAction(e -> selectNextHit());
 
@@ -123,8 +103,7 @@ public class SearchTextController {
         });
     }
 
-    private void handleSearchFieldInput()
-    {
+    private void handleSearchFieldInput() {
         PauseTransition debounce = new PauseTransition(Duration.millis(400));
         debounce.setOnFinished(e -> runSearch());
         searchField.textProperty().addListener((o, ov, nv) -> debounce.playFromStart());
@@ -327,54 +306,19 @@ public class SearchTextController {
         return sb.toString();
     }
 
-    private void setSearchShortCut() {
-        if (mainController.getTabPane().getScene() != null) {
-            attachAccelerators(mainController.getTabPane().getScene());
-            mainController.getTabPane().sceneProperty().addListener((obs, oldS, newS) -> {
-                if (newS != null) attachAccelerators(newS);
-            });
-        }
-    }
-
-    private void attachAccelerators(Scene scene) {
-        scene.getAccelerators().put(
-            new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN),
-            () -> Platform.runLater(this::showSearchBar)
-        );
-
-        scene.getAccelerators().put(
-            new KeyCodeCombination(KeyCode.ESCAPE),
-            () -> Platform.runLater(this::hideSearchBar)
-        );
-    }
-
     private WebView getActiveWebView() {
-        Tab tab = mainController.getTabPane().getSelectionModel().getSelectedItem();
+        Tab tab = tabPane.getSelectionModel().getSelectedItem();
         return (tab != null && tab.getUserData() instanceof WebView wv) ? wv : null;
     }
 
-    private void showSearchBar() {
-        for (Node child : mainController.getLeftStackPane().getChildren()) {
-            child.setVisible(false);
-        }
-
-        for (Node child : mainController.getLeftToolsPane().getChildren()) {
-            child.getStyleClass().remove("toggled-icon-button");
-        }
-
-        mainController.getLeftStackPane().setManaged(true);
-        mainController.getSearchInTextPane().setVisible(true);
-
+    public void showSearchBar() {
         searchField.requestFocus();
         searchField.selectAll();
 
         runSearch();
     }
 
-    private void hideSearchBar() {
-        mainController.getSearchInTextPane().setVisible(false);
-        mainController.getLeftStackPane().setManaged(false);
-
+    public void hideSearchBar() {
         WebView wv = getActiveWebView();
         if(wv != null) {
             clearHighlights();

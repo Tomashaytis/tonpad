@@ -1,14 +1,21 @@
 package org.example.tonpad.ui.controllers;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TabPane;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 @Getter
@@ -66,8 +73,6 @@ public class MainController {
     @FXML
     private Button enablePlainViewButton;
 
-    private final FileTreePanelController fileTreePanelController;
-
     private final TabController tabController;
 
     private final SearchTextController searchTextController;
@@ -100,16 +105,100 @@ public class MainController {
     }
 
     private void setupControllers() {
-        fileTreePanelController.setMainController(this);
-        fileTreePanelController.init();
-
         tabController.setTabPane(tabPane);
 
-        searchTextController.setMainController(this);
+        searchTextController.setTabPane(tabPane);
         searchTextController.init();
     }
 
     private void setupEventHandlers() {
-        showFilesButton.setOnAction(event -> fileTreePanelController.toggleLeftPanel());
+        showFilesButton.setOnAction(event -> togglePane(
+                leftStackPane,
+                fileTreePane,
+                showFilesButton,
+                () -> {},
+                () -> {}
+        ));
+
+        setSearchShortCut(
+                new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN),
+                new KeyCodeCombination(KeyCode.ESCAPE),
+                () -> showPane(leftStackPane, searchInTextPane, searchTextController::showSearchBar),
+                () -> hidePane(leftStackPane, searchInTextPane, searchTextController::hideSearchBar)
+        );
+    }
+
+    private void togglePane(StackPane stackPane, AnchorPane anchorPane, @Nullable Button button, Runnable show, Runnable hide) {
+        if (anchorPane.isVisible()) {
+            if (button != null) {
+                button.getStyleClass().remove("toggled-icon-button");
+            }
+            anchorPane.setVisible(false);
+            stackPane.setManaged(false);
+
+            hide.run();
+        } else {
+            for (Node child : stackPane.getChildren()) {
+                child.setVisible(false);
+            }
+
+            for (Node child : stackPane.getChildren()) {
+                child.getStyleClass().remove("toggled-icon-button");
+            }
+
+            if (button != null) {
+                button.getStyleClass().add("toggled-icon-button");
+            }
+            stackPane.setManaged(true);
+            anchorPane.setVisible(true);
+
+            show.run();
+        }
+    }
+
+    private void showPane(StackPane stackPane, AnchorPane anchorPane, Runnable show) {
+        if (!anchorPane.isVisible()) {
+            for (Node child : stackPane.getChildren()) {
+                child.setVisible(false);
+            }
+
+            for (Node child : stackPane.getChildren()) {
+                child.getStyleClass().remove("toggled-icon-button");
+            }
+
+            stackPane.setManaged(true);
+            anchorPane.setVisible(true);
+
+            show.run();
+        }
+    }
+
+    private void hidePane(StackPane stackPane, AnchorPane anchorPane, Runnable hide) {
+        if (anchorPane.isVisible()) {
+            anchorPane.setVisible(false);
+            stackPane.setManaged(false);
+
+            hide.run();
+        }
+    }
+
+    private void setSearchShortCut(KeyCodeCombination openKeyComb, KeyCodeCombination closeKeyComb, Runnable show, Runnable hide) {
+        if (tabPane.getScene() != null) {
+            attachAccelerator(tabPane.getScene(), openKeyComb, show);
+            attachAccelerator(tabPane.getScene(), closeKeyComb, hide);
+            tabPane.sceneProperty().addListener((obs, oldS, newS) -> {
+                if (newS != null) {
+                    attachAccelerator(newS, openKeyComb, show);
+                    attachAccelerator(newS, closeKeyComb, hide);
+                }
+            });
+        }
+    }
+
+    private void attachAccelerator(Scene scene, KeyCodeCombination keyComb, Runnable callback) {
+        scene.getAccelerators().put(
+                keyComb,
+                () -> Platform.runLater(callback)
+        );
     }
 }
