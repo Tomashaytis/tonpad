@@ -112,11 +112,9 @@ public class MainController {
         );
     }
 
-    private void togglePane(StackPane stackPane, AnchorPane anchorPane, @Nullable Button button, Runnable show, Runnable hide) {
+    private void togglePane(StackPane stackPane, AnchorPane anchorPane, Button button, Runnable show, Runnable hide) {
         if (anchorPane.isVisible()) {
-            if (button != null) {
-                button.getStyleClass().remove("toggled-icon-button");
-            }
+            button.getStyleClass().remove("toggled-icon-button");
             anchorPane.setVisible(false);
             stackPane.setManaged(false);
 
@@ -130,9 +128,7 @@ public class MainController {
                 child.getStyleClass().remove("toggled-icon-button");
             }
 
-            if (button != null) {
-                button.getStyleClass().add("toggled-icon-button");
-            }
+            button.getStyleClass().add("toggled-icon-button");
             stackPane.setManaged(true);
             anchorPane.setVisible(true);
 
