@@ -1,4 +1,4 @@
-package org.example.tonpad.parser.extension.block.html.comments;
+package org.example.tonpad.core.parser.extension.block.html.comments;
 
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.data.MutableDataHolder;

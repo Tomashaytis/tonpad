@@ -1,7 +1,7 @@
-package org.example.tonpad.parser.extension.inline.immutable;
+package org.example.tonpad.core.parser.extension.inline.immutable;
 
-import org.example.tonpad.parser.extension.inline.AbstractInlineNodeParserFactory;
-import org.example.tonpad.parser.extension.inline.AbstractInlineSettingsProvider;
+import org.example.tonpad.core.parser.extension.inline.AbstractInlineNodeParserFactory;
+import org.example.tonpad.core.parser.extension.inline.AbstractInlineSettingsProvider;
 import org.springframework.stereotype.Component;
 
 @Component

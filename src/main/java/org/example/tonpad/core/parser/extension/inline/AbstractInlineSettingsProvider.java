@@ -1,8 +1,8 @@
-package org.example.tonpad.parser.extension.inline;
+package org.example.tonpad.core.parser.extension.inline;
 
 import com.vladsch.flexmark.util.ast.Node;
 import lombok.Getter;
-import org.example.tonpad.service.MarkdownService;
+import org.example.tonpad.core.service.MarkdownService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 

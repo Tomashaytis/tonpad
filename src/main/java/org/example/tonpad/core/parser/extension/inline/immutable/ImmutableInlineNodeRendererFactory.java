@@ -1,9 +1,9 @@
-package org.example.tonpad.parser.extension.inline.immutable;
+package org.example.tonpad.core.parser.extension.inline.immutable;
 
 import com.vladsch.flexmark.html.HtmlWriter;
 import com.vladsch.flexmark.html.renderer.NodeRendererContext;
-import org.example.tonpad.parser.extension.inline.AbstractInlineNodeRendererFactory;
-import org.example.tonpad.parser.extension.inline.AbstractInlineSettingsProvider;
+import org.example.tonpad.core.parser.extension.inline.AbstractInlineNodeRendererFactory;
+import org.example.tonpad.core.parser.extension.inline.AbstractInlineSettingsProvider;
 import org.springframework.stereotype.Component;
 
 @Component

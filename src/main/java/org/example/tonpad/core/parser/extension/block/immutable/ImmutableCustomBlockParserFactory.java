@@ -1,7 +1,7 @@
-package org.example.tonpad.parser.extension.block.immutable;
+package org.example.tonpad.core.parser.extension.block.immutable;
 
-import org.example.tonpad.parser.extension.block.AbstractCustomBlockParserFactory;
-import org.example.tonpad.parser.extension.block.AbstractBlockSettingsProvider;
+import org.example.tonpad.core.parser.extension.block.AbstractCustomBlockParserFactory;
+import org.example.tonpad.core.parser.extension.block.AbstractBlockSettingsProvider;
 import org.springframework.stereotype.Component;
 
 @Component

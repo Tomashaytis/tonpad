@@ -24,7 +24,7 @@ public abstract class AbstractCustomBlockParserFactory<T extends AbstractBlock> 
 
     @Override
     public @NotNull BlockParserFactory apply(@NotNull DataHolder dataHolder) {
-        return new org.example.tonpad.parser.extension.block.BlockParserFactory<>(startTag, endTag, blockSupplier);
+        return new org.example.tonpad.core.parser.extension.block.BlockParserFactory<>(startTag, endTag, blockSupplier);
     }
 
     @Override
