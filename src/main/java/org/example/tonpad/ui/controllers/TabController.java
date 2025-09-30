@@ -6,7 +6,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.web.WebView;
-import lombok.Getter;
+import lombok.Setter;
 import org.example.tonpad.core.service.MarkdownService;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +15,8 @@ import java.nio.file.Path;
 
 @Component
 public class TabController {
-    @Getter
+
+    @Setter
     private TabPane tabPane;
 
     private final MarkdownService markdownService;
@@ -24,12 +25,7 @@ public class TabController {
         this.markdownService = markdownService;
     }
 
-    public void setTabPane(TabPane tabPane) {
-        this.tabPane = tabPane;
-        initialize();
-    }
-
-    private void initialize() {
+    public void init() {
         addNewTabButton();
         createInitialTab();
     }
@@ -66,7 +62,7 @@ public class TabController {
         });
     }
 
-    public void createNewTab() {
+    private void createNewTab() {
         createTabWithContent("New Tab " + (tabPane.getTabs().size()), "<h1>New Tab Content</h1>");
     }
 

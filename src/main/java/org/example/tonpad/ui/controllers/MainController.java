@@ -13,15 +13,14 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
-@Getter
 @Component
 @RequiredArgsConstructor
 public class MainController {
+
     @FXML
     private VBox mainVBox;
 
@@ -75,27 +74,9 @@ public class MainController {
 
     private final TabController tabController;
 
-    private final SearchTextController searchTextController;
+    private final SearchInTextController searchInTextController;
 
     private final FileTreeController fileTreeController;
-
-    public void initializeFileTreePanel(VBox fileTreeVBox) {
-        fileTreePane.getChildren().add(fileTreeVBox);
-        
-        AnchorPane.setTopAnchor(fileTreeVBox, 0.0);
-        AnchorPane.setBottomAnchor(fileTreeVBox, 0.0);
-        AnchorPane.setLeftAnchor(fileTreeVBox, 0.0);
-        AnchorPane.setRightAnchor(fileTreeVBox, 0.0);
-    }
-
-    public void initializeSearchInTextPanel(VBox fileTreeVBox) {
-        searchInTextPane.getChildren().add(fileTreeVBox);
-
-        AnchorPane.setTopAnchor(fileTreeVBox, 0.0);
-        AnchorPane.setBottomAnchor(fileTreeVBox, 0.0);
-        AnchorPane.setLeftAnchor(fileTreeVBox, 0.0);
-        AnchorPane.setRightAnchor(fileTreeVBox, 0.0);
-    }
 
     public void postInitialize() {
         setupEventHandlers();
@@ -105,10 +86,13 @@ public class MainController {
     }
 
     private void setupControllers() {
-        tabController.setTabPane(tabPane);
+        fileTreeController.init(fileTreePane);
 
-        searchTextController.setTabPane(tabPane);
-        searchTextController.init();
+        tabController.setTabPane(tabPane);
+        tabController.init();
+
+        searchInTextController.setTabPane(tabPane);
+        searchInTextController.init(searchInTextPane);
     }
 
     private void setupEventHandlers() {
@@ -123,8 +107,8 @@ public class MainController {
         setSearchShortCut(
                 new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN),
                 new KeyCodeCombination(KeyCode.ESCAPE),
-                () -> showPane(leftStackPane, searchInTextPane, searchTextController::showSearchBar),
-                () -> hidePane(leftStackPane, searchInTextPane, searchTextController::hideSearchBar)
+                () -> showPane(leftStackPane, searchInTextPane, searchInTextController::showSearchBar),
+                () -> hidePane(leftStackPane, searchInTextPane, searchInTextController::hideSearchBar)
         );
     }
 

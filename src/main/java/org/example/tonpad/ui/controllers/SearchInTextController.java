@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.VBox;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.example.tonpad.core.service.SearchService;
@@ -22,7 +24,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class SearchTextController {
+public class SearchInTextController {
+
+    @FXML
+    private VBox searchBarVBox;
+
     @FXML
     private TextField searchField;
 
@@ -44,9 +50,15 @@ public class SearchTextController {
 
     private final List<Hit> hits = new ArrayList<>();
 
-    public void init() {
+    public void init(AnchorPane parent) {
         handleSearchFieldInput();
         handleSearchButtons();
+        parent.getChildren().add(searchBarVBox);
+
+        AnchorPane.setTopAnchor(searchBarVBox, 0.0);
+        AnchorPane.setBottomAnchor(searchBarVBox, 0.0);
+        AnchorPane.setLeftAnchor(searchBarVBox, 0.0);
+        AnchorPane.setRightAnchor(searchBarVBox, 0.0);
     }
 
     private void selectPrevHit() {
@@ -144,7 +156,9 @@ public class SearchTextController {
         }
         
         String visibleText = (String) wv.getEngine().executeScript("document.body.textContent");
-        this.hits.addAll(searchService.openSession(() -> visibleText, () -> 0).findAll(query));
+        try (SearchService.Session session = searchService.openSession(() -> visibleText, () -> 0)) {
+            this.hits.addAll(session.findAll(query));
+        }
         highlightInDom();
 
         searchResultsField.setText((currentIndex + 1) + "/" + hits.size());

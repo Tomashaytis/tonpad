@@ -4,7 +4,6 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.example.tonpad.ui.controllers.MainController;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -34,12 +33,10 @@ public class TonpadApplication extends Application {
         MainController mainController = mainLoader.getController();
 
         FXMLLoader fileTreeLoader = loadFxml("/ui/fxml/file-tree-panel.fxml");
-        VBox fileTreeVBox = fileTreeLoader.load();
-        mainController.initializeFileTreePanel(fileTreeVBox);
+        fileTreeLoader.load();
 
         FXMLLoader searchInTextLoader = loadFxml("/ui/fxml/search-bar.fxml");
-        VBox searchBarVBox = searchInTextLoader.load();
-        mainController.initializeSearchInTextPanel(searchBarVBox);
+        searchInTextLoader.load();
 
         Scene scene = new Scene(root, 900, 600);
         scene.getStylesheets().add(
