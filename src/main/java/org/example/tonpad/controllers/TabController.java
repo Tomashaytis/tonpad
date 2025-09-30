@@ -8,8 +8,8 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.web.WebView;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.example.tonpad.service.MarkdownService;
-import org.example.tonpad.service.impl.MarkdownServiceImpl;
+import org.example.tonpad.core.service.MarkdownService;
+import org.example.tonpad.core.service.impl.MarkdownServiceImpl;
 import org.springframework.context.ApplicationContext;
 
 import java.nio.file.Files;

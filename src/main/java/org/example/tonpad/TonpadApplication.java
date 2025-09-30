@@ -8,7 +8,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.example.tonpad.controllers.FileTreeController;
 import org.example.tonpad.controllers.MainController;
-import org.example.tonpad.service.MarkdownService;
+import org.example.tonpad.core.service.MarkdownService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;

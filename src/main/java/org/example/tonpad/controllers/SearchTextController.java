@@ -2,9 +2,9 @@ package org.example.tonpad.controllers;
 
 import java.util.List;
 
-import org.example.tonpad.service.SearchService;
-import org.example.tonpad.service.SearchService.Hit;
-import org.example.tonpad.service.impl.SearchServiceImpl;
+import org.example.tonpad.core.service.SearchService;
+import org.example.tonpad.core.service.SearchService.Hit;
+import org.example.tonpad.core.service.impl.SearchServiceImpl;
 import org.springframework.context.ApplicationContext;
 
 import javafx.animation.PauseTransition;
