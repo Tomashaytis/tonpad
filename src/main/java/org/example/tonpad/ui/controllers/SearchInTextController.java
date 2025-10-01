@@ -1,24 +1,16 @@
 package org.example.tonpad.ui.controllers;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.core.service.SearchService.Hit;
-import org.example.tonpad.core.service.impl.SearchServiceImpl;
-import org.springframework.context.ApplicationContext;
-import jakarta.annotation.PostConstruct;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.example.tonpad.core.service.SearchService;
-import org.example.tonpad.core.service.SearchService.Hit;
 
 import javafx.animation.PauseTransition;
 import javafx.concurrent.Worker;
@@ -33,9 +25,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class SearchInTextController {
-
-    static String FXML_SOURCE = "/ui/fxml/search-bar.fxml";
+public class SearchInTextController extends AbstractController {
 
     @FXML
     private VBox searchBarVBox;
@@ -357,13 +347,8 @@ public class SearchInTextController {
         return (tab != null && tab.getUserData() instanceof WebView wv) ? wv : null;
     }
 
-    @PostConstruct
-    public void postConstruct() throws IOException {
-        FXMLLoader loader = new FXMLLoader(
-                Objects.requireNonNull(getClass().getResource(FXML_SOURCE))
-        );
-        loader.setControllerFactory(i -> this);
-        loader.load();
+    @Override
+    protected String getFxmlSource() {
+        return "/ui/fxml/search-bar.fxml";
     }
-
 }

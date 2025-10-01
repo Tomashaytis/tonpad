@@ -37,7 +37,7 @@ public class TonpadApplication extends Application {
         stage.setScene(scene);
         stage.show();
 
-        mainController.postInitialize();
+        mainController.init();
     }
 
     public static void main(String[] args) {
