@@ -1,0 +1,38 @@
+/* green.css - зелёная тема */
+
+.root {
+    /* Глобальные цвета */
+    -color-main-background: #f1f8e9;
+    -color-main-text: #33691e;
+    -color-main-prompt-text: #689f38;
+
+    /* Основные цвета панелей */
+    -color-side-panel: #e8f5e8;
+    -color-side-panel-border: #81c784;
+    -color-note-panel: #f9fdf9;
+    -color-tools-panel: #dcedc8;
+    -color-search-field: #dcedc8;
+    -color-buttons-field: #f1f8e9;
+    -color-actions-panel: #e8f5e9;
+    
+    /* Цвета дерева файлов */
+    -color-tree-background: #f1f8e9;
+    -color-tree-cell: #f1f8e9;
+    -color-tree-cell-hover: #e6f2df;
+    -color-tree-cell-selected: #d4e8c9;
+    -color-tree-scrollbar: #f1f8e9;
+    -color-tree-thumb: #c5e1a5;
+    
+    /* Цвета вкладок */
+    -color-tab-background: #f5faf1;
+    
+    /* Цвета кнопок */
+    -color-button-hover: #c5e1a5;
+    -color-button-pressed: #b2d789;
+    -color-button-toggled: #a5d16d;
+    
+    /* Цвета подсказок */
+    -color-tooltip-background: #33691e;
+    -color-tooltip-text: #f1f8e9;
+    -color-tooltip-border: #689f38;
+}

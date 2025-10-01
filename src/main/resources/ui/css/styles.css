@@ -95,7 +95,7 @@
     -fx-background-color: silver;
 }
 
-/*Стилизация toolTip*/
+/* Стилизация toolTip */
 .custom-tooltip {
     -fx-background-color: #2d2d2d;
     -fx-text-fill: white;

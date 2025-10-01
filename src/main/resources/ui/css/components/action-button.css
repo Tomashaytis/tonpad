@@ -1,0 +1,16 @@
+.action-button {
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+}
+
+.action-button:hover {
+    -fx-background-color: -color-button-hover;
+    -fx-background-size: 1px;
+}
+
+.action-button:pressed {
+    -fx-background-color: -color-button-pressed;
+    -fx-background-size: 1px;
+}

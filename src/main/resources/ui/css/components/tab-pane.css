@@ -1,0 +1,14 @@
+/* tab-pane.css - стилизация вкладок с заметками */
+
+.tab {
+    -fx-font-size: 14px;
+}
+
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: -color-tab-background;
+    -fx-font-size: 14;
+}
+
+.tab-pane > .tab-header-area > .headers-region {
+    -fx-translate-x: 10px;
+}

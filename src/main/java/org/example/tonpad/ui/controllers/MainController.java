@@ -57,7 +57,7 @@ public class MainController {
     private AnchorPane searchPane;
 
     @FXML
-    private AnchorPane tagPane;
+    private AnchorPane bookmarksPane;
 
     @FXML
     private AnchorPane searchInTextPane;
@@ -69,7 +69,7 @@ public class MainController {
     private Button showSearchButton;
 
     @FXML
-    private Button showTagsButton;
+    private Button showBookmarksButton;
 
     @FXML
     private Button showSettingsButton;
