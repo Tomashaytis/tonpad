@@ -1,0 +1,27 @@
+/* file-tree-view.css - стилизация дерева файлов */
+
+.file-tree-view {
+    -fx-background-color: -color-tree-background;
+}
+
+.file-tree-view .tree-cell {
+    -fx-background-color: -color-tree-cell;
+    -fx-text-fill: -color-main-text;
+}
+
+.file-tree-view .tree-cell:filled:hover {
+    -fx-background-color: -color-tree-cell-hover;
+}
+
+.file-tree-view .tree-cell:filled:selected {
+    -fx-background-color: -color-tree-cell-selected;
+    -fx-text-fill: -color-main-text;
+}
+
+.file-tree-view .scroll-bar:vertical {
+    -fx-background-color: -color-tree-scrollbar;
+}
+
+.file-tree-view .scroll-bar:vertical .thumb {
+    -fx-background-color: -color-tree-thumb;
+}

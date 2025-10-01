@@ -4,14 +4,12 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.example.tonpad.ui.controllers.MainController;
-import org.example.tonpad.core.files.directory.DirectoryServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 
-import java.nio.file.Path;
 import java.util.Objects;
 
 @SpringBootApplication
@@ -31,15 +29,8 @@ public class TonpadApplication extends Application {
 
     @Override
     public void start(Stage stage) {
-
-        Scene scene = new Scene(mainController.getMainVBox(), 900, 600);
-        scene.getStylesheets().add(
-                Objects.requireNonNull(getClass().getResource("/ui/css/styles.css")).toExternalForm()
-        );
-        stage.setScene(scene);
-        stage.show();
-
-        mainController.postInitialize();
+        mainController.init();
+        mainController.setStage(stage);
     }
 
     public static void main(String[] args) {

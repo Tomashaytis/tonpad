@@ -1,0 +1,38 @@
+/* brown.css - коричневая тема */
+
+.root {
+    /* Глобальные цвета */
+    -color-main-background: #f5f1e8;
+    -color-main-text: #5d4037;
+    -color-main-prompt-text: #8d6e63;
+
+    /* Основные цвета панелей */
+    -color-side-panel: #e8e0d2;
+    -color-side-panel-border: #a1887f;
+    -color-note-panel: #faf5ed;
+    -color-tools-panel: #e0d6c5;
+    -color-search-field: #e0d6c5;
+    -color-buttons-field: #f0e9dc;
+    -color-actions-panel: #ede6d8;
+    
+    /* Цвета дерева файлов */
+    -color-tree-background: #f0e9dc;
+    -color-tree-cell: #f0e9dc;
+    -color-tree-cell-hover: #e8dfce;
+    -color-tree-cell-selected: #dccdb9;
+    -color-tree-scrollbar: #f0e9dc;
+    -color-tree-thumb: #d7c9b3;
+    
+    /* Цвета вкладок */
+    -color-tab-background: #f5eee2;
+    
+    /* Цвета кнопок */
+    -color-button-hover: #d7c9b3;
+    -color-button-pressed: #cebea4;
+    -color-button-toggled: #c5b496;
+    
+    /* Цвета подсказок */
+    -color-tooltip-background: #5d4037;
+    -color-tooltip-text: #f5f1e8;
+    -color-tooltip-border: #8d6e63;
+}

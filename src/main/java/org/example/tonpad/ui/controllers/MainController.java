@@ -3,7 +3,6 @@ package org.example.tonpad.ui.controllers;
 import jakarta.annotation.PostConstruct;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -15,18 +14,16 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
-public class MainController {
-
-    static String FXML_SOURCE = "/ui/fxml/tonpad-ui.fxml";
+public class MainController extends AbstractController {
 
     @Getter
     @FXML
@@ -57,7 +54,7 @@ public class MainController {
     private AnchorPane searchPane;
 
     @FXML
-    private AnchorPane tagPane;
+    private AnchorPane bookmarksPane;
 
     @FXML
     private AnchorPane searchInTextPane;
@@ -69,7 +66,7 @@ public class MainController {
     private Button showSearchButton;
 
     @FXML
-    private Button showTagsButton;
+    private Button showBookmarksButton;
 
     @FXML
     private Button showSettingsButton;
@@ -86,11 +83,20 @@ public class MainController {
 
     private final FileTreeController fileTreeController;
 
-    public void postInitialize() {
+    public void init() {
         setupEventHandlers();
         setupControllers();
 
         leftStackPane.setManaged(false);
+    }
+
+    public void setStage(Stage stage) {
+        Scene scene = new Scene(mainVBox, 900, 600);
+        scene.getStylesheets().add(
+                Objects.requireNonNull(getClass().getResource("/ui/css/base.css")).toExternalForm()
+        );
+        stage.setScene(scene);
+        stage.show();
     }
 
     private void setupControllers() {
@@ -190,13 +196,8 @@ public class MainController {
         );
     }
 
-    @PostConstruct
-    public void postConstruct() throws IOException {
-        FXMLLoader loader = new FXMLLoader(
-                Objects.requireNonNull(getClass().getResource(FXML_SOURCE))
-        );
-        loader.setControllerFactory(i -> this);
-        loader.load();
+    @Override
+    protected String getFxmlSource() {
+        return "/ui/fxml/tonpad-ui.fxml";
     }
-
 }

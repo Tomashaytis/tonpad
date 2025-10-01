@@ -1,0 +1,29 @@
+/* tool-tip.css - стилизация подсказки */
+
+.custom-tooltip {
+    -fx-background-color: -color-tooltip-background;
+    -fx-text-fill: -color-tooltip-text;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: -color-tooltip-border;
+    -fx-border-width: 1px;
+    -fx-padding: 8px 12px;
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0.2, 2, 2);
+}
+
+.tooltip-right {
+    -fx-translate-x: 10px;
+    -fx-translate-y: -20px;
+}
+
+.tooltip-left {
+    -fx-translate-x: -30px;
+    -fx-translate-y: -20px;
+}
+
+.tooltip-bottom {
+    -fx-translate-x: -55px;
+    -fx-translate-y: 15px;
+}

@@ -2,7 +2,6 @@ package org.example.tonpad.ui.controllers;
 
 import jakarta.annotation.PostConstruct;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.AnchorPane;
@@ -10,13 +9,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Objects;
-
 @Component
-public class FileTreeController {
-
-    static String FXML_SOURCE = "/ui/fxml/file-tree-panel.fxml";
+public class FileTreeController extends AbstractController {
 
     @FXML
     private TreeView<String> fileTreeView;
@@ -73,13 +67,9 @@ public class FileTreeController {
         // Свернуть все узлы
     }
 
-    @PostConstruct
-    public void postConstruct() throws IOException {
-        FXMLLoader loader = new FXMLLoader(
-                Objects.requireNonNull(getClass().getResource(FXML_SOURCE))
-        );
-        loader.setControllerFactory(i -> this);
-        loader.load();
+    @Override
+    protected String getFxmlSource() {
+        return "/ui/fxml/file-tree-panel.fxml";
     }
 
 }
