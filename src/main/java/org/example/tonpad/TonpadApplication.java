@@ -29,15 +29,8 @@ public class TonpadApplication extends Application {
 
     @Override
     public void start(Stage stage) {
-
-        Scene scene = new Scene(mainController.getMainVBox(), 900, 600);
-        scene.getStylesheets().add(
-                Objects.requireNonNull(getClass().getResource("/ui/css/base.css")).toExternalForm()
-        );
-        stage.setScene(scene);
-        stage.show();
-
         mainController.init();
+        mainController.setStage(stage);
     }
 
     public static void main(String[] args) {

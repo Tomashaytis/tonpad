@@ -1,5 +1,6 @@
 package org.example.tonpad.ui.controllers;
 
+import jakarta.annotation.PostConstruct;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -13,9 +14,12 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -84,6 +88,15 @@ public class MainController extends AbstractController {
         setupControllers();
 
         leftStackPane.setManaged(false);
+    }
+
+    public void setStage(Stage stage) {
+        Scene scene = new Scene(mainVBox, 900, 600);
+        scene.getStylesheets().add(
+                Objects.requireNonNull(getClass().getResource("/ui/css/base.css")).toExternalForm()
+        );
+        stage.setScene(scene);
+        stage.show();
     }
 
     private void setupControllers() {
