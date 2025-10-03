@@ -1,0 +1,29 @@
+/* app-button.css - стилизация главных кнопок приложения */
+
+.close-button {
+    -fx-background-color: transparent;
+    -fx-pref-width: 40px;
+    -fx-pref-height: 40px;
+}
+
+.close-button:hover {
+    -fx-background-color: #ff2a2a;
+}
+
+.close-button:pressed {
+    -fx-background-color: d40000;
+}
+
+.app-button {
+    -fx-background-color: transparent;
+    -fx-pref-width: 40px;
+    -fx-pref-height: 40px;
+}
+
+.app-button:hover {
+    -fx-background-color: -color-button-hover;
+}
+
+.app-button:pressed {
+    -fx-background-color: -color-button-pressed;
+}

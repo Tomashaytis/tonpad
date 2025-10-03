@@ -1,12 +1,12 @@
 package org.example.tonpad.ui.controllers;
 
-import jakarta.annotation.PostConstruct;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TabPane;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -14,8 +14,10 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
-import lombok.Getter;
+import javafx.stage.StageStyle;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +27,6 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class MainController extends AbstractController {
 
-    @Getter
     @FXML
     private VBox mainVBox;
 
@@ -77,26 +78,49 @@ public class MainController extends AbstractController {
     @FXML
     private Button enablePlainViewButton;
 
+    private final TitleBarController titleBarController;
+
     private final TabController tabController;
 
     private final SearchInTextController searchInTextController;
 
     private final FileTreeController fileTreeController;
 
-    public void init() {
+    public void init(Stage stage) {
         setupEventHandlers();
         setupControllers();
-
         leftStackPane.setManaged(false);
+        setStage(stage);
     }
 
-    public void setStage(Stage stage) {
-        Scene scene = new Scene(mainVBox, 900, 600);
+    private void setStage(Stage stage) {
+        Scene scene = new Scene(mainVBox);
+
+        Image icon = new Image(Objects.requireNonNull(
+                getClass().getResourceAsStream("/ui/icons/Tonpad256.png")
+        ));
+        stage.getIcons().add(icon);
+
         scene.getStylesheets().add(
                 Objects.requireNonNull(getClass().getResource("/ui/css/base.css")).toExternalForm()
         );
+
+        scene.setFill(Color.TRANSPARENT);
+
+        stage.initStyle(StageStyle.TRANSPARENT);
+        stage.setResizable(true);
         stage.setScene(scene);
         stage.show();
+
+        titleBarController.init(stage, mainVBox);
+
+        Rectangle rootClip = new Rectangle();
+        rootClip.setArcWidth(10);
+        rootClip.setArcHeight(10);
+
+        rootClip.widthProperty().bind(scene.widthProperty());
+        rootClip.heightProperty().bind(scene.heightProperty());
+        mainVBox.setClip(rootClip);
     }
 
     private void setupControllers() {

@@ -38,7 +38,6 @@ public class TabController {
             String markdown = markdownService.convertHtmlToMarkdown(html);
             createTabWithContent("Initial Tab", html);
         } catch (Exception e) {
-            e.printStackTrace();
             createTabWithContent("New Tab", "<h1>Error loading content</h1>");
         }
     }

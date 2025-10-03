@@ -50,7 +50,6 @@
          <children>
             <VBox prefWidth="40.0">
                <children>
-                  <VBox prefHeight="40.0" prefWidth="40.0" styleClass="side-panel-placeholder" />
                   <VBox fx:id="leftToolsPane" maxHeight="1.7976931348623157E308" prefWidth="40.0" spacing="5.0" styleClass="side-panel" VBox.vgrow="ALWAYS">
                      <children>
                         <Button fx:id="showFilesButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="F" textAlignment="CENTER">
@@ -133,14 +132,13 @@
                <children>
                   <TabPane fx:id="tabPane" prefHeight="598.0" prefWidth="823.0" tabClosingPolicy="ALL_TABS">
                      <StackPane.margin>
-                        <Insets top="10.0" />
+                        <Insets />
                      </StackPane.margin></TabPane>
                </children>
             </StackPane>
             <VBox prefWidth="40.0">
                <children>
-                  <VBox prefHeight="40.0" prefWidth="40.0" styleClass="side-panel-placeholder" />
-                  <VBox fx:id="rightToolsPane" prefWidth="40.0" spacing="5.0" styleClass="side-panel" VBox.vgrow="ALWAYS">
+                  <VBox fx:id="rightToolsPane" spacing="5.0" styleClass="side-panel" VBox.vgrow="ALWAYS">
                      <children>
                         <Button fx:id="showSettingsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
                            <tooltip>
