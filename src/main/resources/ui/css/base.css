@@ -10,14 +10,6 @@
 @import url('themes/light.css');
 
 
-.jfx-decorator .jfx-decorator-title {
-    -fx-min-height: 0;
-    -fx-pref-height: 0;
-    -fx-max-height: 0;
-    -fx-padding: 0;
-    -fx-background-color: transparent;
-}
-
 /* Стилизация фона для приложения */
 .main-body {
     -fx-background-color: -color-main-background;
