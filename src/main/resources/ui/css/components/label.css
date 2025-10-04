@@ -1,0 +1,18 @@
+/* label.css - стилизация меток с текстом */
+
+
+.large-label {
+    -fx-text-fill: -color-main-text;
+    -fx-font-size: 24px;
+}
+
+
+.normal-label {
+    -fx-text-fill: -color-main-text;
+    -fx-font-size: 14px;
+}
+
+.small-label {
+    -fx-text-fill: -color-main-text;
+    -fx-font-size: 12px;
+}

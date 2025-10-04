@@ -3,13 +3,20 @@
 @import url('components/icon-button.css');
 @import url('components/action-button.css');
 @import url('components/app-button.css');
+@import url('components/text-button.css');
 @import url('components/file-tree-view.css');
 @import url('components/tab-pane.css');
 @import url('components/tool-tip.css');
+@import url('components/label.css');
+@import url('components/separator.css');
 @import url('icons/tonpad-icons.css');
 
 @import url('themes/dark.css');
 
+
+.title-bar {
+    -fx-background-color: -color-main-background;
+}
 
 /* Стилизация фона для приложения */
 .main-body {
@@ -53,8 +60,15 @@
     -fx-background-color: -color-buttons-field;
 }
 
-/* Стилизация панели действий для файла */
-.file-actions-panel {
+/* Стилизация панели действий */
+.actions-panel {
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-background-color: -color-actions-panel;
+}
+
+/* Стилизация панели просмотра недавних хранилищ заметок */
+.recent-vaults-list-view {
     -fx-background-radius: 5px;
     -fx-border-radius: 5px;
     -fx-background-color: -color-actions-panel;

@@ -16,6 +16,9 @@
     -color-main-text: #e0e0e0;
     -color-main-prompt-text: #a0a0a0;
 
+    /* Цвета разделителей */
+    -color-separator: #a0a0a0;
+
     /* Основные цвета панелей */
     -color-side-panel: #2d2d2d;
     -color-note-panel: #252525;
@@ -39,6 +42,7 @@
     -color-button-hover: #404040;
     -color-button-pressed: #4a4a4a;
     -color-button-toggled: #505050;
+    -color-button: #505050;
     
     /* Цвета подсказок */
     -color-tooltip-background: #e0e0e0;

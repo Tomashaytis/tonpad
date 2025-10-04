@@ -30,13 +30,17 @@ public class TitleBarController extends AbstractController {
 
     public void init(Stage stage, VBox mainVBox) {
         this.stage = stage;
-        closeAppButton.setOnAction(e -> stage.close());
-        collapseAppButton.setOnAction(e -> stage.setIconified(true));
-        resizeAppButton.setOnAction(e -> stage.setMaximized(!stage.isMaximized()));
-
+        setupEventHandlers();
         mainVBox.getChildren().addFirst(titleBarMainHBox);
         setupDragHandlers();
     }
+
+    private void setupEventHandlers() {
+        closeAppButton.setOnAction(e -> stage.close());
+        collapseAppButton.setOnAction(e -> stage.setIconified(true));
+        resizeAppButton.setOnAction(e -> stage.setMaximized(!stage.isMaximized()));
+    }
+
 
     private void setupDragHandlers() {
         titleBarMainHBox.setOnMousePressed(event -> {

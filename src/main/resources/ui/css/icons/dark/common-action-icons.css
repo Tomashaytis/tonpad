@@ -1,5 +1,9 @@
 /* common-action-icons.css - иконки для общих операций, тёмная тема */
 
+.settings-icon {
+    -fx-image: url(../icons/dark/settings.png);
+}
+
 .more-options-icon {
     -fx-image: url(../icons/dark/more-options.png);
 }
@@ -22,6 +26,10 @@
 
 .collapse-icon {
     -fx-image: url(../icons/dark/collapse.png);
+}
+
+.refresh-icon {
+    -fx-image: url(../icons/dark/refresh.png);
 }
 
 .bookmark-icon {

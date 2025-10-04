@@ -25,3 +25,7 @@
 .file-tree-view .scroll-bar:vertical .thumb {
     -fx-background-color: -color-tree-thumb;
 }
+
+.file-tree-view .arrow {
+    -fx-background-color: -color-main-text;
+}

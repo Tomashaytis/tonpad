@@ -64,6 +64,22 @@
                   <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="collection-add-icon" />
                </graphic>
             </Button>
+            <Button fx:id="refreshFilesButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="R" textAlignment="CENTER">
+               <padding>
+                  <Insets right="3.0" />
+               </padding>
+               <tooltip>
+                  <Tooltip text="Refresh file tree">
+                     <styleClass>
+                        <String fx:value="custom-tooltip" />
+                        <String fx:value="tooltip-bottom" />
+                     </styleClass>
+                  </Tooltip>
+               </tooltip>
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="refresh-icon" />
+               </graphic>
+            </Button>
             <Button fx:id="sortFilesButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
                <padding>
                   <Insets right="3.0" />
