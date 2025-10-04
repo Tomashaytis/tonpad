@@ -97,13 +97,15 @@ public class MainController extends AbstractController {
         fileTreeController.init(fileTreePane, vaultPath);
 
         tabController.setTabPane(tabPane);
-        tabController.init();
+        tabController.init("src/main/resources/Welcome.md");
 
         searchInTextController.setTabPane(tabPane);
         searchInTextController.init(searchInTextPane);
     }
 
     private void setupEventHandlers() {
+        fileTreeController.setFileOpenHandler(this::openFileInEditor);
+
         showFilesButton.setOnAction(event -> togglePane(
                 leftStackPane,
                 fileTreePane,
@@ -188,6 +190,10 @@ public class MainController extends AbstractController {
                 keyComb,
                 () -> Platform.runLater(callback)
         );
+    }
+
+    private void openFileInEditor(String path) {
+        tabController.openFileInCurrentTab(path);
     }
 
     @Override

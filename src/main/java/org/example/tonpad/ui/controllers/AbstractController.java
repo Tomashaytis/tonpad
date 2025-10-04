@@ -13,6 +13,7 @@ import javafx.stage.StageStyle;
 import java.io.IOException;
 import java.util.Objects;
 
+
 public abstract class AbstractController {
 
     protected abstract String getFxmlSource();

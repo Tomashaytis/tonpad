@@ -10,8 +10,10 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.FileTree;
+import org.example.tonpad.ui.extentions.FileTreeItem;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -19,6 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.function.Consumer;
+
 
 @Component
 @RequiredArgsConstructor
@@ -55,9 +59,14 @@ public class FileTreeController extends AbstractController {
 
     private TreeItem<String> rootItem;
 
+    private TreeItem<String> selectedItem;
+
     private String vaultPath;
 
     private boolean isCollapsed = true;
+
+    @Setter
+    private Consumer<String> fileOpenHandler;
 
     private final Map<String, Boolean> expandedState = new HashMap<>();
 
@@ -91,6 +100,32 @@ public class FileTreeController extends AbstractController {
         });
 
         refreshFilesButton.setOnAction(e -> refreshTree());
+
+        fileTreeView.setOnMouseClicked(e -> {
+            if (e.getClickCount() == 2) {
+                onOpenFile();
+            }
+        });
+
+        addNoteButton.setOnAction(e -> {
+            addNote();
+            onOpenFile();
+            refreshTree();
+        });
+
+        addDirectoryButton.setOnAction(e -> {
+            addDir();
+            refreshTree();
+        });
+    }
+
+    private void onOpenFile() {
+        if (selectedItem != null && selectedItem.isLeaf()) {
+            String filePath = getFullPath(selectedItem);
+            if (fileOpenHandler != null) {
+                fileOpenHandler.accept(filePath);
+            }
+        }
     }
 
     private void refreshTree() {
@@ -114,7 +149,7 @@ public class FileTreeController extends AbstractController {
 
     private void saveExpandedStateRecursive(TreeItem<String> item) {
         if (item != null) {
-            String path = getItemPath(item);
+            String path = getRelativePath(item);
             expandedState.put(path, item.isExpanded());
 
             for (TreeItem<String> child : item.getChildren()) {
@@ -131,7 +166,7 @@ public class FileTreeController extends AbstractController {
 
     private void restoreExpandedStateRecursive(TreeItem<String> item) {
         if (item != null) {
-            String path = getItemPath(item);
+            String path = getRelativePath(item);
             Boolean wasExpanded = expandedState.get(path);
             if (wasExpanded != null) {
                 item.setExpanded(wasExpanded);
@@ -142,7 +177,8 @@ public class FileTreeController extends AbstractController {
             }
         }
     }
-    private String getItemPath(TreeItem<String> item) {
+
+    private String getRelativePath(TreeItem<String> item) {
         List<String> pathSegments = new ArrayList<>();
         TreeItem<String> current = item;
 
@@ -152,6 +188,22 @@ public class FileTreeController extends AbstractController {
         }
 
         return String.join("/", pathSegments);
+    }
+
+    private String getFullPath(TreeItem<String> item) {
+        if (item == null) {
+            return vaultPath;
+        }
+
+        List<String> pathSegments = new ArrayList<>();
+        TreeItem<String> current = item;
+
+        while (current.getParent() != null) {
+            pathSegments.addFirst(current.getValue());
+            current = current.getParent();
+        }
+
+        return Path.of(vaultPath, pathSegments.toArray(new String[0])).toString();
     }
 
     private void expandAll() {
@@ -180,23 +232,6 @@ public class FileTreeController extends AbstractController {
         }
     }
 
-    private void saveExpandedState(TreeItem<String> item) {
-        if (item != null) {
-            item.setExpanded(item.isExpanded());
-            for (TreeItem<String> child : item.getChildren()) {
-                saveExpandedState(child);
-            }
-        }
-    }
-
-    private void restoreExpandedState(TreeItem<String> item) {
-        if (item != null) {
-            for (TreeItem<String> child : item.getChildren()) {
-                restoreExpandedState(child);
-            }
-        }
-    }
-
     private void setupFileTree() {
         FileTree fileTree = fileSystemService.getFileTree(vaultPath);
 
@@ -213,21 +248,25 @@ public class FileTreeController extends AbstractController {
         fileTreeView.setOnContextMenuRequested(this::onRightClick);
     }
 
-    private void onFileSelected(TreeItem<String> newValue) {
+    private void onFileSelected(TreeItem<String> selectedItem) {
+        this.selectedItem = selectedItem;
     }
 
     private void onRightClick(ContextMenuEvent event) {
+
     }
 
     private TreeItem<String> convertFileTreeToTreeItem(FileTree fileTree) {
         Path path = fileTree.getPath();
         String fileName = path.getFileName() != null ? path.getFileName().toString() : path.toString();
 
-        TreeItem<String> treeItem = new TreeItem<>(fileName);
+        boolean isDirectory = fileTree.getChildren() != null;
+
+        FileTreeItem treeItem = new FileTreeItem(fileName, isDirectory);
 
         treeItem.setValue(fileName);
 
-        if (fileTree.getChildren() != null && !fileTree.getChildren().isEmpty()) {
+        if (isDirectory && !fileTree.getChildren().isEmpty()) {
             for (FileTree child : fileTree.getChildren()) {
                 TreeItem<String> childItem = convertFileTreeToTreeItem(child);
                 treeItem.getChildren().add(childItem);
@@ -235,6 +274,32 @@ public class FileTreeController extends AbstractController {
         }
 
         return  treeItem;
+    }
+
+    private void addNote() {
+        Path path = selectedItem == null ? Path.of(vaultPath) : Path.of(getRelativePath(selectedItem)).getParent();
+        Path filePath = path.resolve("Untitled.md");
+
+        int index = 1;
+        while (fileSystemService.exists(filePath)) {
+            filePath = path.resolve("Untitled " + index + ".md");
+            index += 1;
+        }
+
+        fileSystemService.makeFile(filePath);
+    }
+
+    private void addDir() {
+        Path path = selectedItem == null ? Path.of(vaultPath) : Path.of(getRelativePath(selectedItem)).getParent();
+        Path filePath = path.resolve("Untitled");
+
+        int index = 1;
+        while (fileSystemService.exists(filePath)) {
+            filePath = path.resolve("Untitled " + index);
+            index += 1;
+        }
+
+        fileSystemService.makeDir(filePath);
     }
 
     @Override
