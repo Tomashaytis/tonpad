@@ -97,8 +97,10 @@ public class MainController extends AbstractController {
         stage.setScene(scene);
 
         setupEventHandlers();
-
         stage.show();
+        System.out.println("----------------------");
+        System.out.println(stage.getScene().getFocusOwner());
+
     }
 
     private void setupControllers() {

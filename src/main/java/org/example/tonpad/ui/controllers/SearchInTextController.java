@@ -184,6 +184,8 @@ public class SearchInTextController extends AbstractController {
         highlightInDom();
 
         searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
+        System.out.println("----------------------");
+        System.out.println(tabPane.getScene().getFocusOwner());
     }
 
     private void clearHighlights() {
