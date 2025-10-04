@@ -1,0 +1,41 @@
+/* common-action-icons.css - иконки для общих операций, тёмная тема */
+
+.more-options-icon {
+    -fx-image: url(../icons/dark/more-options.png);
+}
+
+.version-history-icon {
+    -fx-image: url(../icons/dark/version-history.png);
+}
+
+.sort-down-icon {
+    -fx-image: url(../icons/dark/sort-down.png);
+}
+
+.sort-up-icon {
+    -fx-image: url(../icons/dark/sort-up.png);
+}
+
+.expand-icon {
+    -fx-image: url(../icons/dark/expand.png);
+}
+
+.collapse-icon {
+    -fx-image: url(../icons/dark/collapse.png);
+}
+
+.bookmark-icon {
+    -fx-image: url(../icons/dark/bookmark.png);
+}
+
+.merge-icon {
+    -fx-image: url(../icons/dark/merge.png);
+}
+
+.arrow-down-icon {
+    -fx-image: url(../icons/dark/arrow-down.png);
+}
+
+.arrow-up-icon {
+    -fx-image: url(../icons/dark/arrow-up.png);
+}

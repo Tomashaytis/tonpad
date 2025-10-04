@@ -6,8 +6,9 @@
 @import url('components/file-tree-view.css');
 @import url('components/tab-pane.css');
 @import url('components/tool-tip.css');
+@import url('icons/tonpad-icons.css');
 
-@import url('themes/light.css');
+@import url('themes/dark.css');
 
 
 /* Стилизация фона для приложения */

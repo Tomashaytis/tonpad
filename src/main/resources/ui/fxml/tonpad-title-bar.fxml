@@ -3,7 +3,6 @@
 <?import java.lang.String?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Tooltip?>
-<?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 
@@ -11,11 +10,7 @@
    <children>
       <HBox fx:id="leftHeadHBox" prefHeight="100.0" prefWidth="200.0">
          <children>
-            <ImageView fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true">
-               <image>
-                  <Image url="@../icons/Tonpad48.png" />
-               </image>
-            </ImageView>
+            <ImageView fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true" styleClass="tonpad48-icon" />
          </children>
       </HBox>
       <HBox fx:id="centerHeadHBox" prefHeight="100.0" prefWidth="200.0" HBox.hgrow="ALWAYS" />
@@ -31,11 +26,7 @@
                   </Tooltip>
                </tooltip>
                <graphic>
-                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@../icons/Collapse_app.png" />
-                     </image>
-                  </ImageView>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="collapse-app-icon" />
                </graphic>
             </Button>
             <Button fx:id="resizeAppButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="40.0" prefWidth="40.0" styleClass="app-button" textAlignment="CENTER">
@@ -48,11 +39,7 @@
                   </Tooltip>
                </tooltip>
                <graphic>
-                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@../icons/Resize_app.png" />
-                     </image>
-                  </ImageView>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="resize-app-icon" />
                </graphic>
             </Button>
             <Button fx:id="closeAppButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="40.0" prefWidth="40.0" styleClass="close-button" textAlignment="CENTER">
@@ -65,11 +52,7 @@
                   </Tooltip>
                </tooltip>
                <graphic>
-                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@../icons/Close_app.png" />
-                     </image>
-                  </ImageView>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="close-app-icon" />
                </graphic>
             </Button>
          </children>

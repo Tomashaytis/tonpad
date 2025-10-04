@@ -37,7 +37,6 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.Tooltip?>
-<?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
@@ -65,11 +64,7 @@
                               <Insets right="3.0" />
                            </padding>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Folder.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="folder-icon" />
                            </graphic>
                         </Button>
                         <Button fx:id="showSearchButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
@@ -85,11 +80,7 @@
                               </Tooltip>
                            </tooltip>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Folder_search.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="folder-search-icon" />
                            </graphic>
                         </Button>
                         <Button fx:id="showBookmarksButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="T" textAlignment="CENTER">
@@ -105,11 +96,7 @@
                               </Tooltip>
                            </tooltip>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Package_favourite_alt.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="bookmarks-icon" />
                            </graphic>
                         </Button>
                      </children>
@@ -150,11 +137,7 @@
                               </Tooltip>
                            </tooltip>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Filter_alt.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="more-options-icon" />
                            </graphic>
                            <padding>
                               <Insets right="3.0" />
@@ -173,11 +156,7 @@
                               </Tooltip>
                            </tooltip>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Book_open_alt.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="reading-view-icon" />
                            </graphic>
                         </Button>
                         <Button fx:id="enablePlainViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="P" textAlignment="CENTER">
@@ -193,11 +172,7 @@
                               </Tooltip>
                            </tooltip>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Paper.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="plain-view-icon" />
                            </graphic>
                            <VBox.margin>
                               <Insets />

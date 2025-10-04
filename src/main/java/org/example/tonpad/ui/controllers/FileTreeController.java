@@ -1,15 +1,22 @@
 package org.example.tonpad.ui.controllers;
 
-import jakarta.annotation.PostConstruct;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import lombok.RequiredArgsConstructor;
+import org.example.tonpad.core.files.FileSystemService;
+import org.example.tonpad.core.files.FileTree;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Path;
+
 @Component
+@RequiredArgsConstructor
 public class FileTreeController extends AbstractController {
 
     @FXML
@@ -35,11 +42,8 @@ public class FileTreeController extends AbstractController {
 
     @FXML
     private Button expandFilesButton;
-
-    @FXML
-    public void initialize() {
-        setupFileTree();
-    }
+    
+    private final FileSystemService fileSystemService;
 
     public void init(AnchorPane parent) {
         parent.getChildren().add(fileTreeVBox);
@@ -48,11 +52,8 @@ public class FileTreeController extends AbstractController {
         AnchorPane.setBottomAnchor(fileTreeVBox, 0.0);
         AnchorPane.setLeftAnchor(fileTreeVBox, 0.0);
         AnchorPane.setRightAnchor(fileTreeVBox, 0.0);
-    }
 
-    private void setupFileTree() {
-        // Заполнение File Tree
-        System.out.println("File tree initialized from FXML");
+        setupFileTree();
     }
 
     public void refreshTree() {
@@ -65,6 +66,46 @@ public class FileTreeController extends AbstractController {
 
     public void collapseAll() {
         // Свернуть все узлы
+    }
+
+    private void setupFileTree() {
+        FileTree fileTree = fileSystemService.getFileTree("D:\\Projects\\Others\\Java\\test");
+
+        TreeItem<String> rootItem = convertFileTreeToTreeItem(fileTree);
+
+        fileTreeView.setRoot(rootItem);
+
+        rootItem.setExpanded(true);
+
+        fileTreeView.getSelectionModel().selectedItemProperty().addListener(
+                (observable, oldValue, newValue) -> onFileSelected(newValue)
+        );
+
+        fileTreeView.setOnContextMenuRequested(this::onRightClick);
+    }
+
+    private void onFileSelected(TreeItem<String> newValue) {
+    }
+
+    private void onRightClick(ContextMenuEvent event) {
+    }
+
+    private TreeItem<String> convertFileTreeToTreeItem(FileTree fileTree) {
+        Path path = fileTree.getPath();
+        String fileName = path.getFileName() != null ? path.getFileName().toString() : path.toString();
+
+        TreeItem<String> treeItem = new TreeItem<>(fileName);
+
+        treeItem.setValue(fileName);
+
+        if (fileTree.getChildren() != null && !fileTree.getChildren().isEmpty()) {
+            for (FileTree child : fileTree.getChildren()) {
+                TreeItem<String> childItem = convertFileTreeToTreeItem(child);
+                treeItem.getChildren().add(childItem);
+            }
+        }
+
+        return  treeItem;
     }
 
     @Override

@@ -1,0 +1,17 @@
+/* open-in-icons.css - иконки для открытия в другом фиде, тёмная тема */
+
+.open-in-new-tab-icon {
+    -fx-image: url(../icons/dark/open-in-new-tab.png);
+}
+
+.open-in-new-window-icon {
+    -fx-image: url(../icons/dark/open-in-new-window.png);
+}
+
+.open-in-explorer-icon {
+    -fx-image: url(../icons/dark/open-in-explorer.png);
+}
+
+.open-in-notepad-icon {
+    -fx-image: url(../icons/dark/open-in-notepad.png);
+}
