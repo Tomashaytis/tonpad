@@ -1,13 +1,11 @@
-/* icon-button.css - стилизация кнопки */
+/* icon-button.css - стилизация кнопки с иконкой */
 
 .icon-button {
     -fx-background-radius: 10%;
     -fx-border-radius: 10%;
     -fx-background-color: transparent;
-    -fx-cursor: hand;
     -fx-pref-width: 24px;
     -fx-pref-height: 24px;
-    -fx-font-size: 14px;
 }
 
 .icon-button:hover {

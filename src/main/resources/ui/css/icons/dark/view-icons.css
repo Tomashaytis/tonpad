@@ -1,0 +1,9 @@
+/* view-icons.css - иконки для стилей просмотра, тёмная тема */
+
+.reading-view-icon {
+    -fx-image: url(../icons/dark/reading-view.png);
+}
+
+.plain-view-icon {
+    -fx-image: url(../icons/dark/plain-view.png);
+}

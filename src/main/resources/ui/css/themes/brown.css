@@ -1,5 +1,15 @@
 /* brown.css - коричневая тема */
 
+@import url('../icons/light/common-action-icons.css');
+@import url('../icons/light/app-action-icons.css');
+@import url('../icons/light/add-action-icons.css');
+@import url('../icons/light/file-action-icons.css');
+@import url('../icons/light/open-in-icons.css');
+@import url('../icons/light/search-icons.css');
+@import url('../icons/light/view-icons.css');
+@import url('../icons/light/entity-icons.css');
+
+
 .root {
     /* Глобальные цвета */
     -color-main-background: #f5f1e8;
@@ -8,7 +18,6 @@
 
     /* Основные цвета панелей */
     -color-side-panel: #e8e0d2;
-    -color-side-panel-border: #a1887f;
     -color-note-panel: #faf5ed;
     -color-tools-panel: #e0d6c5;
     -color-search-field: #e0d6c5;

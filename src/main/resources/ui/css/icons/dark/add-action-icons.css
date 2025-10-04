@@ -1,0 +1,13 @@
+/* add-action-icons.css - иконки для операций добавления, тёмная тема */
+
+.file-add-icon {
+    -fx-image: url(../icons/dark/file-add.png);
+}
+
+.folder-add-icon {
+    -fx-image: url(../icons/dark/folder-add.png);
+}
+
+.collection-add-icon {
+    -fx-image: url(../icons/dark/collection-add.png);
+}

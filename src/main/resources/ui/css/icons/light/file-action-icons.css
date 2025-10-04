@@ -1,0 +1,21 @@
+/* file-action-icons.css - иконки для операций с файлами, светлая тема */
+
+.remove-icon {
+    -fx-image: url(../icons/common/remove-red.png);
+}
+
+.rename-icon {
+    -fx-image: url(../icons/light/rename.png);
+}
+
+.copy-file-icon {
+    -fx-image: url(../icons/light/copy-file.png);
+}
+
+.copy-path-icon {
+    -fx-image: url(../icons/light/copy-path.png);
+}
+
+.move-file-icon {
+    -fx-image: url(../icons/light/move-file.png);
+}

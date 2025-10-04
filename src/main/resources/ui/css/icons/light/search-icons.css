@@ -1,0 +1,13 @@
+/* search-icons.css - иконки для операций поиска, светлая тема */
+
+.search-icon {
+    -fx-image: url(../icons/light/search.png);
+}
+
+.file-search-icon {
+    -fx-image: url(../icons/light/file-search.png);
+}
+
+.folder-search-icon {
+    -fx-image: url(../icons/light/folder-search.png);
+}
