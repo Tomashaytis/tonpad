@@ -1,0 +1,17 @@
+/* entity-icons.css - иконки для сущностей, светлая тема */
+
+.file-icon {
+    -fx-image: url(../icons/light/file.png);
+}
+
+.folder-icon {
+    -fx-image: url(../icons/light/folder.png);
+}
+
+.bookmarks-icon {
+    -fx-image: url(../icons/light/bookmarks.png);
+}
+
+.collection-icon {
+    -fx-image: url(../icons/light/folder.png);
+}

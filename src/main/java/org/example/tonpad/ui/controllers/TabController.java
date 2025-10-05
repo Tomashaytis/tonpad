@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+
 
 @Component
 public class TabController {
@@ -25,23 +27,38 @@ public class TabController {
         this.markdownService = markdownService;
     }
 
-    public void init() {
+    public void init(String path) {
         addNewTabButton();
-        createInitialTab();
+        createInitialTab(path);
     }
 
-    private void createInitialTab() {
+    public void openFileInCurrentTab(String path) {
         try {
-            String fileContent = Files.readString(Path.of("src/main/resources/test.md"));
+            Path filePath = Path.of(path);
+
+            String fileContent = Files.readString(filePath);
             Document markdownFile = markdownService.parseMarkdownFile(fileContent);
             String html = markdownService.renderMarkdownFileToHtml(markdownFile);
-            String markdown = markdownService.convertHtmlToMarkdown(html);
-            createTabWithContent("Initial Tab", html);
+
+            Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+            replaceTabContent(currentTab, getTabName(filePath), html);
         } catch (Exception e) {
-            e.printStackTrace();
+            createTabWithContent("New Tab", "<h1>Error loading content</h1>" + Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    private void createInitialTab(String path) {
+        try {
+            Path filePath = Path.of(path);
+            String fileContent = Files.readString(filePath);
+            Document markdownFile = markdownService.parseMarkdownFile(fileContent);
+            String html = markdownService.renderMarkdownFileToHtml(markdownFile);
+            createTabWithContent(getTabName(filePath), html);
+        } catch (Exception e) {
             createTabWithContent("New Tab", "<h1>Error loading content</h1>");
         }
     }
+
 
     private void addNewTabButton() {
         Tab addTab = new Tab();
@@ -84,10 +101,42 @@ public class TabController {
         newTab.setContent(content);
         newTab.setUserData(webView);
         newTab.setOnCloseRequest(event -> {
-            // Закрытие вкладки
+            tabClose(newTab);
         });
 
         tabPane.getTabs().add(tabPane.getTabs().size() - 1, newTab);
         tabPane.getSelectionModel().select(newTab);
+    }
+
+    private void replaceTabContent(Tab tab, String title, String htmlContent) {
+        tab.setText(title);
+
+        AnchorPane content = new AnchorPane();
+        WebView webView = new WebView();
+        webView.getEngine().loadContent(htmlContent);
+
+        AnchorPane.setTopAnchor(webView, 0.0);
+        AnchorPane.setBottomAnchor(webView, 0.0);
+        AnchorPane.setLeftAnchor(webView, 0.0);
+        AnchorPane.setRightAnchor(webView, 0.0);
+        content.getChildren().add(webView);
+
+        tab.setContent(content);
+        tab.setUserData(webView);
+        tab.setOnCloseRequest(event -> {
+            tabClose(tab);
+        });
+
+        tabPane.getTabs().add(tabPane.getTabs().size() - 1, tab);
+        tabPane.getSelectionModel().select(tab);
+    }
+
+    private String getTabName(Path filePath) {
+        String fileName = filePath.getFileName().toString();
+        int dotIndex = fileName.lastIndexOf('.');
+        return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
+    }
+
+    private void tabClose(Tab tab) {
     }
 }

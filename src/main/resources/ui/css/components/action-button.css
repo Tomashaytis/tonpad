@@ -1,8 +1,10 @@
+/* action-button.css - стилизация кнопки выбора действия */
+
 .action-button {
     -fx-background-radius: 10px;
     -fx-border-radius: 10px;
     -fx-background-color: transparent;
-    -fx-cursor: hand;
+    -fx-text-fill: -color-main-text;
 }
 
 .action-button:hover {

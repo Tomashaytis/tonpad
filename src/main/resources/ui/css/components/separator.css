@@ -1,0 +1,19 @@
+/* separator.css - стилизация разделителей */
+
+.vertical-section-separator {
+    -fx-background-color: transparent;
+}
+
+.vertical-section-separator .line {
+    -fx-border-color: -color-separator;
+    -fx-border-width: 0 1 0 0;
+}
+
+.horisontal-section-separator {
+    -fx-background-color: transparent;
+}
+
+.horisontal-section-separator .line {
+    -fx-border-color: -color-separator;
+    -fx-border-width: 0 0 1 0;
+}

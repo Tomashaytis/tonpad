@@ -17,6 +17,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -25,7 +26,6 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class MainController extends AbstractController {
 
-    @Getter
     @FXML
     private VBox mainVBox;
 
@@ -77,43 +77,39 @@ public class MainController extends AbstractController {
     @FXML
     private Button enablePlainViewButton;
 
+    private final TitleBarController titleBarController;
+
     private final TabController tabController;
 
     private final SearchInTextController searchInTextController;
 
     private final FileTreeController fileTreeController;
 
-    public void init() {
+    @Setter
+    private String vaultPath;
+
+    public void init(Stage stage) {
         setupControllers();
 
         leftStackPane.setManaged(false);
-    }
-
-    public void setStage(Stage stage) {
-        Scene scene = new Scene(mainVBox, 900, 600);
-        scene.getStylesheets().add(
-                Objects.requireNonNull(getClass().getResource("/ui/css/base.css")).toExternalForm()
-        );
-        stage.setScene(scene);
-
+        setStage(stage, mainVBox);
+        titleBarController.init(stage, mainVBox);
         setupEventHandlers();
-        stage.show();
-        System.out.println("----------------------");
-        System.out.println(stage.getScene().getFocusOwner());
-
     }
 
     private void setupControllers() {
-        fileTreeController.init(fileTreePane);
+        fileTreeController.init(fileTreePane, vaultPath);
 
         tabController.setTabPane(tabPane);
-        tabController.init();
+        tabController.init("src/main/resources/Welcome.md");
 
         searchInTextController.setTabPane(tabPane);
         searchInTextController.init(searchInTextPane);
     }
 
     private void setupEventHandlers() {
+        fileTreeController.setFileOpenHandler(this::openFileInEditor);
+
         showFilesButton.setOnAction(event -> togglePane(
                 leftStackPane,
                 fileTreePane,
@@ -198,6 +194,10 @@ public class MainController extends AbstractController {
                 keyComb,
                 () -> Platform.runLater(callback)
         );
+    }
+
+    private void openFileInEditor(String path) {
+        tabController.openFileInCurrentTab(path);
     }
 
     @Override

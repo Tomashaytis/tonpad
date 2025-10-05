@@ -1,0 +1,33 @@
+/* text-button.css - стилизация кнопки с текстом */
+
+.main-text-button {
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-background-color: mediumSeaGreen;
+    -fx-text-fill: -color-main-text;
+    -fx-font-size: 14px;
+}
+
+.main-text-button:hover {
+    -fx-background-color: seaGreen;
+}
+
+.main-text-button:pressed {
+    -fx-background-color: #267349 ;
+}
+
+.text-button {
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-background-color: -color-button;
+    -fx-text-fill: -color-main-text;
+    -fx-font-size: 14px;
+}
+
+.text-button:hover {
+    -fx-background-color: -color-button-hover;
+}
+
+.text-button:pressed {
+    -fx-background-color: -color-button-pressed;
+}

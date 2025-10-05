@@ -192,6 +192,15 @@ public class FileSystemServiceImpl implements FileSystemService {
         }
     }
 
+    public boolean exists(String path) {
+        return exists(Path.of(path));
+    }
+
+    public boolean exists(Path path) {
+        return  Files.exists(path);
+    }
+
+
     private static class RecursiveDeleteFileVisitor implements FileVisitor<Path> {
         @Override
         public @NotNull FileVisitResult preVisitDirectory(Path dir, @NotNull BasicFileAttributes attrs) throws IOException {

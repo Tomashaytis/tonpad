@@ -1,14 +1,26 @@
 /* dark.css - тёмная тема */
 
+@import url('../icons/dark/common-action-icons.css');
+@import url('../icons/dark/app-action-icons.css');
+@import url('../icons/dark/add-action-icons.css');
+@import url('../icons/dark/file-action-icons.css');
+@import url('../icons/dark/open-in-icons.css');
+@import url('../icons/dark/search-icons.css');
+@import url('../icons/dark/view-icons.css');
+@import url('../icons/dark/entity-icons.css');
+
+
 .root {
     /* Глобальные цвета */
     -color-main-background: #1e1e1e;
     -color-main-text: #e0e0e0;
     -color-main-prompt-text: #a0a0a0;
 
+    /* Цвета разделителей */
+    -color-separator: #a0a0a0;
+
     /* Основные цвета панелей */
     -color-side-panel: #2d2d2d;
-    -color-side-panel-border: #555555;
     -color-note-panel: #252525;
     -color-tools-panel: #363636;
     -color-search-field: #363636;
@@ -30,6 +42,7 @@
     -color-button-hover: #404040;
     -color-button-pressed: #4a4a4a;
     -color-button-toggled: #505050;
+    -color-button: #505050;
     
     /* Цвета подсказок */
     -color-tooltip-background: #e0e0e0;
