@@ -56,7 +56,7 @@ public class QuickStartDialogController extends AbstractController {
     public void init() {
         this.stage = new Stage();
         setupEventHandlers();
-        setStage(stage, quickStartDialogMainHBox);
+        setStage(stage, quickStartDialogMainHBox, StageStyle.TRANSPARENT);
         setupDragHandlers();
     }
 

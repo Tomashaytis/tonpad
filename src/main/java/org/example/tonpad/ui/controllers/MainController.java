@@ -14,6 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.stereotype.Component;
@@ -88,7 +89,7 @@ public class MainController extends AbstractController {
     public void init(Stage stage) {
         setupControllers();
         leftStackPane.setManaged(false);
-        setStage(stage, mainVBox);
+        setStage(stage, mainVBox, StageStyle.TRANSPARENT);
         titleBarController.init(stage, mainVBox);
         setupEventHandlers();
     }
