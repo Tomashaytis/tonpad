@@ -98,7 +98,7 @@ public class MainController extends AbstractController {
         fileTreeController.init(fileTreePane, vaultPath);
 
         tabController.setTabPane(tabPane);
-        tabController.init("src/main/resources/Welcome.md");
+        tabController.init("src/main/resources/test.md");
 
         searchInTextController.setTabPane(tabPane);
         searchInTextController.init(searchInTextPane);
