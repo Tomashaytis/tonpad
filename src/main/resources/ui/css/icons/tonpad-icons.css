@@ -1,0 +1,9 @@
+/* tonpad-icons.css - иконки для логотипа приложения, светлая тема */
+
+.tonpad48-icon {
+    -fx-image: url(../icons/common/Tonpad48.png);
+}
+
+.tonpad220-icon {
+    -fx-image: url(../icons/common/Tonpad220.png);
+}

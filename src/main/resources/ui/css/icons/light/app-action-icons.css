@@ -1,0 +1,13 @@
+/* app-action-icons.css - иконки для заголовка приложения, светлая тема */
+
+.close-app-icon {
+    -fx-image: url(../icons/light/close-app.png);
+}
+
+.resize-app-icon {
+    -fx-image: url(../icons/light/resize-app.png);
+}
+
+.collapse-app-icon {
+    -fx-image: url(../icons/light/collapse-app.png);
+}

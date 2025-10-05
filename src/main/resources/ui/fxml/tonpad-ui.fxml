@@ -37,7 +37,6 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.Tooltip?>
-<?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
@@ -50,7 +49,6 @@
          <children>
             <VBox prefWidth="40.0">
                <children>
-                  <VBox prefHeight="40.0" prefWidth="40.0" styleClass="side-panel-placeholder" />
                   <VBox fx:id="leftToolsPane" maxHeight="1.7976931348623157E308" prefWidth="40.0" spacing="5.0" styleClass="side-panel" VBox.vgrow="ALWAYS">
                      <children>
                         <Button fx:id="showFilesButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="F" textAlignment="CENTER">
@@ -66,11 +64,7 @@
                               <Insets right="3.0" />
                            </padding>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Folder.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="folder-icon" />
                            </graphic>
                         </Button>
                         <Button fx:id="showSearchButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
@@ -86,11 +80,7 @@
                               </Tooltip>
                            </tooltip>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Folder_search.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="folder-search-icon" />
                            </graphic>
                         </Button>
                         <Button fx:id="showBookmarksButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="T" textAlignment="CENTER">
@@ -106,11 +96,7 @@
                               </Tooltip>
                            </tooltip>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Package_favourite_alt.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="bookmarks-icon" />
                            </graphic>
                         </Button>
                      </children>
@@ -133,14 +119,13 @@
                <children>
                   <TabPane fx:id="tabPane" prefHeight="598.0" prefWidth="823.0" tabClosingPolicy="ALL_TABS">
                      <StackPane.margin>
-                        <Insets top="10.0" />
+                        <Insets />
                      </StackPane.margin></TabPane>
                </children>
             </StackPane>
             <VBox prefWidth="40.0">
                <children>
-                  <VBox prefHeight="40.0" prefWidth="40.0" styleClass="side-panel-placeholder" />
-                  <VBox fx:id="rightToolsPane" prefWidth="40.0" spacing="5.0" styleClass="side-panel" VBox.vgrow="ALWAYS">
+                  <VBox fx:id="rightToolsPane" spacing="5.0" styleClass="side-panel" VBox.vgrow="ALWAYS">
                      <children>
                         <Button fx:id="showSettingsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
                            <tooltip>
@@ -152,11 +137,7 @@
                               </Tooltip>
                            </tooltip>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Filter_alt.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="more-options-icon" />
                            </graphic>
                            <padding>
                               <Insets right="3.0" />
@@ -175,11 +156,7 @@
                               </Tooltip>
                            </tooltip>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Book_open_alt.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="reading-view-icon" />
                            </graphic>
                         </Button>
                         <Button fx:id="enablePlainViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="P" textAlignment="CENTER">
@@ -195,11 +172,7 @@
                               </Tooltip>
                            </tooltip>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                 <image>
-                                    <Image url="@../icons/Paper.png" />
-                                 </image>
-                              </ImageView>
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="plain-view-icon" />
                            </graphic>
                            <VBox.margin>
                               <Insets />
