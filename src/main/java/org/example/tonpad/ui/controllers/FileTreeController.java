@@ -76,8 +76,9 @@ public class FileTreeController extends AbstractController {
 
     public void searchInFileTree(String strToSearch)
     {
+        fileTreeView.getSelectionModel().selectionModeProperty().addListener();
         System.out.println("wwwwwwwwwwwwww");
-        var res = fileSystemService.findByNameContains("./test", "2");
+        var res = fileSystemService.findByNameContains("./test", "t");
         System.out.println(res.toString());
     }
 

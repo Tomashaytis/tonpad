@@ -87,7 +87,7 @@ public class FileSystemServiceImpl implements FileSystemService {
 
         try (Stream<Path> elems = Files.walk(rootDir))
         {
-            return elems.filter(p -> !p.equals(rootDir)).map(rootDir::relativize).toList();
+            return elems.filter(p -> !p.equals(rootDir)).map(rootDir::relativize).filter(path -> path.getFileName().toString().contains(substring)).toList();
         } catch (IOException e) {
             log.warn(FILE_SEARCH_ERROR, e);
             throw new CustomIOException(FILE_SEARCH_ERROR, e);
