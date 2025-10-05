@@ -11,7 +11,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.FileTree;
+import org.example.tonpad.ui.extentions.FileTreeItem;
 import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -259,18 +261,10 @@ public class FileTreeController extends AbstractController {
 
     public void searchInFileTree(String strToSearch)
     {
-        fileTreeView.getSelectionModel().selectionModeProperty().addListener();
+//        fileTreeView.getSelectionModel().selectionModeProperty().addListener();
         System.out.println("wwwwwwwwwwwwww");
         var res = fileSystemService.findByNameContains("./test", "t");
         System.out.println(res.toString());
-    }
-
-    public void expandAll() {
-        // Развернуть все узлы
-    }
-
-    public void collapseAll() {
-        // Свернуть все узлы
     }
 
     private TreeItem<String> convertFileTreeToTreeItem(FileTree fileTree) {
