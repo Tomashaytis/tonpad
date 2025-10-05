@@ -84,7 +84,6 @@ public class MainController extends AbstractController {
     private final FileTreeController fileTreeController;
 
     public void init() {
-        setupEventHandlers();
         setupControllers();
 
         leftStackPane.setManaged(false);
@@ -96,6 +95,7 @@ public class MainController extends AbstractController {
                 Objects.requireNonNull(getClass().getResource("/ui/css/base.css")).toExternalForm()
         );
         stage.setScene(scene);
+        setupEventHandlers();
         stage.show();
     }
 
