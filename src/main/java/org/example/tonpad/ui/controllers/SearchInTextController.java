@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
-import java.util.Queue;
 
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.core.service.SearchService.Hit;
@@ -26,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import javafx.animation.PauseTransition;
-import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -73,16 +71,13 @@ public class SearchInTextController extends AbstractController {
 
     private final List<Hit> hits = new ArrayList<>();
 
-    private static final String JS_GET_TEXT = 
-        "(function(){var r=document.getElementById('note-root')||document.body; return r.textContent;})()";
-
     private static final String JS_GET_HTML = 
         "(function(){var r=document.getElementById('note-root')||document.body; return r.innerHTML;})()";
 
     private static String jsSetHtml(String html) {
         return "(function(h){var r=document.getElementById('note-root')||document.body; r.innerHTML=h;})("
            + html + ");";
-}
+    }
 
     public void init(AnchorPane parent) {
         handleSearchFieldInput();
@@ -206,7 +201,7 @@ public class SearchInTextController extends AbstractController {
         .replace("\n", "\\n")
         .replace("</script>", "<\\/script>")
         + "'";
-}
+    }
 
     private void runSearch() {
         currentIndex = -1;
@@ -234,16 +229,10 @@ public class SearchInTextController extends AbstractController {
             this.hits.addAll(session.findAll(query));
         }
         System.out.println(hits);
-        String highlightedText = getHighlightedText(doc, nodes); // сделай сброс всего, если текст для поиска пустой
+        String highlightedText = getHighlightedText(doc, nodes);
         wv.getEngine().executeScript(jsSetHtml(toJsString(highlightedText)));
         
         searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
-    }
-
-    
-    
-    private boolean docReady(WebView wv) {
-        return wv.getEngine().getDocument() == null || wv.getEngine().getLoadWorker().getState() != Worker.State.SUCCEEDED;
     }
     
     private String getHighlightedText(Document doc, List<TextNodeInfo> nodes) {
@@ -345,10 +334,10 @@ public class SearchInTextController extends AbstractController {
         List<TextNodeInfo> out = new ArrayList<>();
 
         while (!stack.isEmpty()) {
-            Node cur = stack.removeLast(); // <-- было remove() (removeFirst)
+            Node cur = stack.removeLast();
             if (cur instanceof Element el) {
                 String tag = el.tagName();
-                if ("script".equals(tag) || "style".equals(tag) || "template".equals(tag)) continue;
+                if ("script".equals(tag) || "style".equals(tag) || "template".equals(tag)) continue; // если есть свои тэги, которые скрывают текст и т.п. - сюда же их. Мб потом откуда-то список таких тэгов подсасываться будет
             }
             if (cur instanceof TextNode tn) {
                 String text = tn.getWholeText();
@@ -359,7 +348,6 @@ public class SearchInTextController extends AbstractController {
                     total = end;
                 }
             }
-            // push детей в обратном порядке
             for (int i = cur.childNodeSize() - 1; i >= 0; i--) {
                 stack.addLast(cur.childNode(i));
             }
@@ -373,7 +361,7 @@ public class SearchInTextController extends AbstractController {
         return sb.toString();
     }
 
-    // если есть свои тэги, которые скрывают текст и т.п. - сюда же их. Мб потом откуда-то список таких тэгов подсасываться будет
+    
     
     @AllArgsConstructor
     static class TextNodeInfo
