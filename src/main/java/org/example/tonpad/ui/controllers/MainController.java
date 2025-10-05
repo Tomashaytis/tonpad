@@ -86,11 +86,11 @@ public class MainController extends AbstractController {
     private String vaultPath;
 
     public void init(Stage stage) {
-        setupEventHandlers();
         setupControllers();
         leftStackPane.setManaged(false);
         setStage(stage, mainVBox);
         titleBarController.init(stage, mainVBox);
+        setupEventHandlers();
     }
 
     private void setupControllers() {
