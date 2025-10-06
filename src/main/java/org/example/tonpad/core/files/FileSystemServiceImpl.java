@@ -76,6 +76,24 @@ public class FileSystemServiceImpl implements FileSystemService {
         }
     }
 
+    public List<Path> findByNameContains(String rootDir, String substring)
+    {
+        return findByNameContains(Path.of(rootDir), substring);
+    }
+
+    public List<Path> findByNameContains(Path rootDir, String substring) {
+        if (substring == null || substring.isBlank()) return List.of();
+        final String targetSubstring = substring.toLowerCase(java.util.Locale.ROOT);
+
+        try (Stream<Path> elems = Files.walk(rootDir))
+        {
+            return elems.filter(p -> !p.equals(rootDir)).map(rootDir::relativize).filter(path -> path.getFileName().toString().contains(substring)).toList();
+        } catch (IOException e) {
+            log.warn(FILE_SEARCH_ERROR, e);
+            throw new CustomIOException(FILE_SEARCH_ERROR, e);
+        }
+    }
+
     public List<String> getAllFilesInDir(String directory) {
         return getAllFilesInDir(Path.of(directory));
     }

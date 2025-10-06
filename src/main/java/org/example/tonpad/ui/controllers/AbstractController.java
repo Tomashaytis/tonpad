@@ -33,7 +33,7 @@ public abstract class AbstractController {
         Scene scene = new Scene(root);
 
         Image icon = new Image(Objects.requireNonNull(
-                getClass().getResourceAsStream("/ui/icons/Tonpad256.png")
+                getClass().getResourceAsStream("/ui/icons/common/Tonpad256.png")
         ));
         stage.getIcons().add(icon);
 
