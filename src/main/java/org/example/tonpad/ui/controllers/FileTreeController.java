@@ -23,8 +23,9 @@ import java.util.Map;
 import java.util.List;
 import java.util.function.Consumer;
 
-@RequiredArgsConstructor
+
 @Component
+@RequiredArgsConstructor
 public class FileTreeController extends AbstractController {
 
     @FXML
@@ -111,14 +112,16 @@ public class FileTreeController extends AbstractController {
         });
 
         addNoteButton.setOnAction(e -> {
-            addNote();
-            onOpenFile();
+            String newFilePath = addNote();
             refreshTree();
+            selectItem(newFilePath);
+            fileOpenHandler.accept(newFilePath);
         });
 
         addDirectoryButton.setOnAction(e -> {
-            addDir();
+            String dirPath = addDir();
             refreshTree();
+            selectItem(dirPath);
         });
     }
 
@@ -129,6 +132,32 @@ public class FileTreeController extends AbstractController {
                 fileOpenHandler.accept(filePath);
             }
         }
+    }
+
+    private void selectItem(String path) {
+        Path relativePath = Path.of(vaultPath).relativize(Path.of(path));
+        TreeItem<String> item = findTreeItemByPath(rootItem, relativePath);
+        if (item != null) {
+            fileTreeView.getSelectionModel().select(item);
+            selectedItem = item;
+            fileTreeView.scrollTo(fileTreeView.getRow(item));
+        }
+    }
+
+    private TreeItem<String> findTreeItemByPath(TreeItem<String> root, Path path) {
+        if (path.getNameCount() == 0) return root;
+
+        String firstSegment = path.getName(0).toString();
+        for (TreeItem<String> child : root.getChildren()) {
+            if (child.getValue().equals(firstSegment)) {
+                if (path.getNameCount() == 1) {
+                    return child;
+                } else {
+                    return findTreeItemByPath(child, path.subpath(1, path.getNameCount()));
+                }
+            }
+        }
+        return null;
     }
 
     public void refreshTree() {
@@ -218,7 +247,6 @@ public class FileTreeController extends AbstractController {
         return String.join("/", parts).replace('\\','/');
     }
 
-
     private String getFullPath(TreeItem<String> item) {
         if (item == null) {
             return vaultPath;
@@ -268,8 +296,6 @@ public class FileTreeController extends AbstractController {
 
         fileTreeView.setRoot(rootItem);
 
-
-
         rootItem.setExpanded(true);
 
         fileTreeView.getSelectionModel().selectedItemProperty().addListener(
@@ -314,11 +340,6 @@ public class FileTreeController extends AbstractController {
 
     }
 
-//    public void searchInFileTree(String strToSearch)
-//    {
-//        var res = searchInTextController.testRunSearch("t");
-//    }
-
     private TreeItem<String> convertFileTreeToTreeItem(FileTree fileTree) {
         Path path = fileTree.getPath();
         String fileName = path.getFileName() != null ? path.getFileName().toString() : path.toString();
@@ -339,30 +360,61 @@ public class FileTreeController extends AbstractController {
         return  treeItem;
     }
 
-    private void addNote() {
-        Path path = selectedItem == null ? Path.of(vaultPath) : Path.of(getRelativePath(selectedItem)).getParent();
-        Path filePath = path.resolve("Untitled.md");
+    private String addNote() {
+        Path targetPath;
+
+        if (selectedItem == null) {
+            targetPath = Path.of(vaultPath);
+        } else {
+            String fullPath = getFullPath(selectedItem);
+            Path selectedPath = Path.of(fullPath);
+
+            if (selectedItem.isLeaf()) {
+                targetPath = selectedPath.getParent();
+            } else {
+                targetPath = selectedPath;
+            }
+        }
+
+        Path filePath = targetPath.resolve("Untitled.md");
 
         int index = 1;
         while (fileSystemService.exists(filePath)) {
-            filePath = path.resolve("Untitled " + index + ".md");
+            filePath = targetPath.resolve("Untitled " + index + ".md");
             index += 1;
         }
 
         fileSystemService.makeFile(filePath);
+        return filePath.toString();
     }
 
-    private void addDir() {
-        Path path = selectedItem == null ? Path.of(vaultPath) : Path.of(getRelativePath(selectedItem)).getParent();
-        Path filePath = path.resolve("Untitled");
+    private String addDir() {
+        Path targetPath;
+
+        if (selectedItem == null) {
+            targetPath = Path.of(vaultPath);
+        } else {
+            String fullPath = getFullPath(selectedItem);
+            Path selectedPath = Path.of(fullPath);
+
+            if (selectedItem.isLeaf()) {
+                targetPath = selectedPath.getParent();
+            } else {
+                targetPath = selectedPath;
+            }
+        }
+
+        Path dirPath = targetPath.resolve("Untitled");
 
         int index = 1;
-        while (fileSystemService.exists(filePath)) {
-            filePath = path.resolve("Untitled " + index);
+        while (fileSystemService.exists(dirPath)) {
+            dirPath = targetPath.resolve("Untitled " + index);
             index += 1;
         }
 
-        fileSystemService.makeDir(filePath);
+        fileSystemService.makeDir(dirPath);
+
+        return dirPath.toString();
     }
 
     @Override

@@ -6,11 +6,15 @@ import lombok.RequiredArgsConstructor;
 import org.example.tonpad.ui.controllers.MainController;
 import org.example.tonpad.ui.controllers.QuickStartDialogController;
 import org.example.tonpad.ui.extentions.VaultPath;
+import org.example.tonpad.ui.controllers.TestFieldController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
+
+import java.io.IOException;
+
 
 @RequiredArgsConstructor
 @SpringBootApplication
@@ -27,6 +31,9 @@ public class TonpadApplication extends Application {
 
     @Autowired
     private QuickStartDialogController quickStartDialogController;
+
+    @Autowired
+    private TestFieldController testFieldController;
 
     @Override
     public void init() {

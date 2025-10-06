@@ -5,11 +5,13 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
+import javax.swing.text.AsyncBoxView;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -27,7 +29,7 @@ public abstract class AbstractController {
         loader.load();
     }
 
-    protected void setStage(Stage stage, Parent root) {
+    protected void setStage(Stage stage, Parent root, StageStyle stageStyle) {
         Scene scene = new Scene(root);
 
         Image icon = new Image(Objects.requireNonNull(
@@ -41,7 +43,7 @@ public abstract class AbstractController {
 
         scene.setFill(Color.TRANSPARENT);
 
-        stage.initStyle(StageStyle.TRANSPARENT);
+        stage.initStyle(stageStyle);
         stage.setResizable(true);
         stage.setScene(scene);
         stage.show();

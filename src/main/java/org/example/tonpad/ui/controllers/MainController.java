@@ -15,6 +15,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -90,9 +91,8 @@ public class MainController extends AbstractController {
 
     public void init(Stage stage) {
         setupControllers();
-
         leftStackPane.setManaged(false);
-        setStage(stage, mainVBox);
+        setStage(stage, mainVBox, StageStyle.TRANSPARENT);
         titleBarController.init(stage, mainVBox);
         setupEventHandlers();
     }
@@ -101,7 +101,7 @@ public class MainController extends AbstractController {
         fileTreeController.init(fileTreePane, vaultPath.getVaultPath());
 
         tabController.setTabPane(tabPane);
-        tabController.init("src/main/resources/Welcome.md");
+        tabController.init("src/main/resources/test.md");
 
         searchInTextController.setTabPane(tabPane);
         searchInTextController.init(searchInTextPane);
