@@ -1,24 +1,38 @@
 package org.example.tonpad.ui.controllers;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
 import java.util.List;
 
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.core.service.SearchService.Hit;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
+import org.jsoup.parser.Tag;
+
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import javafx.animation.PauseTransition;
 import javafx.concurrent.Worker;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.web.WebView;
 import javafx.util.Duration;
 import org.springframework.stereotype.Component;
@@ -57,6 +71,14 @@ public class SearchInTextController extends AbstractController {
 
     private final List<Hit> hits = new ArrayList<>();
 
+    private static final String JS_GET_HTML = 
+        "(function(){var r=document.getElementById('note-root')||document.body; return r.innerHTML;})()";
+
+    private static String jsSetHtml(String html) {
+        return "(function(h){var r=document.getElementById('note-root')||document.body; r.innerHTML=h;})("
+           + html + ");";
+    }
+
     public void init(AnchorPane parent) {
         handleSearchFieldInput();
         handleSearchButtons();
@@ -67,21 +89,31 @@ public class SearchInTextController extends AbstractController {
         AnchorPane.setLeftAnchor(searchBarVBox, 0.0);
         AnchorPane.setRightAnchor(searchBarVBox, 0.0);
     }
-
-    public void showSearchBar() {
-        searchField.requestFocus();
-        searchField.selectAll();
-
-        runSearch();
+    
+    private void handleSearchFieldInput() {
+        PauseTransition debounce = new PauseTransition(Duration.millis(400));
+        debounce.setOnFinished(e -> runSearch());
+        searchField.textProperty().addListener((o, ov, nv) -> debounce.playFromStart());
     }
 
-    public void hideSearchBar() {
-        WebView wv = getActiveWebView();
-        if(wv != null) {
-            clearHighlights();
-            clearDomSelection(wv);
-        }
+    private void handleSearchButtons() {
+        prevHitButton.setOnAction(e -> selectPrevHit());
+        nextHitButton.setOnAction(e -> selectNextHit());
+
+        EventHandler<KeyEvent> nav = e -> {
+            if (e.getTarget() == searchField) {
+                if ((e.getCode() == KeyCode.F3 && e.isShiftDown()) || e.getCode() == KeyCode.UP) {
+                    e.consume();
+                    selectPrevHit();
+                } else if (e.getCode() == KeyCode.F3 || e.getCode() == KeyCode.DOWN || e.getCode() == KeyCode.ENTER) {
+                    e.consume();
+                    selectNextHit();
+                }
+            }
+        };
+        searchField.addEventFilter(KeyEvent.KEY_PRESSED,  nav);
     }
+
 
     private void selectPrevHit() {
         WebView wv = getActiveWebView();
@@ -102,6 +134,24 @@ public class SearchInTextController extends AbstractController {
 
         searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
     }
+
+    public void showSearchBar() {
+        searchField.requestFocus();
+        searchField.selectAll();
+
+        runSearch();
+    }
+
+    public void hideSearchBar() {
+        WebView wv = getActiveWebView();
+        if(wv != null) {
+            currentIndex = -1;
+            String innerHtml  = (String) wv.getEngine().executeScript(JS_GET_HTML);
+            String clearText = clearHighlights(innerHtml);
+            wv.getEngine().executeScript(jsSetHtml(toJsString(clearText)));
+        }
+    }
+
 
     private boolean selectGlobalRange(WebView wv, int start, int end) {
         if (wv == null) return false;
@@ -127,91 +177,8 @@ public class SearchInTextController extends AbstractController {
         return !(res instanceof String s && s.startsWith("JS_ERROR:")) && Boolean.TRUE.equals(res);
     }
 
-    private void handleSearchButtons() {
-        prevHitButton.setOnAction(e -> selectPrevHit());
-        nextHitButton.setOnAction(e -> selectNextHit());
-
-        searchField.setOnKeyPressed(e -> {
-            if((e.getCode() == KeyCode.F3 && e.isShiftDown()) || e.getCode() == KeyCode.UP) {selectPrevHit(); e.consume();}
-            else if(e.getCode() == KeyCode.ENTER || e.getCode() == KeyCode.F3 || e.getCode() == KeyCode.DOWN) {selectNextHit(); e.consume();};
-        });
-    }
-
-    private void handleSearchFieldInput() {
-        PauseTransition debounce = new PauseTransition(Duration.millis(400));
-        debounce.setOnFinished(e -> runSearch());
-        searchField.textProperty().addListener((o, ov, nv) -> debounce.playFromStart());
-    }
-
-    private void clearDomSelection(WebView wv) {
-        if (wv == null) return;
-        execJS(wv, """
-            (function(){
-            try {
-                const sel = window.getSelection && window.getSelection();
-                if (sel) sel.removeAllRanges();      // основное
-                // На случай «прилипшего» фокуса:
-                if (document.activeElement) document.activeElement.blur();
-                // Ещё один способ (старые WebKit):
-                if (window.getSelection && window.getSelection().empty) {
-                window.getSelection().empty();
-                }
-                return true;
-            } catch(e) { return false; }
-            })();
-        """);
-    }
-
-    private void runSearch() {
-        WebView wv = getActiveWebView();
-        if(wv == null) {
-            return;
-        }
-        hits.clear();
-
-        String query = searchField.getText().trim();
-        if(query.isEmpty()) {
-            clearHighlights();
-            clearDomSelection(wv);
-            currentIndex = -1;
-            return;
-        }
-        
-        String visibleText = (String) wv.getEngine().executeScript("document.body.textContent");
-        try (SearchService.Session session = searchService.openSession(() -> visibleText, () -> 0)) {
-            this.hits.addAll(session.findAll(query));
-        }
-        highlightInDom();
-
-        searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
-    }
-
-    private void clearHighlights() {
-        currentIndex = -1;
-        WebView wv = getActiveWebView();
-        if (wv == null || docReady(wv)) return;
-
-        Object res = execJS(wv, """
-            const root = document.body;
-            const marks = root.querySelectorAll('mark.__hit');
-            for (const m of marks) {
-                const t = document.createTextNode(m.textContent);
-                m.replaceWith(t);
-            }
-            return marks.length;
-        """);
-        if (res instanceof String s && s.startsWith("JS_ERROR:")) {
-            System.err.println(s);
-        }
-        clearDomSelection(wv);
-    }
-
-
-    private boolean docReady(WebView wv) {
-        return wv.getEngine().getDocument() == null || wv.getEngine().getLoadWorker().getState() != Worker.State.SUCCEEDED;
-    }
-
-    private Object execJS(WebView wv, String jsBody) {
+    private Object execJS(WebView wv, String jsBody) 
+    {
         String wrapped = """
             (function(){
             try {
@@ -225,130 +192,189 @@ public class SearchInTextController extends AbstractController {
         return wv.getEngine().executeScript(wrapped);
     }
 
-    private void highlightInDom() {
-        WebView wv = getActiveWebView();
-        if (wv == null || docReady(wv)) {
-            return;
-        }
-
-        if (hits.isEmpty()) {
-            clearHighlights(); return;
-        }
-
-        clearHighlights();
-
-        String rangesJson = toJsonRanges(hits);
-
-        String jsBody = """
-        const ranges = %s;           // [[start,end), ...] по document.body.textContent
-        const root = document.body;
-
-        // Фильтр текстовых нод (как раньше)
-        const textFilter = {
-            acceptNode(node) {
-            const el = node.parentElement;
-            if (!el) return NodeFilter.FILTER_REJECT;
-            if (el.closest('script,style,template,mark.__hit')) return NodeFilter.FILTER_REJECT;
-            for (let e = el; e; e = e.parentElement) {
-                const cs = getComputedStyle(e);
-                if (cs.display === 'none' || cs.visibility === 'hidden') return NodeFilter.FILTER_REJECT;
-            }
-            return NodeFilter.FILTER_ACCEPT;
-            }
-        };
-
-        // 1) Собираем текстовые ноды и их глобальные диапазоны [start,end) в textContent
-        const nodes = [];
-        {
-            const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, textFilter);
-            let n, acc = 0;
-            while (n = w.nextNode()) {
-                const len = n.data.length;
-                if (len > 0) nodes.push({ node:n, start:acc, end:acc+len });
-                acc += len;
-            }
-        }
-
-        if (!nodes.length || !ranges.length) return 0;
-
-        // 2) Разложим глобальные диапазоны на локальные сегменты по нодам
-        // segments[i] = список {from,to} локальных индексов внутри nodes[i].node
-        const segments = Array(nodes.length); // возможно sparse
-
-        let ni = 0;        // индекс текущей ноды
-        let ri = 0;        // индекс текущего диапазона
-        while (ri < ranges.length && ni < nodes.length) {
-            const [rs, re] = ranges[ri];
-            const {start:ns, end:ne} = nodes[ni];
-
-            if (re <= ns) { ri++; continue; }   // диапазон целиком до этой ноды
-            if (rs >= ne) { ni++; continue; }   // диапазон целиком после этой ноды
-
-            // пересечение диапазона и ноды
-            const from = Math.max(0, rs - ns);
-            const to   = Math.min(ne - ns, re - ns);
-            if (from < to) {
-                (segments[ni] ||= []).push({from, to});
-            }
-
-            // сдвиг: если диапазон вышел за пределы ноды — двигаем ноду; иначе — следующий диапазон
-            if (re > ne) ni++; else ri++;
-        }
-
-        // 3) Заменяем ноды фрагментами с <mark>, начиная с конца массива,
-        //    чтобы предыдущие индексы не инвалидировались
-        for (let i = nodes.length - 1; i >= 0; i--) {
-            const segs = segments[i];
-            if (!segs || !segs.length) continue;
-
-            const text = nodes[i].node.data;
-            // segs уже не перекрываются глобально, но на всякий проверим и отсортируем
-            segs.sort((a,b) => a.from - b.from);
-
-            const frag = document.createDocumentFragment();
-            let pos = 0;
-            for (let s = 0; s < segs.length; s++) {
-                const {from, to} = segs[s];
-                if (pos < from) frag.appendChild(document.createTextNode(text.slice(pos, from)));
-                const mark = document.createElement('mark');
-                mark.className = '__hit';
-                mark.textContent = text.slice(from, to);
-                frag.appendChild(mark);
-                pos = to;
-            }
-            if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
-
-            nodes[i].node.parentNode.replaceChild(frag, nodes[i].node);
-        }
-
-        return root.querySelectorAll('mark.__hit').length;
-        """.formatted(rangesJson);
-
-        Object res = execJS(wv, jsBody);
-        if (res instanceof String s && s.startsWith("JS_ERROR:")) {
-            System.err.println(s);
-        }
+    private static String toJsString(String s) {
+        if (s == null) return "''";
+        return "'" + s
+        .replace("\\", "\\\\")
+        .replace("'", "\\'")
+        .replace("\r", "\\r")
+        .replace("\n", "\\n")
+        .replace("</script>", "<\\/script>")
+        + "'";
     }
 
-    private static String toJsonRanges(List<Hit> hits) {
-        StringBuilder sb = new StringBuilder();
-        sb.append('[');
-        for(int i = 0; i < hits.size(); i++) {
-            Hit hit = hits.get(i);
-            if(i > 0) sb.append(',');
-            sb.append('[').append(hit.start()).append(',').append(hit.end()).append(']');
+    private void runSearch() {
+        currentIndex = -1;
+        
+        WebView wv = getActiveWebView();
+        if (wv == null || wv.getEngine().getLoadWorker().getState() != Worker.State.SUCCEEDED) return;
+        
+        String innerHtml  = (String) wv.getEngine().executeScript(JS_GET_HTML);
+        String clearText = clearHighlights(innerHtml);
+
+        Document doc = Jsoup.parseBodyFragment(clearText);
+        Element root = doc.body();
+        List<TextNodeInfo> nodes = collectTextNodes(root);
+        String linear = linearizeFromNodes(nodes);
+        
+        String query = searchField.getText().trim();
+        hits.clear();
+        if(query.isEmpty()) {
+            wv.getEngine().executeScript(jsSetHtml(toJsString(clearText)));
+            searchResultsField.clear();
+            return;
         }
-        sb.append(']');
-        return sb.toString();
+        
+        try (SearchService.Session session = searchService.openSession(() -> linear, () -> 0)) {
+            this.hits.addAll(session.findAll(query));
+        }
+        System.out.println(hits);
+        String highlightedText = getHighlightedText(doc, nodes);
+        wv.getEngine().executeScript(jsSetHtml(toJsString(highlightedText)));
+        
+        searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
+    }
+    
+    private String getHighlightedText(Document doc, List<TextNodeInfo> nodes) {
+        List<List<Segment>> segmentsPerNode = splitHitsPerNode(nodes);
+        
+        for(int i = nodes.size() - 1; i >= 0; i--)
+        {
+            List<Segment> segments = segmentsPerNode.get(i);
+            if(segments == null || segments.isEmpty()) continue;
+            
+            TextNode node = nodes.get(i).textNode;
+            String text = node.getWholeText();
+
+            segments.sort(Comparator.comparingInt(s -> s.from));
+
+            List<Node> parts = new ArrayList<>();
+            int pos = 0;
+            for(Segment seg: segments)
+            {
+                if(pos < seg.from)
+                {
+                    parts.add(new TextNode(text.substring(pos, seg.from)));
+                }
+                
+                Element mark = new Element(Tag.valueOf("mark"), "");
+                mark.addClass("__hit");
+                mark.text(text.substring(seg.from, seg.to));
+                parts.add(mark);
+                pos = seg.to;
+            }
+            if(pos < text.length())
+            {
+                parts.add(new TextNode(text.substring(pos)));
+            }
+            
+            Element parent = (Element)node.parent();
+            int index = node.siblingIndex();
+            node.remove();
+            for(int p = parts.size() - 1; p >= 0; p--)
+            {
+                parent.insertChildren(index, parts.get(p));
+            }
+        }
+        
+        return doc.body().html();
+    }
+    
+    private String clearHighlights(String html) {
+        Document doc = Jsoup.parseBodyFragment(html);
+        doc.select("mark.__hit").forEach(Element::unwrap);
+        return doc.body().html();
     }
 
     private WebView getActiveWebView() {
         Tab tab = tabPane.getSelectionModel().getSelectedItem();
         return (tab != null && tab.getUserData() instanceof WebView wv) ? wv : null;
     }
-
+    
     @Override
     protected String getFxmlSource() {
         return "/ui/fxml/search-bar.fxml";
+    }
+
+    private List<List<Segment>> splitHitsPerNode(List<TextNodeInfo> nodes)
+    {
+        List<List<Segment>> result = new ArrayList<>(Collections.nCopies(nodes.size(), null));
+        int ni = 0, hi = 0;
+        while(hi < hits.size() && ni < nodes.size())
+        {
+            Hit hit = hits.get(hi);
+            TextNodeInfo node = nodes.get(ni);
+
+            if(hit.end() <= node.start) {hi++; continue;}
+            if(hit.start() >= node.end) {ni++; continue;}
+
+            int from = Math.max(0, hit.start() - node.start);
+            int to = Math.min(hit.end() - node.start, node.end - node.start);
+            if(from < to)
+            {
+                List<Segment> list = result.get(ni);
+                if(list == null) 
+                {
+                    list = new ArrayList<>();
+                    result.set(ni, list);
+                }
+                list.add(new Segment(from, to));
+            }
+
+            if (hit.end() > node.end) ni++;
+            else hi++;
+        }
+        return result;
+    }
+
+    private List<TextNodeInfo> collectTextNodes(Node root) {
+        Deque<Node> stack = new ArrayDeque<>();
+        stack.addLast(root);
+        int total = 0;
+        List<TextNodeInfo> out = new ArrayList<>();
+
+        while (!stack.isEmpty()) {
+            Node cur = stack.removeLast();
+            if (cur instanceof Element el) {
+                String tag = el.tagName();
+                if ("script".equals(tag) || "style".equals(tag) || "template".equals(tag)) continue; // если есть свои тэги, которые скрывают текст и т.п. - сюда же их. Мб потом откуда-то список таких тэгов подсасываться будет
+            }
+            if (cur instanceof TextNode tn) {
+                String text = tn.getWholeText();
+                if (!text.isEmpty()) {
+                    int start = total;
+                    int end = start + text.length();
+                    out.add(new TextNodeInfo(tn, start, end));
+                    total = end;
+                }
+            }
+            for (int i = cur.childNodeSize() - 1; i >= 0; i--) {
+                stack.addLast(cur.childNode(i));
+            }
+        }
+        return out;
+    }
+
+    private static String linearizeFromNodes(List<TextNodeInfo> nodes) {
+        StringBuilder sb = new StringBuilder();
+        for (TextNodeInfo info : nodes) sb.append(info.textNode.getWholeText());
+        return sb.toString();
+    }
+
+    
+    
+    @AllArgsConstructor
+    static class TextNodeInfo
+    {
+        TextNode textNode;
+        int start;
+        int end;
+    }
+
+    @AllArgsConstructor
+    static class Segment
+    {
+        int from;
+        int to;
     }
 }
