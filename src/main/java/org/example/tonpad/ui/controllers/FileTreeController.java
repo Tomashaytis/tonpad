@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.FileTree;
+import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.ui.extentions.FileTreeItem;
 import org.springframework.stereotype.Component;
 import java.nio.file.Path;
@@ -53,14 +54,13 @@ public class FileTreeController extends AbstractController {
     @FXML
     private Button expandFilesButton;
 
+    private final SearchInTextController searchInTextController;
+
     private final FileSystemService fileSystemService;
 
-    private TreeItem<String> rootItem;
+    private static final javafx.css.PseudoClass MATCHED = javafx.css.PseudoClass.getPseudoClass("matched");
 
-    @FXML
-    public void initialize() {
-        setupFileTree();
-    }
+    private TreeItem<String> rootItem;
 
     private TreeItem<String> selectedItem;
 
@@ -131,13 +131,41 @@ public class FileTreeController extends AbstractController {
         }
     }
 
-    private void refreshTree() {
+    public void refreshTree() {
         saveAllExpandedStates();
 
         FileTree fileTree = fileSystemService.getFileTree(vaultPath);
         TreeItem<String> newRoot = convertFileTreeToTreeItem(fileTree);
 
         fileTreeView.setRoot(newRoot);
+
+        fileTreeView.setCellFactory(tv -> new javafx.scene.control.TreeCell<>() {
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                    pseudoClassStateChanged(MATCHED, false);
+                    return;
+                }
+
+                // относительный путь узла (как ключ в твоей мапе)
+                String rel = norm(getRelativePath(getTreeItem()));
+                Map<String, List<SearchService.Hit>> hitsMap = searchInTextController.getHitsMap();
+
+                List<SearchService.Hit> ranges = hitsMap.get(rel);
+                if (ranges == null || ranges.isEmpty()) {
+                    setGraphic(null);
+                    setText(item);                  // обычный текст
+                    pseudoClassStateChanged(MATCHED, false);
+                } else {
+                    setText(null);
+                    setGraphic(buildHighlightedName(item, ranges)); // TextFlow с подсветкой
+                    pseudoClassStateChanged(MATCHED, true);         // фон строки (см. CSS)
+                }
+            }
+        });
+
         rootItem = newRoot;
 
         restoreAllExpandedStates();
@@ -182,16 +210,14 @@ public class FileTreeController extends AbstractController {
     }
 
     private String getRelativePath(TreeItem<String> item) {
-        List<String> pathSegments = new ArrayList<>();
-        TreeItem<String> current = item;
-
-        while (current != null && !current.getValue().isEmpty()) {
-            pathSegments.addFirst(current.getValue());
-            current = current.getParent();
+        var parts = new java.util.ArrayList<String>();
+        for (TreeItem<String> cur = item; cur != null; cur = cur.getParent()) {
+            if (cur.getValue() == null || cur.getValue().isEmpty()) break;
+            parts.add(0, cur.getValue()); // корень тоже включаем
         }
-
-        return String.join("/", pathSegments);
+        return String.join("/", parts).replace('\\','/');
     }
+
 
     private String getFullPath(TreeItem<String> item) {
         if (item == null) {
@@ -242,6 +268,8 @@ public class FileTreeController extends AbstractController {
 
         fileTreeView.setRoot(rootItem);
 
+
+
         rootItem.setExpanded(true);
 
         fileTreeView.getSelectionModel().selectedItemProperty().addListener(
@@ -251,6 +279,33 @@ public class FileTreeController extends AbstractController {
         fileTreeView.setOnContextMenuRequested(this::onRightClick);
     }
 
+    private static String norm(String s) {
+        if (s == null) return "";
+        s = s.replace('\\', '/');
+        if (s.startsWith("./")) s = s.substring(2);
+        return s;
+    }
+
+    private javafx.scene.Node buildHighlightedName(String name, java.util.List<SearchService.Hit> hits) {
+        // предполагаем, что hits отсортированы и не пересекаются
+        var flow = new javafx.scene.text.TextFlow();
+        int i = 0, n = name.length();
+        for (var h : hits) {
+            int s = Math.max(0, Math.min(h.start(), n));
+            int e = Math.max(0, Math.min(h.end(),   n));
+            if (e <= s) continue;
+
+            if (i < s) flow.getChildren().add(new javafx.scene.text.Text(name.substring(i, s)));
+            var t = new javafx.scene.text.Text(name.substring(s, e));
+            t.getStyleClass().add("filetree-hit");   // стиль подсвеченного фрагмента
+            flow.getChildren().add(t);
+            i = e;
+        }
+        if (i < n) flow.getChildren().add(new javafx.scene.text.Text(name.substring(i)));
+        return flow;
+    }
+
+
     private void onFileSelected(TreeItem<String> selectedItem) {
         this.selectedItem = selectedItem;
     }
@@ -259,13 +314,10 @@ public class FileTreeController extends AbstractController {
 
     }
 
-    public void searchInFileTree(String strToSearch)
-    {
-//        fileTreeView.getSelectionModel().selectionModeProperty().addListener();
-        System.out.println("wwwwwwwwwwwwww");
-        var res = fileSystemService.findByNameContains("./test", "t");
-        System.out.println(res.toString());
-    }
+//    public void searchInFileTree(String strToSearch)
+//    {
+//        var res = searchInTextController.testRunSearch("t");
+//    }
 
     private TreeItem<String> convertFileTreeToTreeItem(FileTree fileTree) {
         Path path = fileTree.getPath();

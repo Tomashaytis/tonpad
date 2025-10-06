@@ -2,15 +2,17 @@ package org.example.tonpad;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
+import lombok.RequiredArgsConstructor;
 import org.example.tonpad.ui.controllers.MainController;
 import org.example.tonpad.ui.controllers.QuickStartDialogController;
+import org.example.tonpad.ui.extentions.VaultPath;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 
-
+@RequiredArgsConstructor
 @SpringBootApplication
 @EnableConfigurationProperties({TonpadConfig.class})
 public class TonpadApplication extends Application {
@@ -19,6 +21,9 @@ public class TonpadApplication extends Application {
 
     @Autowired
     private MainController mainController;
+
+    @Autowired
+    private VaultPath vaultPath;
 
     @Autowired
     private QuickStartDialogController quickStartDialogController;
@@ -35,7 +40,7 @@ public class TonpadApplication extends Application {
         quickStartDialogController.setCreateVaultHandler(selectedPath -> {
             quickStartDialogController.close();
 
-            mainController.setVaultPath(selectedPath);
+            vaultPath.setVaultPath(selectedPath);
             mainController.init(primaryStage);
         });
     }

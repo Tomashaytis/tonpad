@@ -1,8 +1,12 @@
 package org.example.tonpad.ui.controllers;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import lombok.Getter;
+import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.core.service.SearchService.Hit;
 import javafx.scene.control.TabPane;
@@ -21,6 +25,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.web.WebView;
 import javafx.util.Duration;
+import org.example.tonpad.ui.extentions.VaultPath;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -51,11 +57,20 @@ public class SearchInTextController extends AbstractController {
     @Setter
     private TabPane tabPane;
 
+    private final VaultPath vaultPath;
+
+    private final FileSystemService fileSystemService;
+
     private final SearchService searchService;
+
+//    private final FileTreeController fileTreeController;
 
     private int currentIndex = -1;
 
     private final List<Hit> hits = new ArrayList<>();
+
+    @Getter
+    private final Map<String, List<SearchService.Hit>> hitsMap = new HashMap<>();
 
     public void init(AnchorPane parent) {
         handleSearchFieldInput();
@@ -162,6 +177,52 @@ public class SearchInTextController extends AbstractController {
         """);
     }
 
+    public Map<String, List<SearchService.Hit>> runFileTreeSearch(String query) {
+        Map<String, List<SearchService.Hit>> map = new HashMap<>();
+        if (query == null || query.isBlank()) return map;
+
+        final String needle = query.toLowerCase(java.util.Locale.ROOT);
+        final String rootAbs = vaultPath.getVaultPath();
+        final java.nio.file.Path rootPath = java.nio.file.Paths.get(rootAbs);
+        final String rootName = rootPath.getFileName() != null ? rootPath.getFileName().toString() : rootAbs;
+
+        // 2.1 Все элементы под корнем
+        fileSystemService.findByNameContains(rootAbs, query).stream()
+                .map(rel -> {
+                    String fileName = rel.getFileName() == null ? "" : rel.getFileName().toString();
+                    String hay = fileName.toLowerCase(java.util.Locale.ROOT);
+                    int from = 0, idx;
+                    var hits = new java.util.ArrayList<Hit>();
+                    while ((idx = hay.indexOf(needle, from)) >= 0) {
+                        hits.add(new Hit(idx, idx + needle.length()));
+                        from = idx + needle.length(); // перекрытия → idx+1
+                    }
+                    // ключ в формате <rootName>/<rel>
+                    String relStr = rel.toString().replace('\\','/');
+                    String key = relStr.isEmpty() ? rootName : (rootName + "/" + relStr);
+                    return java.util.Map.entry(key, hits);
+                })
+                .filter(e -> !e.getValue().isEmpty())
+                .forEach(e -> map.put(e.getKey(), e.getValue()));
+
+        // 2.2 Сам корень (его имя — это отображаемый текст узла)
+        {
+            String hay = rootName.toLowerCase(java.util.Locale.ROOT);
+            int from = 0, idx;
+            var hits = new java.util.ArrayList<Hit>();
+            while ((idx = hay.indexOf(needle, from)) >= 0) {
+                hits.add(new Hit(idx, idx + needle.length()));
+                from = idx + needle.length();
+            }
+            if (!hits.isEmpty()) {
+                map.put(rootName, hits); // ключ строго как getRelativePath для корня
+            }
+        }
+
+        return map;
+    }
+
+
     private void runSearch() {
         WebView wv = getActiveWebView();
         if(wv == null) {
@@ -176,7 +237,10 @@ public class SearchInTextController extends AbstractController {
             currentIndex = -1;
             return;
         }
-        
+
+        hitsMap.putAll(runFileTreeSearch(query));  // Map<String, List<Hit>>
+//        fileTreeController.refreshTree();
+
         String visibleText = (String) wv.getEngine().executeScript("document.body.textContent");
         try (SearchService.Session session = searchService.openSession(() -> visibleText, () -> 0)) {
             this.hits.addAll(session.findAll(query));
@@ -184,7 +248,6 @@ public class SearchInTextController extends AbstractController {
         highlightInDom();
 
         searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
-        System.out.println("----------------------");
         System.out.println(tabPane.getScene().getFocusOwner());
     }
 

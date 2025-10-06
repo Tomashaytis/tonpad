@@ -18,6 +18,7 @@ import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.example.tonpad.ui.extentions.VaultPath;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -85,8 +86,7 @@ public class MainController extends AbstractController {
 
     private final FileTreeController fileTreeController;
 
-    @Setter
-    private String vaultPath;
+    private final VaultPath vaultPath;
 
     public void init(Stage stage) {
         setupControllers();
@@ -98,7 +98,7 @@ public class MainController extends AbstractController {
     }
 
     private void setupControllers() {
-        fileTreeController.init(fileTreePane, vaultPath);
+        fileTreeController.init(fileTreePane, vaultPath.getVaultPath());
 
         tabController.setTabPane(tabPane);
         tabController.init("src/main/resources/Welcome.md");

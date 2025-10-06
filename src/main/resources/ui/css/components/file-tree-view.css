@@ -29,3 +29,18 @@
 .file-tree-view .arrow {
     -fx-background-color: -color-main-text;
 }
+
+/* test*/
+.file-tree-view .tree-cell:matched {
+    -fx-background-color: #fff8b0;
+}
+/* оформление самих символов совпадения */
+.filetree-hit {
+    -fx-font-weight: bold;
+    -fx-underline: true;
+}
+
+/* чтобы выбранная строка не «конфликтовала» с matched */
+.file-tree-view .tree-cell:matched:selected {
+    -fx-background-color: -fx-selection-bar;
+}

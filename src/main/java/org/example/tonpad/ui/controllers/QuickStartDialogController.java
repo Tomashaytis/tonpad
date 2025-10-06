@@ -13,7 +13,11 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.example.tonpad.ui.extentions.VaultPath;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -21,6 +25,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 @Component
+@RequiredArgsConstructor
 public class QuickStartDialogController extends AbstractController {
 
     @FXML
@@ -43,6 +48,8 @@ public class QuickStartDialogController extends AbstractController {
 
     @FXML
     private Button settingsButton;
+
+    private final VaultPath vaultPath;
 
     private Stage stage;
 
@@ -99,8 +106,8 @@ public class QuickStartDialogController extends AbstractController {
                 }
             }
 
-            String vaultPath = selectedDirectory.getAbsolutePath();
-            createVaultHandler.accept(vaultPath);
+            vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
+            createVaultHandler.accept(vaultPath.getVaultPath());
         }
     }
 
@@ -130,8 +137,10 @@ public class QuickStartDialogController extends AbstractController {
         directoryChooser.setTitle("Select Vault Directory");
 
         File selectedDirectory = directoryChooser.showDialog(stage);
-        String vaultPath = selectedDirectory.getAbsolutePath();
-        createVaultHandler.accept(vaultPath);
+        vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
+//        String vaultPath = selectedDirectory.getAbsolutePath();
+        System.out.println(vaultPath.getVaultPath());
+        createVaultHandler.accept(vaultPath.getVaultPath());
     }
 
     private void ensureEmptyDirectory(File directory) {
