@@ -1,12 +1,9 @@
 package org.example.tonpad.ui.controllers;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
 
+import lombok.Getter;
+import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.core.service.SearchService.Hit;
 import org.jsoup.Jsoup;
@@ -35,6 +32,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.web.WebView;
 import javafx.util.Duration;
+import org.example.tonpad.ui.extentions.VaultPath;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -65,13 +64,22 @@ public class SearchInTextController extends AbstractController {
     @Setter
     private TabPane tabPane;
 
+    private final VaultPath vaultPath;
+
+    private final FileSystemService fileSystemService;
+
     private final SearchService searchService;
+
+    private final FileTreeController fileTreeController;
 
     private int currentIndex = -1;
 
     private final List<Hit> hits = new ArrayList<>();
 
-    private static final String JS_GET_HTML = 
+    @Getter
+    private final Map<String, List<Hit>> hitsMap = new HashMap<>();
+
+    private static final String JS_GET_HTML =
         "(function(){var r=document.getElementById('note-root')||document.body; return r.innerHTML;})()";
 
     private static String jsSetHtml(String html) {
@@ -89,7 +97,7 @@ public class SearchInTextController extends AbstractController {
         AnchorPane.setLeftAnchor(searchBarVBox, 0.0);
         AnchorPane.setRightAnchor(searchBarVBox, 0.0);
     }
-    
+
     private void handleSearchFieldInput() {
         PauseTransition debounce = new PauseTransition(Duration.millis(400));
         debounce.setOnFinished(e -> runSearch());
@@ -113,7 +121,6 @@ public class SearchInTextController extends AbstractController {
         };
         searchField.addEventFilter(KeyEvent.KEY_PRESSED,  nav);
     }
-
 
     private void selectPrevHit() {
         WebView wv = getActiveWebView();
@@ -177,8 +184,94 @@ public class SearchInTextController extends AbstractController {
         return !(res instanceof String s && s.startsWith("JS_ERROR:")) && Boolean.TRUE.equals(res);
     }
 
-    private Object execJS(WebView wv, String jsBody) 
-    {
+    private void clearDomSelection(WebView wv) {
+        if (wv == null) return;
+        execJS(wv, """
+            (function(){
+            try {
+                const sel = window.getSelection && window.getSelection();
+                if (sel) sel.removeAllRanges();      // основное
+                // На случай «прилипшего» фокуса:
+                if (document.activeElement) document.activeElement.blur();
+                // Ещё один способ (старые WebKit):
+                if (window.getSelection && window.getSelection().empty) {
+                window.getSelection().empty();
+                }
+                return true;
+            } catch(e) { return false; }
+            })();
+        """);
+    }
+
+    public Map<String, List<SearchService.Hit>> runFileTreeSearch(String query) {
+        Map<String, List<SearchService.Hit>> map = new HashMap<>();
+        if (query == null || query.isBlank()) return map;
+
+        final String needle = query.toLowerCase(java.util.Locale.ROOT);
+        final String rootAbs = vaultPath.getVaultPath();
+        final java.nio.file.Path rootPath = java.nio.file.Paths.get(rootAbs);
+        final String rootName = rootPath.getFileName() != null ? rootPath.getFileName().toString() : rootAbs;
+
+        fileSystemService.findByNameContains(rootAbs, query).stream()
+                .map(rel -> {
+                    String fileName = rel.getFileName() == null ? "" : rel.getFileName().toString();
+                    String hay = fileName.toLowerCase(java.util.Locale.ROOT);
+                    int from = 0, idx;
+                    var hits = new java.util.ArrayList<Hit>();
+                    while ((idx = hay.indexOf(needle, from)) >= 0) {
+                        hits.add(new Hit(idx, idx + needle.length()));
+                        from = idx + needle.length(); // перекрытия → idx+1
+                    }
+                    // ключ в формате <rootName>/<rel>
+                    String relStr = rel.toString().replace('\\','/');
+                    String key = relStr.isEmpty() ? rootName : (rootName + "/" + relStr);
+                    return java.util.Map.entry(key, hits);
+                })
+                .filter(e -> !e.getValue().isEmpty())
+                .forEach(e -> map.put(e.getKey(), e.getValue()));
+
+        {
+            String hay = rootName.toLowerCase(java.util.Locale.ROOT);
+            int from = 0, idx;
+            var hits = new java.util.ArrayList<Hit>();
+            while ((idx = hay.indexOf(needle, from)) >= 0) {
+                hits.add(new Hit(idx, idx + needle.length()));
+                from = idx + needle.length();
+            }
+            if (!hits.isEmpty()) {
+                map.put(rootName, hits); // ключ строго как getRelativePath для корня
+            }
+        }
+
+        return map;
+    }
+
+        private void clearHighlights() {
+        currentIndex = -1;
+        WebView wv = getActiveWebView();
+        if (wv == null || docReady(wv)) return;
+
+        Object res = execJS(wv, """
+            const root = document.body;
+            const marks = root.querySelectorAll('mark.__hit');
+            for (const m of marks) {
+                const t = document.createTextNode(m.textContent);
+                m.replaceWith(t);
+            }
+            return marks.length;
+        """);
+        if (res instanceof String s && s.startsWith("JS_ERROR:")) {
+            System.err.println(s);
+        }
+        clearDomSelection(wv);
+    }
+
+
+    private boolean docReady(WebView wv) {
+        return wv.getEngine().getDocument() == null || wv.getEngine().getLoadWorker().getState() != Worker.State.SUCCEEDED;
+    }
+
+    private Object execJS(WebView wv, String jsBody) {
         String wrapped = """
             (function(){
             try {
@@ -205,10 +298,10 @@ public class SearchInTextController extends AbstractController {
 
     private void runSearch() {
         currentIndex = -1;
-        
+
         WebView wv = getActiveWebView();
         if (wv == null || wv.getEngine().getLoadWorker().getState() != Worker.State.SUCCEEDED) return;
-        
+
         String innerHtml  = (String) wv.getEngine().executeScript(JS_GET_HTML);
         String clearText = clearHighlights(innerHtml);
 
@@ -216,33 +309,38 @@ public class SearchInTextController extends AbstractController {
         Element root = doc.body();
         List<TextNodeInfo> nodes = collectTextNodes(root);
         String linear = linearizeFromNodes(nodes);
-        
+
         String query = searchField.getText().trim();
         hits.clear();
         if(query.isEmpty()) {
+            fileTreeController.setHitsMap(new HashMap<>());
+            fileTreeController.refreshTree();
+            hitsMap.clear();
             wv.getEngine().executeScript(jsSetHtml(toJsString(clearText)));
             searchResultsField.clear();
             return;
         }
-        
+        fileTreeController.refreshTree();
+        fileTreeController.setHitsMap(runFileTreeSearch(query));
+
         try (SearchService.Session session = searchService.openSession(() -> linear, () -> 0)) {
             this.hits.addAll(session.findAll(query));
         }
         System.out.println(hits);
         String highlightedText = getHighlightedText(doc, nodes);
         wv.getEngine().executeScript(jsSetHtml(toJsString(highlightedText)));
-        
+
         searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
     }
-    
+
     private String getHighlightedText(Document doc, List<TextNodeInfo> nodes) {
         List<List<Segment>> segmentsPerNode = splitHitsPerNode(nodes);
-        
+
         for(int i = nodes.size() - 1; i >= 0; i--)
         {
             List<Segment> segments = segmentsPerNode.get(i);
             if(segments == null || segments.isEmpty()) continue;
-            
+
             TextNode node = nodes.get(i).textNode;
             String text = node.getWholeText();
 
@@ -256,7 +354,7 @@ public class SearchInTextController extends AbstractController {
                 {
                     parts.add(new TextNode(text.substring(pos, seg.from)));
                 }
-                
+
                 Element mark = new Element(Tag.valueOf("mark"), "");
                 mark.addClass("__hit");
                 mark.text(text.substring(seg.from, seg.to));
@@ -267,7 +365,7 @@ public class SearchInTextController extends AbstractController {
             {
                 parts.add(new TextNode(text.substring(pos)));
             }
-            
+
             Element parent = (Element)node.parent();
             int index = node.siblingIndex();
             node.remove();
@@ -276,10 +374,10 @@ public class SearchInTextController extends AbstractController {
                 parent.insertChildren(index, parts.get(p));
             }
         }
-        
+
         return doc.body().html();
     }
-    
+
     private String clearHighlights(String html) {
         Document doc = Jsoup.parseBodyFragment(html);
         doc.select("mark.__hit").forEach(Element::unwrap);
@@ -290,7 +388,7 @@ public class SearchInTextController extends AbstractController {
         Tab tab = tabPane.getSelectionModel().getSelectedItem();
         return (tab != null && tab.getUserData() instanceof WebView wv) ? wv : null;
     }
-    
+
     @Override
     protected String getFxmlSource() {
         return "/ui/fxml/search-bar.fxml";
@@ -313,7 +411,7 @@ public class SearchInTextController extends AbstractController {
             if(from < to)
             {
                 List<Segment> list = result.get(ni);
-                if(list == null) 
+                if(list == null)
                 {
                     list = new ArrayList<>();
                     result.set(ni, list);
@@ -361,8 +459,8 @@ public class SearchInTextController extends AbstractController {
         return sb.toString();
     }
 
-    
-    
+
+
     @AllArgsConstructor
     static class TextNodeInfo
     {

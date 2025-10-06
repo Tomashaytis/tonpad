@@ -1,5 +1,6 @@
 package org.example.tonpad.ui.controllers;
 
+import jakarta.annotation.PostConstruct;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -15,10 +16,13 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.example.tonpad.ui.extentions.VaultPath;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -83,8 +87,7 @@ public class MainController extends AbstractController {
 
     private final FileTreeController fileTreeController;
 
-    @Setter
-    private String vaultPath;
+    private final VaultPath vaultPath;
 
     public void init(Stage stage) {
         setupControllers();
@@ -95,7 +98,7 @@ public class MainController extends AbstractController {
     }
 
     private void setupControllers() {
-        fileTreeController.init(fileTreePane, vaultPath);
+        fileTreeController.init(fileTreePane, vaultPath.getVaultPath());
 
         tabController.setTabPane(tabPane);
         tabController.init("src/main/resources/test.md");

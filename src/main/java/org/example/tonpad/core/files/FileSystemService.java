@@ -12,6 +12,10 @@ public interface FileSystemService {
 
     Optional<Path> findFileInDir(Path rootDir, String fileName);
 
+    List<Path> findByNameContains(Path rootDir, String substring);
+
+    List<Path> findByNameContains(String rootDir, String substring);
+
     List<String> getAllFilesInDir(String directory);
 
     List<String> getAllFilesInDir(Path directory);
