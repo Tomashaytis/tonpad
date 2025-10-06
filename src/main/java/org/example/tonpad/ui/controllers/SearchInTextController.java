@@ -1,13 +1,6 @@
 package org.example.tonpad.ui.controllers;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.List;
-нimport java.util.Map;
+import java.util.*;
 
 import lombok.Getter;
 import org.example.tonpad.core.files.FileSystemService;
@@ -77,12 +70,14 @@ public class SearchInTextController extends AbstractController {
 
     private final SearchService searchService;
 
+    private final FileTreeController fileTreeController;
+
     private int currentIndex = -1;
 
     private final List<Hit> hits = new ArrayList<>();
 
     @Getter
-    private final Map<String, List<SearchService.Hit>> hitsMap = new HashMap<>();
+    private final Map<String, List<Hit>> hitsMap = new HashMap<>();
 
     private static final String JS_GET_HTML =
         "(function(){var r=document.getElementById('note-root')||document.body; return r.innerHTML;})()";
@@ -189,22 +184,6 @@ public class SearchInTextController extends AbstractController {
         return !(res instanceof String s && s.startsWith("JS_ERROR:")) && Boolean.TRUE.equals(res);
     }
 
-    private void handleSearchButtons() {
-        prevHitButton.setOnAction(e -> selectPrevHit());
-        nextHitButton.setOnAction(e -> selectNextHit());
-
-        searchField.setOnKeyPressed(e -> {
-            if((e.getCode() == KeyCode.F3 && e.isShiftDown()) || e.getCode() == KeyCode.UP) {selectPrevHit(); e.consume();}
-            else if(e.getCode() == KeyCode.ENTER || e.getCode() == KeyCode.F3 || e.getCode() == KeyCode.DOWN) {selectNextHit(); e.consume();};
-        });
-    }
-
-    private void handleSearchFieldInput() {
-        PauseTransition debounce = new PauseTransition(Duration.millis(400));
-        debounce.setOnFinished(e -> runSearch());
-        searchField.textProperty().addListener((o, ov, nv) -> debounce.playFromStart());
-    }
-
     private void clearDomSelection(WebView wv) {
         if (wv == null) return;
         execJS(wv, """
@@ -233,7 +212,6 @@ public class SearchInTextController extends AbstractController {
         final java.nio.file.Path rootPath = java.nio.file.Paths.get(rootAbs);
         final String rootName = rootPath.getFileName() != null ? rootPath.getFileName().toString() : rootAbs;
 
-        // 2.1 Все элементы под корнем
         fileSystemService.findByNameContains(rootAbs, query).stream()
                 .map(rel -> {
                     String fileName = rel.getFileName() == null ? "" : rel.getFileName().toString();
@@ -252,7 +230,6 @@ public class SearchInTextController extends AbstractController {
                 .filter(e -> !e.getValue().isEmpty())
                 .forEach(e -> map.put(e.getKey(), e.getValue()));
 
-        // 2.2 Сам корень (его имя — это отображаемый текст узла)
         {
             String hay = rootName.toLowerCase(java.util.Locale.ROOT);
             int from = 0, idx;
@@ -269,36 +246,7 @@ public class SearchInTextController extends AbstractController {
         return map;
     }
 
-
-    private void runSearch() {
-        WebView wv = getActiveWebView();
-        if(wv == null) {
-            return;
-        }
-        hits.clear();
-
-        String query = searchField.getText().trim();
-        if(query.isEmpty()) {
-            clearHighlights();
-            clearDomSelection(wv);
-            currentIndex = -1;
-            return;
-        }
-
-        hitsMap.putAll(runFileTreeSearch(query));  // Map<String, List<Hit>>
-//        fileTreeController.refreshTree();
-
-        String visibleText = (String) wv.getEngine().executeScript("document.body.textContent");
-        try (SearchService.Session session = searchService.openSession(() -> visibleText, () -> 0)) {
-            this.hits.addAll(session.findAll(query));
-        }
-        highlightInDom();
-
-        searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
-        System.out.println(tabPane.getScene().getFocusOwner());
-    }
-
-    private void clearHighlights() {
+        private void clearHighlights() {
         currentIndex = -1;
         WebView wv = getActiveWebView();
         if (wv == null || docReady(wv)) return;
@@ -365,10 +313,15 @@ public class SearchInTextController extends AbstractController {
         String query = searchField.getText().trim();
         hits.clear();
         if(query.isEmpty()) {
+            fileTreeController.setHitsMap(new HashMap<>());
+            fileTreeController.refreshTree();
+            hitsMap.clear();
             wv.getEngine().executeScript(jsSetHtml(toJsString(clearText)));
             searchResultsField.clear();
             return;
         }
+        fileTreeController.refreshTree();
+        fileTreeController.setHitsMap(runFileTreeSearch(query));
 
         try (SearchService.Session session = searchService.openSession(() -> linear, () -> 0)) {
             this.hits.addAll(session.findAll(query));

@@ -55,7 +55,7 @@ public class FileTreeController extends AbstractController {
     @FXML
     private Button expandFilesButton;
 
-    private final SearchInTextController searchInTextController;
+//    private final SearchInTextController searchInTextController;
 
     private final FileSystemService fileSystemService;
 
@@ -71,6 +71,9 @@ public class FileTreeController extends AbstractController {
 
     @Setter
     private Consumer<String> fileOpenHandler;
+
+    @Setter
+    private Map<String, List<SearchService.Hit>> hitsMap;
 
     private final Map<String, Boolean> expandedState = new HashMap<>();
 
@@ -178,9 +181,8 @@ public class FileTreeController extends AbstractController {
                     return;
                 }
 
-                // относительный путь узла (как ключ в твоей мапе)
                 String rel = norm(getRelativePath(getTreeItem()));
-                Map<String, List<SearchService.Hit>> hitsMap = searchInTextController.getHitsMap();
+//                Map<String, List<SearchService.Hit>> hitsMap = searchInTextController.getHitsMap();
 
                 List<SearchService.Hit> ranges = hitsMap.get(rel);
                 if (ranges == null || ranges.isEmpty()) {
