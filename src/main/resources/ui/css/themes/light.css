@@ -1,14 +1,26 @@
 /* light.css - светлая тема */
 
+@import url('../icons/light/common-action-icons.css');
+@import url('../icons/light/app-action-icons.css');
+@import url('../icons/light/add-action-icons.css');
+@import url('../icons/light/file-action-icons.css');
+@import url('../icons/light/open-in-icons.css');
+@import url('../icons/light/search-icons.css');
+@import url('../icons/light/view-icons.css');
+@import url('../icons/light/entity-icons.css');
+
+
 .root {
     /* Глобальные цвета */
     -color-main-background: #f5f5f5;
     -color-main-text: #333333;
     -color-main-prompt-text: #666666;
 
+    /* Цвета разделителей */
+    -color-separator: #666666;
+
     /* Основные цвета панелей */
     -color-side-panel: #e0e0e0;
-    -color-side-panel-border: #555555;
     -color-note-panel: white;
     -color-tools-panel: #d6d6d6;
     -color-search-field: #d6d6d6;
@@ -30,6 +42,8 @@
     -color-button-hover: #d0d0d0;
     -color-button-pressed: #c8c8c8;
     -color-button-toggled: #c4c4c4;
+    -color-button: #c4c4c4;
+
     
     /* Цвета подсказок */
     -color-tooltip-background: #2d2d2d;

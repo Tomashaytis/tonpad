@@ -39,4 +39,8 @@ public interface FileSystemService {
     void delete(String path);
 
     void delete(Path path);
+
+    boolean exists(String path);
+
+    boolean exists(Path path);
 }
