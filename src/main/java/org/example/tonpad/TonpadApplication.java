@@ -13,8 +13,6 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 
-import java.io.IOException;
-
 
 @RequiredArgsConstructor
 @SpringBootApplication

@@ -2,11 +2,13 @@ package org.example.tonpad.core.files.regularFiles;
 
 import org.example.tonpad.core.exceptions.IllegalInputException;
 import org.example.tonpad.core.files.FileSystemService;
+import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class RegularFileServiceImpl {
+@Service
+public class RegularFileServiceImpl implements RegularFileService {
 
     private static final String FILE_EXTENSION = ".md";
 
@@ -17,7 +19,7 @@ public class RegularFileServiceImpl {
     }
 
     public Path createFile(Path path, String name) {
-        return fileSystem.makeFile(Path.of(path.toString(), name + FILE_EXTENSION));
+        return fileSystem.makeFile(path.resolve(name + FILE_EXTENSION));
     }
 
     public String readFile(Path path) {

@@ -26,8 +26,8 @@ public class DirectoryServiceImpl implements DirectoryService {
         this.reservedNames = config.reservedNames();
     }
 
-    public FileTree getFileTree() {
-        return fileSystem.getFileTree(dataDir);
+    public FileTree getFileTree(String path) {
+        return fileSystem.getFileTree(path);
     }
 
     /**
@@ -41,7 +41,7 @@ public class DirectoryServiceImpl implements DirectoryService {
             throw new IllegalInputException("Нельзя создать директорию с таким названием");
         }
 
-        return initDir(Path.of(path.toString(), name));
+        return initDir(path.resolve(name));
     }
 
     public Path renameDir(Path path, String name) {
