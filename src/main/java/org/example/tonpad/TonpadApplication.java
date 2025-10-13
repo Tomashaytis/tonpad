@@ -41,6 +41,7 @@ public class TonpadApplication extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        //testFieldController.init(primaryStage);
         quickStartDialogController.init();
         quickStartDialogController.setCreateVaultHandler(selectedPath -> {
             quickStartDialogController.close();
