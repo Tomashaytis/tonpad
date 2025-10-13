@@ -48,17 +48,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.webjars.npm</groupId>
-            <artifactId>prosemirror-state</artifactId>
-            <version>1.4.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.webjars.npm</groupId>
-            <artifactId>prosemirror-model</artifactId>
-            <version>1.25.2</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>

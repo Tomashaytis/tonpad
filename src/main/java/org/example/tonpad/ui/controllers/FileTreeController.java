@@ -55,8 +55,6 @@ public class FileTreeController extends AbstractController {
     @FXML
     private Button expandFilesButton;
 
-//    private final SearchInTextController searchInTextController;
-
     private final FileSystemService fileSystemService;
 
     private static final javafx.css.PseudoClass MATCHED = javafx.css.PseudoClass.getPseudoClass("matched");
