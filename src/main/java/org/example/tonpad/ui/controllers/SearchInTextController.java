@@ -92,10 +92,8 @@ public class SearchInTextController extends AbstractController {
         handleSearchButtons();
         parent.getChildren().add(searchBarVBox);
 
-        AnchorPane.setTopAnchor(searchBarVBox, 0.0);
-        AnchorPane.setBottomAnchor(searchBarVBox, 0.0);
-        AnchorPane.setLeftAnchor(searchBarVBox, 0.0);
-        AnchorPane.setRightAnchor(searchBarVBox, 0.0);
+        AnchorPane.setTopAnchor(searchBarVBox, 48.0);
+        AnchorPane.setRightAnchor(searchBarVBox, 8.0);
     }
 
     private void handleSearchFieldInput() {
