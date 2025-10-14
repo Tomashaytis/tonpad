@@ -3,6 +3,7 @@ package org.example.tonpad.core.files;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.exceptions.CustomIOException;
+import org.example.tonpad.core.models.SortOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -10,7 +11,9 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -198,6 +201,71 @@ public class FileSystemServiceImpl implements FileSystemService {
 
     public boolean exists(Path path) {
         return  Files.exists(path);
+    }
+
+    public FileTree getFileTreeSorted(String path, SortOptions opt) {
+        return getFileTreeSorted(Path.of(path), opt);
+    }
+
+    public FileTree getFileTreeSorted(Path path, SortOptions opt) {
+        try (Stream<Path> stream = Files.list(path)) {
+            List<Path> children = stream.filter(p -> !p.equals(path)).filter(p -> {
+                if(!opt.relevantOnly()) return true;
+                if(Files.isDirectory(p)) return true;
+                String name = p.getFileName() == null ? "" : p.getFileName().toString().toLowerCase();
+                return name.endsWith(".md");
+            }).toList();
+
+            Comparator<Path> cmp = makeComparator(opt);
+
+            List<FileTree> subtrees = new ArrayList<>(children.size());
+            children.stream().sorted(cmp).forEach(p -> {
+                if(Files.isDirectory(p)) subtrees.add(getFileTreeSorted(p, opt));
+                else subtrees.add(new FileTree(path.resolve(p.getFileName()), null));
+            });
+
+            return new FileTree(path, subtrees);
+        }
+        catch (IOException e) {
+            log.warn(DIR_READING_ERROR);
+            throw new CustomIOException(DIR_READING_ERROR, e);
+        }
+    }
+
+    private Comparator<Path> makeComparator(SortOptions opt) {
+        Comparator<Path> byName = Comparator.comparing(
+            (Path p) -> {
+                Path fn = p.getFileName();
+                return (fn == null ? p.toString() : fn.toString());
+            },
+            String.CASE_INSENSITIVE_ORDER
+        );
+
+        var byCreated = java.util.Comparator.comparingLong((Path p) -> {
+            try {
+                BasicFileAttributes attr = Files.readAttributes(p, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                FileTime time = attr.creationTime();
+                if (time != null) return time.toMillis();
+                return attr.lastModifiedTime().toMillis();
+            } catch (IOException ex) {
+                return 0L;
+            }
+        });
+
+        Comparator<Path> base;
+        switch (opt.key()) {
+            case NAME_ASC -> base = byName;
+            case NAME_DESC -> base = byName.reversed();
+            case CREATED_NEWEST -> base = byCreated.reversed().thenComparing(byName);
+            case CREATED_OLDEST -> base = byCreated.thenComparing(byName);
+            default -> base = Comparator.comparing(p -> p.getFileName().toString());
+        }
+
+        if(opt.foldersFirst()) {
+            Comparator<Path> byIsDirDesc = Comparator.<Path, Integer>comparing(p -> Files.isDirectory(p) ? 1 : 0).reversed();
+            base = byIsDirDesc.thenComparing(base);
+        }
+        return base;
     }
 
 
