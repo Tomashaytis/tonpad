@@ -121,9 +121,24 @@ public class MainController extends AbstractController {
         setSearchShortCut(
                 new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN),
                 new KeyCodeCombination(KeyCode.ESCAPE),
-                () -> showPane(leftStackPane, searchInTextPane, searchInTextController::showSearchBar),
-                () -> hidePane(leftStackPane, searchInTextPane, searchInTextController::hideSearchBar)
+                this::showSearchOverlay,
+                this::hideSearchOverlay
         );
+    }
+
+    private void showSearchOverlay()
+    {
+        if (!searchInTextPane.isVisible()) {
+            searchInTextPane.setVisible(true);
+        }
+        searchInTextController.showSearchBar();
+    }
+
+    private void hideSearchOverlay() {
+        if (searchInTextPane.isVisible()) {
+            searchInTextController.hideSearchBar();
+            searchInTextPane.setVisible(false);
+        }
     }
 
     private void togglePane(StackPane stackPane, AnchorPane anchorPane, Button button, Runnable show, Runnable hide) {
