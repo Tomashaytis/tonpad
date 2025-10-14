@@ -4,6 +4,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import org.example.tonpad.core.models.SortOptions;
+
 public interface FileSystemService {
 
     FileTree getFileTree(String path);
@@ -47,4 +49,8 @@ public interface FileSystemService {
     boolean exists(String path);
 
     boolean exists(Path path);
+
+    FileTree getFileTreeSorted(String path, SortOptions opt);
+
+    FileTree getFileTreeSorted(Path path, SortOptions opt);
 }

@@ -2,6 +2,10 @@ package org.example.tonpad.ui.controllers;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.RadioMenuItem;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.ImageView;
@@ -13,11 +17,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.FileTree;
+import org.example.tonpad.core.models.SortKey;
+import org.example.tonpad.core.models.SortOptions;
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.ui.extentions.FileTreeItem;
 import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -55,6 +63,17 @@ public class FileTreeController extends AbstractController {
     @FXML
     private Button expandFilesButton;
 
+    @FXML
+    private ContextMenu sortMenu;
+    @FXML
+    private ToggleGroup sortToggleGroup;
+    @FXML
+    private RadioMenuItem miNameAsc, miNameDesc, miCreatedNewest, miCreatedOldest;
+    @FXML
+    private CheckBox cbFoldersFirst, cbRelevantOnly;
+    
+    private SortKey sortKey = SortKey.NAME_ASC;
+
 //    private final SearchInTextController searchInTextController;
 
     private final FileSystemService fileSystemService;
@@ -73,7 +92,7 @@ public class FileTreeController extends AbstractController {
     private Consumer<String> fileOpenHandler;
 
     @Setter
-    private Map<String, List<SearchService.Hit>> hitsMap;
+    private Map<String, List<SearchService.Hit>> hitsMap = Collections.emptyMap();
 
     private final Map<String, Boolean> expandedState = new HashMap<>();
 
@@ -108,24 +127,70 @@ public class FileTreeController extends AbstractController {
 
         refreshFilesButton.setOnAction(e -> refreshTree());
 
+        sortFilesButton.setOnAction(e -> {
+            if (sortMenu == null) {
+                throw new IllegalStateException("sortMenu is null");
+            }
+            if (sortMenu.isShowing()) sortMenu.hide();
+            else sortMenu.show(sortFilesButton, javafx.geometry.Side.BOTTOM, 0, 0);
+        });
+
+        cbFoldersFirst.selectedProperty().addListener((obs, o, n) -> applySortOptions());
+        cbRelevantOnly.selectedProperty().addListener((obs, o, n) -> applySortOptions());
+        miCreatedNewest.setUserData(SortKey.CREATED_NEWEST);
+        miCreatedOldest.setUserData(SortKey.CREATED_OLDEST);
+        miNameAsc.setUserData(SortKey.NAME_ASC);
+        miNameDesc.setUserData(SortKey.NAME_DESC); // при смене порядка меню убирается и рефреш сразу, при выборе нижних двух не закрывается сразу, а по ESC, и не обновляется, вручную надо рефрешить, или изменить порядок
+
+        if(sortToggleGroup.getSelectedToggle() != null)
+        {
+            Object ud = sortToggleGroup.getSelectedToggle().getUserData();
+            if(ud instanceof SortKey sk) sortKey = sk;
+        }
+
+        miNameAsc.setOnAction(e -> onSortPicked(SortKey.NAME_ASC));
+        miNameDesc.setOnAction(e -> onSortPicked(SortKey.NAME_DESC));
+        miCreatedNewest.setOnAction(e -> onSortPicked(SortKey.CREATED_NEWEST));
+        miCreatedOldest.setOnAction(e -> onSortPicked(SortKey.CREATED_OLDEST));
+        
+        
+        
         fileTreeView.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 onOpenFile();
             }
         });
-
+        
         addNoteButton.setOnAction(e -> {
             String newFilePath = addNote();
             refreshTree();
             selectItem(newFilePath);
             fileOpenHandler.accept(newFilePath);
         });
-
+        
         addDirectoryButton.setOnAction(e -> {
             String dirPath = addDir();
             refreshTree();
             selectItem(dirPath);
         });
+        
+        applySortOptions();
+    }
+
+    private void onSortPicked(SortKey picked)
+    {
+        if(sortKey != picked) sortKey = picked;
+        applySortOptions();
+        if(sortMenu != null && sortMenu.isShowing()) sortMenu.hide();
+    }
+
+    private void onSortFlagsChanged()
+    {
+    }
+    
+    private void applySortOptions()
+    {
+        refreshTree();        
     }
 
     private void onOpenFile() {
@@ -166,7 +231,8 @@ public class FileTreeController extends AbstractController {
     public void refreshTree() {
         saveAllExpandedStates();
 
-        FileTree fileTree = fileSystemService.getFileTree(vaultPath);
+        SortOptions opt = new SortOptions(sortKey, cbFoldersFirst.isSelected(), cbRelevantOnly.isSelected());
+        FileTree fileTree = fileSystemService.getFileTreeSorted(vaultPath, opt);
         TreeItem<String> newRoot = convertFileTreeToTreeItem(fileTree);
 
         fileTreeView.setRoot(newRoot);
@@ -184,7 +250,7 @@ public class FileTreeController extends AbstractController {
                 String rel = norm(getRelativePath(getTreeItem()));
 //                Map<String, List<SearchService.Hit>> hitsMap = searchInTextController.getHitsMap();
 
-                List<SearchService.Hit> ranges = hitsMap.get(rel);
+                List<SearchService.Hit> ranges = hitsMap != null ? hitsMap.get(rel) : null;
                 if (ranges == null || ranges.isEmpty()) {
                     setGraphic(null);
                     setText(item);                  // обычный текст
