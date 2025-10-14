@@ -1,0 +1,32 @@
+.notation-block {
+    display: flex;
+    align-items: baseline;
+}
+
+.heading-spec {
+    color: #b8cb76;
+    caret-color: black;
+}
+
+.heading,
+.heading-spec {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: inherit;
+}
+
+.notation-block h1, .notation-block:has(> h1) .heading-spec { font-size: 28px; }
+.notation-block h2, .notation-block:has(> h2) .heading-spec { font-size: 24px; }
+.notation-block h3, .notation-block:has(> h3) .heading-spec { font-size: 20px; }
+.notation-block h4, .notation-block:has(> h4) .heading-spec { font-size: 16px; }
+.notation-block h5, .notation-block:has(> h5) .heading-spec { font-size: 14px; }
+.notation-block h6, .notation-block:has(> h6) .heading-spec { font-size: 12px; }
+
+/* Общие стили редактора */
+.markdown-editor {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+}
+
+.spec-hidden {
+    display: none;
+}

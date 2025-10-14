@@ -111,7 +111,6 @@
                   <AnchorPane fx:id="fileTreePane" minWidth="180.0" styleClass="file-tree-panel" visible="false" />
                   <AnchorPane fx:id="searchPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
                   <AnchorPane fx:id="bookmarksPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
-                  <AnchorPane fx:id="searchInTextPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
                </children>
             </StackPane>
 
@@ -120,7 +119,19 @@
                   <TabPane fx:id="tabPane" prefHeight="598.0" prefWidth="823.0" tabClosingPolicy="ALL_TABS">
                      <StackPane.margin>
                         <Insets />
-                     </StackPane.margin></TabPane>
+                     </StackPane.margin>
+                  </TabPane>
+                  <AnchorPane fx:id="searchInTextPane"
+                              visible="false"
+                              pickOnBounds="false"
+                              StackPane.alignment="TOP_RIGHT"
+                              styleClass="viewing-panel">
+                        <children>
+                        </children>
+                        <StackPane.margin>
+                           <Insets top="8" right="8"/>
+                        </StackPane.margin>
+                  </AnchorPane>
                </children>
             </StackPane>
             <VBox prefWidth="40.0">
