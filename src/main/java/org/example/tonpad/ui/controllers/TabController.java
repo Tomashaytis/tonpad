@@ -42,7 +42,7 @@ public class TabController {
 
             String fileContent = Files.readString(filePath);
             Document markdownFile = markdownService.parseMarkdownFile(fileContent);
-            String html = markdownService.renderMarkdownFileToHtml(markdownFile);
+            String html = markdownService.renderMarkdownFileToHtmlPage(markdownFile);
 
             Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
             replaceTabContent(currentTab, getTabName(filePath), html);
@@ -56,7 +56,7 @@ public class TabController {
             Path filePath = Path.of(path);
             String fileContent = Files.readString(filePath);
             Document markdownFile = markdownService.parseMarkdownFile(fileContent);
-            String html = markdownService.renderMarkdownFileToHtml(markdownFile);
+            String html = markdownService.renderMarkdownFileToHtmlPage(markdownFile);
             createTabWithContent(getTabName(filePath), html, filePath);
         } catch (Exception e) {
             createTemporaryTab("New Tab", "<h1>Error loading content</h1>");
