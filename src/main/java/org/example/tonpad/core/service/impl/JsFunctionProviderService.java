@@ -1,4 +1,4 @@
-package org.example.tonpad.core.service;
+package org.example.tonpad.core.service.impl;
 
 import jakarta.annotation.PostConstruct;
 import lombok.AccessLevel;
