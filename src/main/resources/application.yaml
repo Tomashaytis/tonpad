@@ -14,3 +14,4 @@ app:
   reserved-names:
     templates-dir: "templates"
     notes-dir: "notes"
+  js-functions-directory: classpath:js
