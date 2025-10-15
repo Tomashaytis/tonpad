@@ -8,6 +8,8 @@ public interface MarkdownService {
 
     String renderMarkdownFileToHtml(Document document);
 
+    String renderMarkdownFileToHtmlPage(Document document);
+
     String convertHtmlToMarkdown(String html);
 
 }
