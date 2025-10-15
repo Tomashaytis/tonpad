@@ -60,7 +60,12 @@ public class MarkdownServiceImpl implements MarkdownService {
 
     @Override
     public String renderMarkdownFileToHtml(Document document) {
-        return String.format(STYLED_HTML_FROMATED_STRING, renderer.render(document));
+        return renderer.render(document);
+    }
+
+    @Override
+    public String renderMarkdownFileToHtmlPage(Document document) {
+        return String.format(STYLED_HTML_FROMATED_STRING, renderMarkdownFileToHtml(document));
     }
 
     @Override
