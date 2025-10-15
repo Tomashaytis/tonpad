@@ -13898,7 +13898,23 @@
               parseDOM: [{ tag: "br" }],
               toDOM() { return ["br"]; },
           },
-          customTag: {
+          html_comment: {
+              group: "block",
+              content: "text*",
+              marks: "",
+              parseDOM: [{ tag: "div.html-comment" }],
+              toDOM(node) {
+                  return ["div", {
+                      class: node.attrs.isInline ? "html-comment-inline" : "html-comment-block",
+                      "data-inline": node.attrs.isInline
+                  }, `<!-- ${node.attrs.content} -->`];
+              },
+              attrs: {
+                  content: { default: "" },
+                  isInline: { default: false }
+              }
+          },
+          custom_tag: {
               content: "block+",
               group: "block",
               attrs: {
@@ -13961,6 +13977,29 @@
                   },
               ],
               toDOM() { return ["strong"]; },
+          },
+          strike: {
+              parseDOM: [
+                  { tag: "s" },
+                  { tag: "strike" },
+                  { tag: "del" },
+                  { style: "text-decoration=line-through" },
+              ],
+              toDOM() { return ["s"]; },
+          },
+          highlight: {
+              parseDOM: [
+                  { tag: "mark" },
+                  { style: "background-color", getAttrs: value => value && null },
+              ],
+              toDOM() { return ["mark"]; },
+          },
+          underline: {
+              parseDOM: [
+                  { tag: "u" },
+                  { style: "text-decoration=underline" },
+              ],
+              toDOM() { return ["u"]; },
           },
           link: {
               attrs: {
@@ -23342,14 +23381,16 @@
 
   class CustomMarkdownParser {
       constructor() {
-          const md = new MarkdownIt();
+          const md = new MarkdownIt("commonmark", { html: false });
 
-          md.block.ruler.before("html_block", "custom_tag", (state, startLine, endLine, silent) => {
+          md.block.ruler.before("paragraph", "custom_tag", (state, startLine, endLine, silent) => {
               const startPos = state.bMarks[startLine] + state.tShift[startLine];
               const maxPos = state.eMarks[startLine];
               const lineText = state.src.slice(startPos, maxPos);
 
-              const openTagMatch = lineText.match(/^<!--\s*(\w+)(?:\s+([^>]*))?\s*-->$/);
+              console.log("Checking line:", lineText);
+
+              const openTagMatch = lineText.match(/^\{\{\s*(\w+)(?:\s+([^}]*))?\s*\}\}$/);
               if (!openTagMatch) return false;
 
               const tagName = openTagMatch[1];
@@ -23365,7 +23406,7 @@
 
               for (; nextLine < endLine; nextLine++) {
                   const nextLineText = state.src.slice(state.bMarks[nextLine], state.eMarks[nextLine]);
-                  if (nextLineText.match(new RegExp(`^<!--\\s*/${tagName}\\s*-->$`))) {
+                  if (nextLineText.match(new RegExp(`\\{\\{\\s*/${tagName}\\s*\\}\\}$`))) {
                       foundEndTag = true;
                       contentEnd = state.bMarks[nextLine];
                       break;
@@ -23375,13 +23416,15 @@
               if (!foundEndTag) return false;
 
               const content = state.src.slice(contentStart, contentEnd);
-              const token = state.push("custom_tag", "", 0);
+              const token = state.push("html_block", "", 0);
               token.block = true;
-              token.attrs = [
-                  ["data-tag-name", tagName],
-                  ["data-tag-params", JSON.stringify(attrs)],
-                  ["data-source-text", `<!-- ${tagName} ${attrString} -->${content}<!-- /${tagName} -->`],
-              ];
+
+              token.attrs = {
+                  'data-tag-name': tagName,
+                  'data-tag-params': JSON.stringify(attrs),
+                  'data-source-text': `{{ ${tagName} ${attrString} }}${content}{{ /${tagName} }}`
+              };
+
               token.content = content;
               token.map = [startLine, nextLine + 1];
               state.line = nextLine + 1;
@@ -23389,13 +23432,18 @@
               return true;
           });
 
-          this.parser = new MarkdownParser(markdownSchema, md, {
+          md.renderer.rules.custom_tag_block = (tokens, idx) => {
+              const token = tokens[idx];
+              return `<div data-custom-tag data-tag-name="${token.attrs['data-tag-name']}" data-tag-params='${token.attrs['data-tag-params']}'>${token.content}</div>`;
+          };
+
+          const tokens = {
               custom_tag: {
-                  block: "customTag",
+                  block: "custom_tag",
                   getAttrs: tok => ({
                       name: tok.attrGet('data-tag-name') || '',
-                      type: tok.attrGet('data-tag-type') || '',
-                      params: JSON.parse(tok.attrGet('data-tag-params') || '{}')
+                      params: JSON.parse(tok.attrGet('data-tag-params') || '{}'),
+                      sourceText: tok.attrGet('data-source-text') || ''
                   })
               },
               blockquote: { block: "blockquote" },
@@ -23416,6 +23464,20 @@
                   })
               },
               hard_break: { node: "hard_break" },
+              html_block: {
+                  node: "html_comment",
+                  getAttrs: tok => ({
+                      content: tok.content,
+                      isInline: false
+                  })
+              },
+              html_inline: {
+                  node: "html_comment",
+                  getAttrs: tok => ({
+                      content: tok.content,
+                      isInline: true
+                  })
+              },
               em: { mark: "em" },
               strong: { mark: "strong" },
               link: {
@@ -23425,8 +23487,15 @@
                       title: tok.attrGet("title") || null
                   })
               },
-              code_inline: { mark: "code" }
-          });
+              code_inline: { mark: "code" },
+              s: { mark: "strike" },
+              del: { mark: "strike" },
+              strike: { mark: "strike" },
+              mark: { mark: "highlight" },
+              u: { mark: "underline" }
+          };
+
+          this.parser = new MarkdownParser(markdownSchema, md, tokens);
       }
 
       parse(text) {
@@ -23817,6 +23886,9 @@
 
           heading_spec: () => {
           },
+
+          html_comment: () => {
+          },
           
           text: (state, node) => {
               state.text(node.text);
@@ -24028,14 +24100,15 @@
           };
       }
 
-      static findNext($from) {
-          const currentIndex = $from.index();
-          const parent = $from.node($from.depth - 1);
+      static findNext($from, targetDepth = null) {
+          const depth = targetDepth !== null ? targetDepth : $from.depth - 1;
+          const currentIndex = $from.index(depth);
+          const parent = $from.node(depth);
 
           if (currentIndex >= parent.childCount - 1) return null;
 
           const nextNode = parent.child(currentIndex + 1);
-          let nextPos = $from.start($from.depth - 1);
+          let nextPos = $from.start(depth);
 
           for (let i = 0; i <= currentIndex; i++) {
               nextPos += parent.child(i).nodeSize;
@@ -24044,7 +24117,8 @@
           return {
               node: nextNode,
               pos: nextPos,
-              index: currentIndex + 1
+              index: currentIndex + 1,
+              depth: depth
           };
       }
 
@@ -24077,8 +24151,17 @@
                       const { $from, $to } = state.selection;
 
                       const currentNode = $from.parent;
-                      if (currentNode.type.name === "paragraph")
-                          return false;
+                      if (currentNode.type.name === "paragraph") {
+                          const prevText = currentNode.textContent.slice(0, $from.parentOffset);
+                          const nextText = currentNode.textContent.slice($from.parentOffset);
+
+                          let isHandled = false;
+                          if (/^(#{1,6})\s/.test(prevText) || /^(#{1,6})\s/.test(nextText)) {
+                              handleHeadingPattern$2(state, dispatch, $from, prevText, nextText);
+                              isHandled = true;
+                          }
+                          return isHandled;
+                      }
 
                       const { node: notationBlock, pos: notationBlockPos } = NodeSearch.getParent($from);
 
@@ -24110,23 +24193,33 @@
   }
 
   function handleHeadingEnter(event, state, dispatch, $from, $to, notationBlock, notationBlockPos) {
-      if ($from.parent.type.name !== "heading") return false;
-
       event.preventDefault();
 
       if ($from.pos === $to.pos) {
-          const headingText = $from.parent.textContent;
-          const beforeText = headingText.slice(0, $from.parentOffset);
-          const afterText = headingText.slice($from.parentOffset);
+          const headingNode = $from.parent;
+          const headingText = headingNode.textContent;
+          const prevText = headingText.slice(0, $from.parentOffset);
+          const nextText = headingText.slice($from.parentOffset);
 
-          const newParagraph = state.schema.nodes.paragraph.create(
-              null,
-              afterText ? state.schema.text(afterText) : null
-          );
+          const match = nextText.match(/^(#{1,6})\s(.*)$/);
+
+          let newNode;
+          if (match) {
+              const newHeading = state.schema.nodes.heading.create(
+                  { level: match[1].length },
+                  match[2] ? state.schema.text(match[2]) : null
+              );
+              newNode = NodeConverter.constructHeading(newHeading);
+          } else {
+              newNode = state.schema.nodes.paragraph.create(
+                  null,
+                  nextText ? state.schema.text(nextText) : null
+              );
+          }
 
           const updatedHeading = state.schema.nodes.heading.create(
-              { level: $from.parent.attrs.level },
-              beforeText ? state.schema.text(beforeText) : null
+              { level: headingNode.attrs.level },
+              prevText ? state.schema.text(prevText) : null
           );
 
           const headingBlock = NodeConverter.constructHeading(updatedHeading);
@@ -24139,10 +24232,10 @@
               headingBlock
           );
 
-          const paragraphPos = notationBlockPos + headingBlock.nodeSize;
-          tr = tr.insert(paragraphPos, newParagraph);
+          const newNodePos = notationBlockPos + headingBlock.nodeSize;
+          tr = tr.insert(newNodePos, newNode);
 
-          const cursorPos = paragraphPos + 1;
+          const cursorPos = newNodePos + 1;
           dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
           return true;
       }
@@ -24272,6 +24365,82 @@
           }
       }
       return false;
+  }
+
+  function handleHeadingPattern$2(state, dispatch, $from, prevText, nextText) {
+      const prevHeadingMatch = prevText.match(/^(#{1,6})\s(.*)$/);
+      const nextHeadingMatch = nextText.match(/^(#{1,6})\s(.*)$/);
+
+      let tr = state.tr;
+      if (prevHeadingMatch) {
+          const level = prevHeadingMatch[1].length;
+          const headingText = prevHeadingMatch[2];
+
+          const headingNode = state.schema.nodes.heading.create(
+              { level: level },
+              headingText ? state.schema.text(headingText) : null
+          );
+
+          const headingBlock = NodeConverter.constructHeading(headingNode);
+          const paragraphPos = $from.before(1);
+
+          tr.replaceWith(
+              paragraphPos,
+              paragraphPos + $from.parent.nodeSize,
+              headingBlock
+          );
+
+      } else {
+          const paragraphNode = state.schema.nodes.paragraph.create(
+              null,
+              prevText ? state.schema.text(prevText) : null
+          );
+
+          const paragraphPos = $from.before(1);
+
+          tr.replaceWith(
+              paragraphPos,
+              paragraphPos + $from.parent.nodeSize,
+              paragraphNode
+          );
+      }
+
+      if (nextHeadingMatch) {
+          const level = nextHeadingMatch[1].length;
+          const headingText = nextHeadingMatch[2];
+
+          const headingNode = state.schema.nodes.heading.create(
+              { level: level },
+              headingText ? state.schema.text(headingText) : null
+          );
+
+          const headingBlock = NodeConverter.constructHeading(headingNode);
+
+          const paragraphPos = $from.before(1);
+
+          tr.insert(
+              paragraphPos + prevText.length + 1,
+              headingBlock
+          );
+      } else {
+          const paragraphNode = state.schema.nodes.paragraph.create(
+              null,
+              nextText ? state.schema.text(nextText) : null
+          );
+
+          const paragraphPos = $from.before(1);
+
+          tr.insert(
+              paragraphPos + prevText.length,
+              paragraphNode
+          );
+      }
+
+      const cursorPos = $from.parentOffset + 2;
+
+      dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+
+      return true;
   }
 
   /**
@@ -25213,7 +25382,7 @@
                       return null;
                   }
 
-                  headingText = headingText.slice(2);
+                  headingText = headingText.slice(1);
 
                   const headingNode = markdownSchema.nodes.heading.create(
                       { level: level },
@@ -25294,26 +25463,34 @@
 
                       const isLineStart = ($from.parentOffset === 0 || currentNode.textContent === "");
 
-                      if (currentNodeType === "paragraph" && isLineStart) {
-                          return handleParagraphToHeadingMerge(event, state, dispatch, $from);
-                      } else if (currentNodeType === "paragraph" && currentNode.textContent.length !== 0) {
-                          const newText = currentNode.textContent.slice(0, $from.parentOffset - 1) + currentNode.textContent.slice($from.parentOffset);
-                          if (/^(#{1,6})\s/.test(newText))
-                              return handleHeadingPattern(event, state, dispatch, $from, newText);
+                      if (currentNodeType === "paragraph") {
+                          if (isLineStart) {
+                              return handleParagraphToHeadingMerge$1(event, state, dispatch, $from);
+                          } else if (currentNode.textContent.length !== 0) {
+                              const newText = currentNode.textContent.slice(0, $from.parentOffset - 1) + currentNode.textContent.slice($from.parentOffset);
+
+                              let isHandled = false;
+                              if (/^(#{1,6})\s/.test(newText)) {
+                                  handleHeadingPattern$1(state, dispatch, $from, newText);
+                                  isHandled = true;
+                              }
+                              return isHandled;
+                          }
+                          return false;
                       }
 
                       if (currentNodeType === "heading_spec") {
-                          return handleHeadingSpecBackspace(event, state, dispatch, $from);
+                          return handleHeadingSpecBackspace$1(event, state, dispatch, $from);
                       }
 
                       if (currentNodeType === "heading" && isLineStart) {
-                          return handleHeadingBackspace(event, state, dispatch, $from);
+                          return handleHeadingBackspace$1(event, state, dispatch, $from);
                       }
 
                       if (currentNodeType === "notation_block" && $from.index() === 1) {
                           switch (currentNodeType.attrs.type) {
                               case "heading":
-                                  return handleHeadingSpecBackspace(event, state, dispatch, $from);
+                                  return handleHeadingSpecBackspace$1(event, state, dispatch, $from);
                               default:
                                   return false;
                           }
@@ -25325,7 +25502,7 @@
       });
   }
 
-  function handleHeadingBackspace(event, state, dispatch, $from) {
+  function handleHeadingBackspace$1(event, state, dispatch, $from) {
       const { node: notationBlock, pos: notationBlockPos } = NodeSearch.getParent($from);
 
       event.preventDefault();
@@ -25337,46 +25514,25 @@
       const headingText = headingNode.textContent;
       const complexText = headingSpecText + headingText;
 
-      if (/^(#{1,6})\s/.test(headingText)) {
-          const match = complexText.match(/^(#{1,6})\s/);
-          if (match) {
-              const newHeading = state.schema.nodes.heading.create(
-                  { level: match[1].length },
-                  state.schema.text(complexText.slice(match[1].length + 1))
-              );
+      const match = complexText.match(/^(#{1,6})\s(.*)/);
+      if (match) {
+          const newHeading = state.schema.nodes.heading.create(
+              { level: match[1].length },
+              match[2] ? state.schema.text(match[2]) : null
+          );
 
-              const newHeadingBlock = NodeConverter.constructHeading(newHeading);
+          const newHeadingBlock = NodeConverter.constructHeading(newHeading);
 
-              const tr = state.tr.replaceWith(
-                  notationBlockPos,
-                  notationBlockPos + notationBlock.nodeSize,
-                  newHeadingBlock
-              );
+          const tr = state.tr.replaceWith(
+              notationBlockPos,
+              notationBlockPos + notationBlock.nodeSize,
+              newHeadingBlock
+          );
 
-              const cursorPos = notationBlockPos + headingSpecNode.nodeSize - 1;
-              dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
-              
-              return true;
+          const cursorPos = notationBlockPos + headingSpecNode.nodeSize - 1;
+          dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
 
-          } else {
-              const updatedHeading = state.schema.nodes.heading.create(
-                  { level: headingNode.attrs.level },
-                  headingText.slice(1) ? state.schema.text(headingText.slice(1)) : null
-              );
-
-              const newHeadingBlock = NodeConverter.constructHeading(updatedHeading);
-
-              const tr = state.tr.replaceWith(
-                  notationBlockPos,
-                  notationBlockPos + notationBlock.nodeSize,
-                  newHeadingBlock
-              );
-
-              const cursorPos = notationBlockPos + headingSpecText.length + 2;
-              dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
-
-              return true;
-          }
+          return true;
 
       } else {
           const combinedText = headingSpecText + headingText;
@@ -25398,31 +25554,35 @@
       }
   }
 
-  function handleHeadingSpecBackspace(event, state, dispatch, $from) {
-      let headingSpecText, notationBlock, notationBlockPos, headingNode, headingText;
-      let beforeText, afterText, deletedChar;
-
+  function handleHeadingSpecBackspace$1(event, state, dispatch, $from) {
       const { parent, parentOffset } = $from;
       if (parentOffset === 0) {
 
           event.preventDefault();
           const prevNode = NodeSearch.findPrevious($from, 0).node;
 
-          if (prevNode && prevNode.type.name === "paragraph") {
-              return handleHeadingToParagraphMerge(state, dispatch, $from, prevNode);
+          if (prevNode) {
+              if (prevNode && prevNode.type.name === "paragraph") {
+                  return handleHeadingToParagraphMerge$1(state, dispatch, $from, prevNode);
+              }
+              if (prevNode && prevNode.type.name === "notation_block" && prevNode.attrs.type === "heading") {
+                  return handleHeadingToHeadingMerge$1(state, dispatch, $from, prevNode);
+              }
           }
           return false;
       }
-      headingSpecText = parent.textContent;
-      const { node, pos } = NodeSearch.getParent($from);
-      notationBlock = node;
-      notationBlockPos = pos;
-      headingNode = notationBlock.child(1);
-      headingText = headingNode.textContent;
 
-      beforeText = headingSpecText.slice(0, parentOffset - 1);
-      afterText = headingSpecText.slice(parentOffset);
-      deletedChar = headingSpecText[parentOffset - 1];
+      const headingSpecNode = parent;
+      const headingSpecText = headingSpecNode.textContent;
+      const { node, pos } = NodeSearch.getParent($from);
+      const notationBlock = node;
+      const notationBlockPos = pos;
+      const headingNode = notationBlock.child(1);
+      const headingText = headingNode.textContent;
+
+      const beforeText = headingSpecText.slice(0, parentOffset - 1);
+      const afterText = headingSpecText.slice(parentOffset);
+      const deletedChar = headingSpecText[parentOffset - 1];
 
       event.preventDefault();
 
@@ -25444,8 +25604,8 @@
               const cursorPos = notationBlockPos + beforeText.length + 2;
               dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
               return true;
-          } else {
 
+          } else {
               const combinedText = beforeText + afterText + headingText;
               const newParagraph = state.schema.nodes.paragraph.create(
                   null,
@@ -25468,7 +25628,7 @@
           const newLevel = beforeText.length + afterText.length - 1;
 
           if (newLevel === 0) {
-              const combinedText = ' ' + afterText + headingText;
+              const combinedText = afterText + headingText;
               const newParagraph = state.schema.nodes.paragraph.create(
                   null,
                   state.schema.text(combinedText)
@@ -25507,10 +25667,87 @@
       return false;
   }
 
-  function handleHeadingToParagraphMerge(state, dispatch, $from, prevParagraph) {
-      const notationBlock = $from.node($from.depth - 1);
-      const notationBlockPos = $from.before($from.depth - 1);
-      const prevParagraphPos = $from.before(1) - prevParagraph.nodeSize;
+  function handleParagraphToHeadingMerge$1(event, state, dispatch, $from) {
+      const prevNode = NodeSearch.findPrevious($from, 0).node;
+
+      if (prevNode && prevNode.type.name === "notation_block" && prevNode.attrs.type === "heading") {
+          event.preventDefault();
+
+          const paragraphNode = $from.parent;
+
+          const notationBlock = prevNode;
+          const notationBlockPos = $from.before(1) - prevNode.nodeSize;
+          const paragraphPos = $from.before(1);
+
+          const headingNode = notationBlock.child(1);
+
+          const paragraphText = paragraphNode.textContent;
+          const headingText = headingNode.textContent;
+
+          const combinedText = headingText + paragraphText;
+
+          const newHeading = state.schema.nodes.heading.create(
+              { level: headingNode.attrs.level },
+              state.schema.text(combinedText)
+          );
+
+          const headingBlock = NodeConverter.constructHeading(newHeading);
+
+          const tr = state.tr.replaceWith(
+              notationBlockPos,
+              paragraphPos + paragraphNode.nodeSize,
+              headingBlock
+          );
+
+          const cursorPos = notationBlockPos + notationBlock.nodeSize - 2;
+          dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+          return true;
+      }
+
+      if (prevNode.type.name === "paragraph") {
+          event.preventDefault();
+
+          const prevParagraphNode = prevNode;
+          const prevParagraphNodePos = $from.before(1) - prevNode.nodeSize;
+          const prevParagraphText = prevParagraphNode.textContent;
+
+          const paragraphNode = $from.parent;
+          const paragraphPos = $from.before(1);
+
+          const paragraphText = paragraphNode.textContent;
+
+          const complexText = prevParagraphText + paragraphText;
+
+          const match = complexText.match(/^(#{1,6})\s/);
+
+          if (!match)
+              return false
+
+          const headingText = paragraphText.slice(1);
+
+          const newHeading = state.schema.nodes.heading.create(
+              { level: match[1].length },
+              state.schema.text(headingText)
+          );
+
+          const headingBlock = NodeConverter.constructHeading(newHeading);
+
+          const tr = state.tr.replaceWith(
+              prevParagraphNodePos,
+              paragraphPos + paragraphNode.nodeSize,
+              headingBlock
+          );
+
+          const cursorPos = prevParagraphNodePos + prevParagraphNode.nodeSize;
+          dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+          return true;
+      }
+      return false;
+  }
+
+  function handleHeadingToParagraphMerge$1(state, dispatch, $from, prevParagraph) {
+      const {node: notationBlock, pos: notationBlockPos} = NodeSearch.getParent($from);
+      const prevParagraphPos = NodeSearch.findPrevious($from, 0).pos;
 
       const headingSpecNode = notationBlock.child(0);
       const headingNode = notationBlock.child(1);
@@ -25540,7 +25777,7 @@
               dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
 
           } else {
-              const newParagraphText = prevParagraph.textContent + headingSpecText + headingText;
+              const newParagraphText = prevParagraphText + headingSpecText + headingText;
               const newParagraph = state.schema.nodes.paragraph.create(
                   null,
                   state.schema.text(newParagraphText)
@@ -25564,90 +25801,42 @@
       return true;
   }
 
-  function handleParagraphToHeadingMerge(event, state, dispatch, $from) {
-      const currentIndex = $from.index(0);
+  function handleHeadingToHeadingMerge$1(state, dispatch, $from, prevNotationBlock) {
+      const notationBlock = NodeSearch.getParent($from).node;
+      const prevNotationBlockPos = NodeSearch.findPrevious($from, 0).pos;
 
-      if (currentIndex > 0) {
-          const doc = $from.node(0);
-          const prevNode = doc.child(currentIndex - 1);
+      const headingSpecNode = notationBlock.child(0);
+      const headingNode = notationBlock.child(1);
 
-          if (prevNode && prevNode.type.name === "notation_block") {
-              event.preventDefault();
+      const headingSpecText = headingSpecNode.textContent;
+      const headingText = headingNode.textContent;
 
-              const paragraphNode = $from.parent;
+      const prevHeadingNode = prevNotationBlock.child(1);
 
-              const notationBlock = prevNode;
-              const notationBlockPos = $from.before(1) - prevNode.nodeSize;
-              const paragraphPos = $from.before(1);
+      const prevHeadingText = prevHeadingNode.textContent;
 
-              const headingNode = notationBlock.child(1);
+      let tr = state.tr;
 
-              const paragraphText = paragraphNode.textContent;
-              const headingText = headingNode.textContent;
+      const newHeading = state.schema.nodes.heading.create(
+          { level: prevHeadingNode.attrs.level },
+          state.schema.text(prevHeadingText + headingSpecText + headingText)
+      );
 
-              const combinedText = headingText + paragraphText;
+      const newHeadingBlock = NodeConverter.constructHeading(newHeading);
 
-              const newHeading = state.schema.nodes.heading.create(
-                  { level: headingNode.attrs.level },
-                  state.schema.text(combinedText)
-              );
+      tr = tr.replaceWith(
+          prevNotationBlockPos,
+          prevNotationBlockPos + prevNotationBlock.nodeSize + notationBlock.nodeSize,
+          newHeadingBlock
+      );
 
-              const headingBlock = NodeConverter.constructHeading(newHeading);
-
-              const tr = state.tr.replaceWith(
-                  notationBlockPos,
-                  paragraphPos + paragraphNode.nodeSize,
-                  headingBlock
-              );
-
-              const cursorPos = notationBlockPos + notationBlock.nodeSize - 2;
-              dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
-              return true;
-          }
-
-          if (prevNode.type.name === "paragraph") {
-              event.preventDefault();
-
-              const prevParagraphNode = prevNode;
-              const prevParagraphNodePos = $from.before(1) - prevNode.nodeSize;
-              const prevParagraphText = prevParagraphNode.textContent;
-
-              const paragraphNode = $from.parent;
-              const paragraphPos = $from.before(1);
-
-              const paragraphText = paragraphNode.textContent;
-
-              const complexText = prevParagraphText + paragraphText;
-
-              const match = complexText.match(/^(#{1,6})\s/);
-
-              if (!match)
-                  return false
-
-              const headingText = paragraphText.slice(1);
-
-              const newHeading = state.schema.nodes.heading.create(
-                  { level: match[1].length },
-                  state.schema.text(headingText)
-              );
-
-              const headingBlock = NodeConverter.constructHeading(newHeading);
-
-              const tr = state.tr.replaceWith(
-                  prevParagraphNodePos,
-                  paragraphPos + paragraphNode.nodeSize,
-                  headingBlock
-              );
-
-              const cursorPos = prevParagraphNodePos + prevParagraphNode.nodeSize;
-              dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
-              return true;
-          }
-      }
-      return false;
+      const cursorPos = prevNotationBlockPos + prevNotationBlock.nodeSize - 2;
+      dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+      
+      return true;
   }
 
-  function handleHeadingPattern(event, state, dispatch, $from, paragraphText) {
+  function handleHeadingPattern$1(state, dispatch, $from, paragraphText) {
       const headingMatch = paragraphText.match(/^(#{1,6})\s(.*)$/);
 
       if (headingMatch) {
@@ -25668,7 +25857,390 @@
               headingBlock
           );
 
-          const cursorPos = $from.parentOffset;
+          const cursorPos = $from.parentOffset + 1;
+
+          dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+          return true;
+      }
+
+      return false;
+  }
+
+  function deletePlugin() {
+      return new Plugin({
+          props: {
+              handleKeyDown(view, event) {
+                  if (event.key === "Delete") {
+                      const { state, dispatch } = view;
+                      const { $from, empty } = state.selection;
+
+                      if (!empty) return false;
+
+                      let currentNode = NodeSearch.getCurrent($from).node;
+                      const currentNodeType = currentNode.type.name;
+
+                      const isLineEnd = ($from.parentOffset === $from.parent.textContent.length);
+
+                      if (currentNodeType === "paragraph") {
+                          if (isLineEnd) {
+                              return handleParagraphToHeadingMerge(event, state, dispatch, $from);
+                          } else if (currentNode.textContent.length !== 0) {
+                              const newText = currentNode.textContent.slice(0, $from.parentOffset) + currentNode.textContent.slice($from.parentOffset + 1);
+
+                              let isHandled = false;
+                              if (/^(#{1,6})\s/.test(newText)) {
+                                  handleHeadingPattern(state, dispatch, $from, newText);
+                                  isHandled = true;
+                              }
+                              return isHandled;
+                          }
+                          return false;
+                      }
+
+                      if (currentNodeType === "heading_spec") {
+                          return handleHeadingSpecBackspace(event, state, dispatch, $from);
+                      }
+
+                      if (currentNodeType === "heading" && isLineEnd) {
+                          return handleHeadingBackspace(event, state, dispatch, $from);
+                      }
+
+                      if (currentNodeType === "notation_block" && $from.index() === 1) {
+                          switch (currentNodeType.attrs.type) {
+                              case "heading":
+                                  return handleHeadingSpecBackspace(event, state, dispatch, $from);
+                              default:
+                                  return false;
+                          }
+                      }
+                  }
+                  return false;
+              }
+          }
+      });
+  }
+
+  function handleHeadingBackspace(event, state, dispatch, $from) {
+      const { parentOffset } = $from;
+      const { node: notationBlock } = NodeSearch.getParent($from);
+
+      event.preventDefault();
+
+      const headingNode = notationBlock.child(1);
+
+      const headingText = headingNode.textContent;
+
+      if (parentOffset === headingText.length) {
+
+          event.preventDefault();
+          const nextNode = NodeSearch.findNext($from, 0).node;
+
+          if (nextNode) {
+              if (nextNode.type.name === "paragraph") {
+                  return handleHeadingToParagraphMerge(state, dispatch, $from, nextNode);
+              }
+
+              if (nextNode.type.name === "notation_block" && nextNode.attrs.type === "heading") {
+                  return handleHeadingToHeadingMerge(state, dispatch, $from, nextNode);
+              }
+          }
+
+
+          return false;
+      }
+      return true;
+  }
+
+  function handleHeadingSpecBackspace(event, state, dispatch, $from) {
+      const { parent, parentOffset } = $from;
+
+      const headingSpecNode = parent;
+      const headingSpecText = headingSpecNode.textContent;
+      const { node, pos } = NodeSearch.getParent($from);
+      const notationBlock = node;
+      const notationBlockPos = pos;
+      const headingNode = notationBlock.child(1);
+      const headingText = headingNode.textContent;
+
+      if (parentOffset === headingSpecText.length) {
+          const newHeading = state.schema.nodes.heading.create(
+              { level: headingNode.attrs.level },
+              headingText.slice(1) ? state.schema.text(headingText.slice(1)) : null
+          );
+
+          const newHeadingBlock = NodeConverter.constructHeading(newHeading);
+
+          const tr = state.tr.replaceWith(
+              notationBlockPos,
+              notationBlockPos + notationBlock.nodeSize,
+              newHeadingBlock
+          );
+
+          const cursorPos = notationBlockPos + headingSpecNode.nodeSize;
+          dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+
+          return true;
+      }
+
+      const beforeText = headingSpecText.slice(0, parentOffset);
+      const afterText = headingSpecText.slice(parentOffset + 1);
+      const deletedChar = headingSpecText[parentOffset];
+
+      event.preventDefault();
+
+      if (deletedChar === ' ') {
+          if (headingText.length > 0 && headingText[0] === ' ') {
+              const updatedHeading = state.schema.nodes.heading.create(
+                  { level: headingNode.attrs.level },
+                  headingText.slice(1) ? state.schema.text(headingText.slice(1)) : null
+              );
+
+              const newHeadingBlock = NodeConverter.constructHeading(updatedHeading);
+
+              const tr = state.tr.replaceWith(
+                  notationBlockPos,
+                  notationBlockPos + notationBlock.nodeSize,
+                  newHeadingBlock
+              );
+
+              const cursorPos = notationBlockPos + beforeText.length + 2;
+              dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+              return true;
+
+          } else {
+              const combinedText = beforeText + afterText + headingText;
+              const newParagraph = state.schema.nodes.paragraph.create(
+                  null,
+                  state.schema.text(combinedText)
+              );
+
+              const tr = state.tr.replaceWith(
+                  notationBlockPos,
+                  notationBlockPos + notationBlock.nodeSize,
+                  newParagraph
+              );
+
+              const cursorPos = notationBlockPos + beforeText.length + 1;
+              dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+              return true;
+          }
+      }
+
+      if (deletedChar === '#') {
+          const newLevel = beforeText.length + afterText.length - 1;
+
+          if (newLevel === 0) {
+              const combinedText = afterText + headingText;
+              const newParagraph = state.schema.nodes.paragraph.create(
+                  null,
+                  state.schema.text(combinedText)
+              );
+
+              const tr = state.tr.replaceWith(
+                  notationBlockPos,
+                  notationBlockPos + notationBlock.nodeSize,
+                  newParagraph
+              );
+
+              const cursorPos = notationBlockPos + 1;
+              dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+              return true;
+
+          } else {
+              const updatedHeading = state.schema.nodes.heading.create(
+                  { level: newLevel },
+                  headingText ? state.schema.text(headingText) : null
+              );
+
+              const newHeadingBlock = NodeConverter.constructHeading(updatedHeading);
+
+              const tr = state.tr.replaceWith(
+                  notationBlockPos,
+                  notationBlockPos + notationBlock.nodeSize,
+                  newHeadingBlock
+              );
+
+              const cursorPos = notationBlockPos + 2 + beforeText.length;
+              dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+              return true;
+          }
+      }
+
+      return false;
+  }
+
+  function handleParagraphToHeadingMerge(event, state, dispatch, $from) {
+      const currentIndex = $from.index(0);
+
+      const doc = $from.node(0);
+      const nextNode = doc.child(currentIndex + 1);
+
+      if (nextNode && nextNode.type.name === "notation_block" && nextNode.attrs.type === "heading") {
+          event.preventDefault();
+
+          const paragraphNode = $from.parent;
+
+          const notationBlock = nextNode;
+          const paragraphPos = $from.before(1);
+
+          const headingSpecNode = notationBlock.child(0);
+          const headingNode = notationBlock.child(1);
+
+          const paragraphText = paragraphNode.textContent;
+          const headingSpecText = headingSpecNode.textContent;
+          const headingText = headingNode.textContent;
+
+          const combinedText = paragraphText + headingSpecText + headingText;
+
+          const newParagraph = state.schema.nodes.paragraph.create(
+              null,
+              state.schema.text(combinedText)
+          );
+
+          const tr = state.tr.replaceWith(
+              paragraphPos,
+              paragraphPos + paragraphNode.nodeSize + notationBlock.nodeSize,
+              newParagraph
+          );
+
+          const cursorPos = paragraphPos + paragraphNode.nodeSize - 1;
+          dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+          return true;
+      }
+
+      if (nextNode.type.name === "paragraph") {
+          event.preventDefault();
+
+          const paragraphNode = $from.parent;
+          const paragraphNodePos = $from.before(1);
+          const paragraphText = paragraphNode.textContent;
+
+          const nextParagraphNode = nextNode;
+          const nextParagraphText = nextParagraphNode.textContent;
+
+          const complexText = paragraphText + nextParagraphText;
+
+          const match = complexText.match(/^(#{1,6})\s(.*)/);
+
+          if (!match)
+              return false
+
+          const newHeading = state.schema.nodes.heading.create(
+              { level: match[1].length },
+              match[2] ? state.schema.text(match[2]) : null
+          );
+
+          const headingBlock = NodeConverter.constructHeading(newHeading);
+
+          const tr = state.tr.replaceWith(
+              paragraphNodePos,
+              paragraphNodePos + paragraphNode.nodeSize + nextParagraphNode.nodeSize,
+              headingBlock
+          );
+
+          const cursorPos = paragraphNodePos + paragraphNode.nodeSize;
+          dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+          return true;
+      }
+  }
+
+  function handleHeadingToParagraphMerge(state, dispatch, $from, nextParagraph) {
+      const { node: notationBlock, pos: notationBlockPos } = NodeSearch.getParent($from);
+      const nextParagraphPos = NodeSearch.findNext($from, 0).pos;
+
+      notationBlock.child(0);
+      const headingNode = notationBlock.child(1);
+
+      const headingText = headingNode.textContent;
+      const nextParagraphText = nextParagraph.textContent;
+
+      let tr = state.tr;
+
+      if (nextParagraphText !== "") {
+          const newHeadingText = headingText + nextParagraphText;
+          const newHeading = state.schema.nodes.heading.create(
+              { level: headingNode.attrs.level },
+              state.schema.text(newHeadingText)
+          );
+
+          const newHeadingBlock = NodeConverter.constructHeading(newHeading);
+
+          tr = tr.replaceWith(
+              notationBlockPos,
+              notationBlockPos + notationBlock.nodeSize,
+              newHeadingBlock
+          );
+
+          tr = tr.delete(nextParagraphPos, nextParagraphPos + nextParagraph.nodeSize);
+
+          const cursorPos = nextParagraphPos - 2;
+          dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+      } else {
+          tr = tr.delete(nextParagraphPos, nextParagraphPos + nextParagraph.nodeSize);
+
+          const cursorPos = nextParagraphPos - 2;
+          dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+      }
+      return true;
+  }
+
+  function handleHeadingToHeadingMerge(state, dispatch, $from, nextNotationBlock) {
+      const { node: notationBlock, pos: notationBlockPos } = NodeSearch.getParent($from);
+
+      const headingNode = notationBlock.child(1);
+
+      const headingText = headingNode.textContent;
+
+      const nextHeadingSpecNode = nextNotationBlock.child(0);
+      const nextHeadingNode = nextNotationBlock.child(1);
+
+      const nextHeadingSpecText = nextHeadingSpecNode.textContent;
+      const nextHeadingText = nextHeadingNode.textContent;
+
+      let tr = state.tr;
+
+      const newHeading = state.schema.nodes.heading.create(
+          { level: headingNode.attrs.level },
+          state.schema.text(headingText + nextHeadingSpecText + nextHeadingText)
+      );
+
+      const newHeadingBlock = NodeConverter.constructHeading(newHeading);
+
+      tr = tr.replaceWith(
+          notationBlockPos,
+          notationBlockPos + notationBlock.nodeSize + nextNotationBlock.nodeSize,
+          newHeadingBlock
+      );
+
+      const cursorPos = notationBlockPos + notationBlock.nodeSize - 2;
+      dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+
+      return true;
+  }
+
+
+  function handleHeadingPattern(state, dispatch, $from, paragraphText) {
+      const headingMatch = paragraphText.match(/^(#{1,6})\s(.*)$/);
+
+      if (headingMatch) {
+          const level = headingMatch[1].length;
+          const headingText = headingMatch[2];
+
+          const headingNode = state.schema.nodes.heading.create(
+              { level: level },
+              headingText ? state.schema.text(headingText) : null
+          );
+
+          const headingBlock = NodeConverter.constructHeading(headingNode);
+          const paragraphPos = $from.before(1);
+
+          let tr = state.tr.replaceWith(
+              paragraphPos,
+              paragraphPos + $from.parent.nodeSize,
+              headingBlock
+          );
+
+          const cursorPos = $from.parentOffset + 2;
 
           dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
           return true;
@@ -25815,6 +26387,83 @@
       });
   }
 
+  function hideSpecPlugin() {
+      const pluginKey = new PluginKey("hideSpecPlugin");
+
+      return new Plugin({
+          key: pluginKey,
+          state: {
+              init(_, { doc }) {
+                  return createDecorations(doc, false);
+              },
+              apply(tr, oldDecoSet, oldState, newState) {
+                  const notationBlockFocused = isNotationBlockFocused(newState);
+
+                  if (
+                      tr.docChanged ||
+                      tr.selectionSet ||
+                      oldState.selection.$from.pos !== newState.selection.$from.pos ||
+                      oldState.selection.$to.pos !== newState.selection.$to.pos
+                  ) {
+                      return createDecorations(newState.doc, notationBlockFocused);
+                  }
+                  return oldDecoSet;
+              }
+          },
+          props: {
+              decorations(state) {
+                  return pluginKey.getState(state);
+              },
+              handleKeyDown() {
+                  return false;
+              },
+              handleTextInput() {
+                  return false;
+              }
+          }
+      });
+  }
+
+  function createDecorations(doc, notationBlockFocused = false) {
+      const decorations = [];
+
+      doc.descendants((node, pos) => {
+          if (node.type.name === "notation_block") {
+              const hasHeadingSpec = node.content.content.some(child => child.type.name === "heading_spec");
+              if (hasHeadingSpec) {
+                  const specNode = node.content.content.find(child => child.type.name === "heading_spec");
+                  const specPos = pos + node.content.content.indexOf(specNode) + 1;
+
+                  decorations.push(
+                      Decoration.node(specPos, specPos + specNode.nodeSize, {
+                          class: notationBlockFocused ? "" : "spec-hidden"
+                      })
+                  );
+              }
+          }
+      });
+
+      return DecorationSet.create(doc, decorations);
+  }
+
+  function isNotationBlockFocused(state) {
+      const { $from } = state.selection;
+
+      if ($from.parent.type.name === "notation_block") {
+          return true;
+      }
+
+      const resolved = state.doc.resolve($from.pos);
+      for (let i = 0; i < resolved.depth; i++) {
+          const node = resolved.node(i);
+          if (node.type.name === "notation_block") {
+              return true;
+          }
+      }
+
+      return false;
+  }
+
   class Editor {
       constructor(target, content = '') {
           if (!target) throw new Error('Target element required');
@@ -25886,6 +26535,7 @@
               history(),
               lineBreakPlugin(),
               backspacePlugin(),
+              deletePlugin(),
               keymapPlugin(this),
               dropCursor(),
               gapCursor(),
@@ -25894,7 +26544,7 @@
               headingInputPlugin(),
               disableInsertPlugin(),
               //patternMatchPlugin(),
-              //hideSpecPlugin(),
+              hideSpecPlugin(),
           ];
       }
 
@@ -26409,13 +27059,17 @@
       if (container) {
           window.editor = new Editor(container, `
 # Heading 1
+
+Marks: *em* **strong** ~~strike~~ __underline__ ==highlight== \`code\`
+
 \`\`\`javascript
 console.log("Hello, world!");
 \`\`\`
 Paragraph text
-<!-- note type="info" -->
+
+{{ note type="info" }}
 Custom tag content
-<!-- /note -->
+{{ /note }}
 `
           );
       }

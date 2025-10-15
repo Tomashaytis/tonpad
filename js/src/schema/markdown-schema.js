@@ -151,7 +151,23 @@ export const markdownSchema = new Schema({
             parseDOM: [{ tag: "br" }],
             toDOM() { return ["br"]; },
         },
-        customTag: {
+        html_comment: {
+            group: "block",
+            content: "text*",
+            marks: "",
+            parseDOM: [{ tag: "div.html-comment" }],
+            toDOM(node) {
+                return ["div", {
+                    class: node.attrs.isInline ? "html-comment-inline" : "html-comment-block",
+                    "data-inline": node.attrs.isInline
+                }, `<!-- ${node.attrs.content} -->`];
+            },
+            attrs: {
+                content: { default: "" },
+                isInline: { default: false }
+            }
+        },
+        custom_tag: {
             content: "block+",
             group: "block",
             attrs: {
@@ -214,6 +230,29 @@ export const markdownSchema = new Schema({
                 },
             ],
             toDOM() { return ["strong"]; },
+        },
+        strike: {
+            parseDOM: [
+                { tag: "s" },
+                { tag: "strike" },
+                { tag: "del" },
+                { style: "text-decoration=line-through" },
+            ],
+            toDOM() { return ["s"]; },
+        },
+        highlight: {
+            parseDOM: [
+                { tag: "mark" },
+                { style: "background-color", getAttrs: value => value && null },
+            ],
+            toDOM() { return ["mark"]; },
+        },
+        underline: {
+            parseDOM: [
+                { tag: "u" },
+                { style: "text-decoration=underline" },
+            ],
+            toDOM() { return ["u"]; },
         },
         link: {
             attrs: {

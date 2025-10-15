@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+.qodo
+
+### NPM ###
+js/dist
+js/node_modules

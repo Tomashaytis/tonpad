@@ -45,7 +45,7 @@ export function inputRulesPlugin() {
                     return null;
                 }
 
-                headingText = headingText.slice(2);
+                headingText = headingText.slice(1);
 
                 const headingNode = markdownSchema.nodes.heading.create(
                     { level: level },

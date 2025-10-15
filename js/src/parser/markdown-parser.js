@@ -4,14 +4,16 @@ import { markdownSchema } from "../schema/markdown-schema.js";
 
 export class CustomMarkdownParser {
     constructor() {
-        const md = new MarkdownIt();
+        const md = new MarkdownIt("commonmark", { html: false });
 
-        md.block.ruler.before("html_block", "custom_tag", (state, startLine, endLine, silent) => {
+        md.block.ruler.before("paragraph", "custom_tag", (state, startLine, endLine, silent) => {
             const startPos = state.bMarks[startLine] + state.tShift[startLine];
             const maxPos = state.eMarks[startLine];
             const lineText = state.src.slice(startPos, maxPos);
 
-            const openTagMatch = lineText.match(/^<!--\s*(\w+)(?:\s+([^>]*))?\s*-->$/);
+            console.log("Checking line:", lineText);
+
+            const openTagMatch = lineText.match(/^\{\{\s*(\w+)(?:\s+([^}]*))?\s*\}\}$/);
             if (!openTagMatch) return false;
 
             const tagName = openTagMatch[1];
@@ -27,7 +29,7 @@ export class CustomMarkdownParser {
 
             for (; nextLine < endLine; nextLine++) {
                 const nextLineText = state.src.slice(state.bMarks[nextLine], state.eMarks[nextLine]);
-                if (nextLineText.match(new RegExp(`^<!--\\s*/${tagName}\\s*-->$`))) {
+                if (nextLineText.match(new RegExp(`\\{\\{\\s*/${tagName}\\s*\\}\\}$`))) {
                     foundEndTag = true;
                     contentEnd = state.bMarks[nextLine];
                     break;
@@ -37,13 +39,15 @@ export class CustomMarkdownParser {
             if (!foundEndTag) return false;
 
             const content = state.src.slice(contentStart, contentEnd);
-            const token = state.push("custom_tag", "", 0);
+            const token = state.push("html_block", "", 0);
             token.block = true;
-            token.attrs = [
-                ["data-tag-name", tagName],
-                ["data-tag-params", JSON.stringify(attrs)],
-                ["data-source-text", `<!-- ${tagName} ${attrString} -->${content}<!-- /${tagName} -->`],
-            ];
+
+            token.attrs = {
+                'data-tag-name': tagName,
+                'data-tag-params': JSON.stringify(attrs),
+                'data-source-text': `{{ ${tagName} ${attrString} }}${content}{{ /${tagName} }}`
+            };
+
             token.content = content;
             token.map = [startLine, nextLine + 1];
             state.line = nextLine + 1;
@@ -51,13 +55,18 @@ export class CustomMarkdownParser {
             return true;
         });
 
-        this.parser = new MarkdownParser(markdownSchema, md, {
+        md.renderer.rules.custom_tag_block = (tokens, idx) => {
+            const token = tokens[idx];
+            return `<div data-custom-tag data-tag-name="${token.attrs['data-tag-name']}" data-tag-params='${token.attrs['data-tag-params']}'>${token.content}</div>`;
+        };
+
+        const tokens = {
             custom_tag: {
-                block: "customTag",
+                block: "custom_tag",
                 getAttrs: tok => ({
                     name: tok.attrGet('data-tag-name') || '',
-                    type: tok.attrGet('data-tag-type') || '',
-                    params: JSON.parse(tok.attrGet('data-tag-params') || '{}')
+                    params: JSON.parse(tok.attrGet('data-tag-params') || '{}'),
+                    sourceText: tok.attrGet('data-source-text') || ''
                 })
             },
             blockquote: { block: "blockquote" },
@@ -78,6 +87,20 @@ export class CustomMarkdownParser {
                 })
             },
             hard_break: { node: "hard_break" },
+            html_block: {
+                node: "html_comment",
+                getAttrs: tok => ({
+                    content: tok.content,
+                    isInline: false
+                })
+            },
+            html_inline: {
+                node: "html_comment",
+                getAttrs: tok => ({
+                    content: tok.content,
+                    isInline: true
+                })
+            },
             em: { mark: "em" },
             strong: { mark: "strong" },
             link: {
@@ -87,8 +110,15 @@ export class CustomMarkdownParser {
                     title: tok.attrGet("title") || null
                 })
             },
-            code_inline: { mark: "code" }
-        });
+            code_inline: { mark: "code" },
+            s: { mark: "strike" },
+            del: { mark: "strike" },
+            strike: { mark: "strike" },
+            mark: { mark: "highlight" },
+            u: { mark: "underline" }
+        };
+
+        this.parser = new MarkdownParser(markdownSchema, md, tokens);
     }
 
     parse(text) {

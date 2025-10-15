@@ -68,6 +68,9 @@ export const markdownSerializer = new MarkdownSerializer(
 
         heading_spec: () => {
         },
+
+        html_comment: () => {
+        },
         
         text: (state, node) => {
             state.text(node.text);

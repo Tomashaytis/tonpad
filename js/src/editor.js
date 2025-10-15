@@ -12,6 +12,7 @@ import { lineBreakPlugin } from "./plugins/line-break.js";
 import { keymapPlugin } from "./plugins/keymap.js";
 import { inputRulesPlugin } from "./plugins/input-rules.js";
 import { backspacePlugin } from "./plugins/backspace.js";
+import { deletePlugin } from "./plugins/delete.js";
 import { headingInputPlugin } from "./plugins/heading-input.js"
 import { patternMatchPlugin } from "./plugins/pattern-matching.js"
 import { disableInsertPlugin } from "./plugins/disable-insert.js"
@@ -88,6 +89,7 @@ export class Editor {
             history(),
             lineBreakPlugin(),
             backspacePlugin(),
+            deletePlugin(),
             keymapPlugin(this),
             dropCursor(),
             gapCursor(),
@@ -96,7 +98,7 @@ export class Editor {
             headingInputPlugin(),
             disableInsertPlugin(),
             //patternMatchPlugin(),
-            //hideSpecPlugin(),
+            hideSpecPlugin(),
         ];
     }
 
