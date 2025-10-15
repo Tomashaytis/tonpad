@@ -1,11 +1,13 @@
-package org.example.tonpad.core.service.impl;
+package org.example.tonpad.core.js.service.impl;
 
 import javafx.application.Platform;
 import javafx.scene.web.WebView;
 import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.exceptions.ExtractJsFunctionNameException;
 import org.example.tonpad.core.exceptions.IllegalJsArgumentException;
-import org.example.tonpad.core.service.JsExecutionService;
+import org.example.tonpad.core.js.funtcion.JsFunctionFile;
+import org.example.tonpad.core.js.service.JsExecutionService;
+import org.example.tonpad.core.js.service.JsFilesService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,35 +20,34 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JsExecutionServiceImpl implements JsExecutionService {
 
-    private final JsFunctionProviderService jsFunctionProviderService;
-
-    @Override
-    public CompletableFuture<Integer> getCaretPosition(WebView webView) {
-        return executeJs(webView, jsFunctionProviderService.getGetCaretPosition());
-    }
-
-    @Override
-    public void insertTextAtPosition(WebView webView, String text, int position) {
-        executeJs(webView, jsFunctionProviderService.getInsertTextAtPosition(), text, position);
-    }
-
-    private <T> CompletableFuture<T> executeJs(WebView webView, String jsFunctionBody, Object... params) {
-        String wrapped = """
+    private static final String JS_FUNCTION_EXTENDED_FORMAT_STRING = """
             (function(){
             try {
                 %s
+                return %s(%s);
             } catch (e) {
                 console.error("JS ERR:", e);
                 return "JS_ERROR:" + (e && e.message ? e.message : e);
             }
             })();
-            """.formatted(generateFullJsCode(jsFunctionBody, List.of(params)));
+            """;
+
+    private final JsFilesService jsFilesService;
+
+    @Override
+    public <T> CompletableFuture<T> executeJs(WebView webView, JsFunctionFile<T> jsFunctionFile) {
+        String jsFunctionBody = jsFilesService.readFile(jsFunctionFile.getFileName());
+        String jsFunctionExtended = JS_FUNCTION_EXTENDED_FORMAT_STRING.formatted(
+                jsFunctionBody,
+                extractFunctionName(jsFunctionBody),
+                generateParamsString(jsFunctionFile.getParams())
+        );
 
         CompletableFuture<T> future = new CompletableFuture<>();
         Platform.runLater(() -> {
             try {
                 @SuppressWarnings("unchecked")
-                T result = (T) webView.getEngine().executeScript(wrapped);
+                T result = (T) webView.getEngine().executeScript(jsFunctionExtended);
                 future.complete(result);
             } catch (Exception e) {
                 future.completeExceptionally(e);
@@ -54,26 +55,6 @@ public class JsExecutionServiceImpl implements JsExecutionService {
         });
 
         return future;
-    }
-
-    private String generateFullJsCode(String jsFunctionBody, List<Object> params) {
-        String functionName = extractFunctionName(jsFunctionBody);
-
-        String paramsString = params.stream()
-                .map(param -> {
-                    if (param instanceof String) {
-                        return "'" + escapeForJsString((String) param) + "'";
-                    } else if (param instanceof Number || param instanceof Boolean) {
-                        return param.toString();
-                    } else {
-                        throw new IllegalJsArgumentException("неподдерживаемый тип параметра: " + param.getClass());
-                    }
-                })
-                .collect(Collectors.joining(", "));
-
-        return jsFunctionBody +
-                "\n\n" +
-                "return " + functionName + "(" + paramsString + ");";
     }
 
     private String extractFunctionName(String jsFunctionBody) {
@@ -84,6 +65,20 @@ public class JsExecutionServiceImpl implements JsExecutionService {
         }
 
         throw new ExtractJsFunctionNameException("не удалось получить название функции: " + jsFunctionBody);
+    }
+
+    private String generateParamsString(List<Object> params) {
+        return params.stream()
+                .map(param -> {
+                    if (param instanceof String) {
+                        return "'" + escapeForJsString((String) param) + "'";
+                    } else if (param instanceof Number || param instanceof Boolean) {
+                        return param.toString();
+                    } else {
+                        throw new IllegalJsArgumentException("неподдерживаемый тип параметра: " + param.getClass());
+                    }
+                })
+                .collect(Collectors.joining(", "));
     }
 
     private String escapeForJsString(String input) {
