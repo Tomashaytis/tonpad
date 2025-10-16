@@ -156,7 +156,6 @@ public class MainController extends AbstractController {
 
     private void showSearchInFileTreeOverlay()
     {
-        System.out.println("ctrlshiftf");
         if (!searchInTextPane.isVisible()) {
             searchInTextPane.setVisible(true);
         }
