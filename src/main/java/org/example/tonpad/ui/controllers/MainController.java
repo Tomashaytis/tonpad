@@ -87,6 +87,8 @@ public class MainController extends AbstractController {
 
     private final FileTreeController fileTreeController;
 
+    private final SearchInFileTreeController searchInFileTreeController;
+
     private final VaultPath vaultPath;
 
     public void init(Stage stage) {
@@ -105,6 +107,9 @@ public class MainController extends AbstractController {
 
         searchInTextController.setTabPane(tabPane);
         searchInTextController.init(searchInTextPane);
+
+        searchInFileTreeController.setTabPane(tabPane);
+        searchInFileTreeController.init(searchInTextPane);
     }
 
     private void setupEventHandlers() {
@@ -124,6 +129,13 @@ public class MainController extends AbstractController {
                 this::showSearchOverlay,
                 this::hideSearchOverlay
         );
+
+        setSearchShortCut(
+                new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN),
+                new KeyCodeCombination(KeyCode.ESCAPE),
+                this::showSearchInFileTreeOverlay,
+                this::hideSearchInFileTreeOverlay
+        );
     }
 
     private void showSearchOverlay()
@@ -131,12 +143,40 @@ public class MainController extends AbstractController {
         if (!searchInTextPane.isVisible()) {
             searchInTextPane.setVisible(true);
         }
-        searchInTextController.showSearchBar();
+        searchInTextController.activateSearchBar();
+        searchInFileTreeController.hideSearchBar();
     }
 
     private void hideSearchOverlay() {
         if (searchInTextPane.isVisible()) {
             searchInTextController.hideSearchBar();
+            searchInTextPane.setVisible(false);
+        }
+    }
+
+    private void showSearchInFileTreeOverlay()
+    {
+        System.out.println("ctrlshiftf");
+        if (!searchInTextPane.isVisible()) {
+            searchInTextPane.setVisible(true);
+        }
+        if (!fileTreePane.isVisible())
+        {
+            togglePane(
+                    leftStackPane,
+                    fileTreePane,
+                    showFilesButton,
+                    () -> {},
+                    () -> {}
+            );
+        }
+        searchInFileTreeController.activateSearchBar();
+        searchInTextController.hideSearchBar();
+    }
+
+    private void hideSearchInFileTreeOverlay() {
+        if (searchInTextPane.isVisible()) {
+            searchInFileTreeController.hideSearchBar();
             searchInTextPane.setVisible(false);
         }
     }

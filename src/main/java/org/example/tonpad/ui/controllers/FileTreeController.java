@@ -74,8 +74,6 @@ public class FileTreeController extends AbstractController {
     
     private SortKey sortKey = SortKey.NAME_ASC;
 
-//    private final SearchInTextController searchInTextController;
-
     private final FileSystemService fileSystemService;
 
     private static final javafx.css.PseudoClass MATCHED = javafx.css.PseudoClass.getPseudoClass("matched");
@@ -230,7 +228,6 @@ public class FileTreeController extends AbstractController {
 
     public void refreshTree() {
         saveAllExpandedStates();
-
         SortOptions opt = new SortOptions(sortKey, cbFoldersFirst.isSelected(), cbRelevantOnly.isSelected());
         FileTree fileTree = fileSystemService.getFileTreeSorted(vaultPath, opt);
         TreeItem<String> newRoot = convertFileTreeToTreeItem(fileTree);
@@ -248,7 +245,6 @@ public class FileTreeController extends AbstractController {
                 }
 
                 String rel = norm(getRelativePath(getTreeItem()));
-//                Map<String, List<SearchService.Hit>> hitsMap = searchInTextController.getHitsMap();
 
                 List<SearchService.Hit> ranges = hitsMap != null ? hitsMap.get(rel) : null;
                 if (ranges == null || ranges.isEmpty()) {
