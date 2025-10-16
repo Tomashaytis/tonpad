@@ -12,24 +12,18 @@ import org.jooq.impl.DSL;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class NotesRecord {
+public class TemplateRecord {
 
-    /**
-     * Поля для использования в запросах
-     */
-    public static final Table<?> NOTES = DSL.table("notes");
+    public TemplateRecord(String name) {
+        this.name = name;
+    }
+
+    public static final Table<?> TEMPLATES = DSL.table("templates");
 
     public static final Field<Integer> ID = DSL.field("id", Integer.class);
     public static final Field<String> NAME = DSL.field("name", String.class);
-    public static final Field<String> PATH = DSL.field("path", String.class);
 
-    /**
-     * Поля, содержащие результаты запросов
-     */
     private Integer id;
 
     private String name;
-
-    private String path;
-
 }
