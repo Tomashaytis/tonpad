@@ -38,28 +38,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class SearchInTextController extends AbstractController {
+public class SearchInTextController {
 
-    @FXML
-    private VBox searchBarVBox;
 
-    @FXML
-    public HBox searchFieldHBox;
-
-    @FXML
-    public HBox searchButtonsHBox;
-
-    @FXML
-    private TextField searchField;
-
-    @FXML
-    private Button prevHitButton;
-
-    @FXML
-    private Button nextHitButton;
-
-    @FXML
-    private TextField searchResultsField;
 
     @Setter
     private TabPane tabPane;
@@ -72,12 +53,11 @@ public class SearchInTextController extends AbstractController {
 
     private final FileTreeController fileTreeController;
 
+    private final SearchFieldController searchFieldController;
+
     private int currentIndex = -1;
 
     private final List<Hit> hits = new ArrayList<>();
-
-    @Getter
-    private final Map<String, List<Hit>> hitsMap = new HashMap<>();
 
     private static final String JS_GET_HTML =
         "(function(){var r=document.getElementById('note-root')||document.body; return r.innerHTML;})()";
@@ -88,62 +68,38 @@ public class SearchInTextController extends AbstractController {
     }
 
     public void init(AnchorPane parent) {
-        handleSearchFieldInput();
-        handleSearchButtons();
-        parent.getChildren().add(searchBarVBox);
-
-        AnchorPane.setTopAnchor(searchBarVBox, 48.0);
-        AnchorPane.setRightAnchor(searchBarVBox, 8.0);
+        searchFieldController.init(parent);
+        searchFieldController.setOnQueryChanged(q -> runSearch());
+        searchFieldController.setOnNext(this::selectNextHit);
+        searchFieldController.setOnPrev(this::selectPrevHit);
     }
 
-    private void handleSearchFieldInput() {
-        PauseTransition debounce = new PauseTransition(Duration.millis(400));
-        debounce.setOnFinished(e -> runSearch());
-        searchField.textProperty().addListener((o, ov, nv) -> debounce.playFromStart());
-    }
+    public void activateSearchBar() {
+        searchFieldController.setOnQueryChanged(q -> runSearch());
+        searchFieldController.setOnNext(this::selectNextHit);
+        searchFieldController.setOnPrev(this::selectPrevHit);
 
-    private void handleSearchButtons() {
-        prevHitButton.setOnAction(e -> selectPrevHit());
-        nextHitButton.setOnAction(e -> selectNextHit());
-
-        EventHandler<KeyEvent> nav = e -> {
-            if (e.getTarget() == searchField) {
-                if ((e.getCode() == KeyCode.F3 && e.isShiftDown()) || e.getCode() == KeyCode.UP) {
-                    e.consume();
-                    selectPrevHit();
-                } else if (e.getCode() == KeyCode.F3 || e.getCode() == KeyCode.DOWN || e.getCode() == KeyCode.ENTER) {
-                    e.consume();
-                    selectNextHit();
-                }
-            }
-        };
-        searchField.addEventFilter(KeyEvent.KEY_PRESSED,  nav);
+        showSearchBar();
     }
 
     private void selectPrevHit() {
         WebView wv = getActiveWebView();
-        if (hits.isEmpty()) return;
-        if (currentIndex <= 0) currentIndex = hits.size() - 1;
-        else currentIndex--;
+        if (hits.isEmpty()) { searchFieldController.setResults(0, 0); return; }
+        if (currentIndex <= 0) currentIndex = hits.size() - 1; else currentIndex--;
         selectGlobalRange(wv, hits.get(currentIndex).start(), hits.get(currentIndex).end());
-
-        searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
+        searchFieldController.setResults(currentIndex + 1, hits.size());
     }
 
     private void selectNextHit() {
         WebView wv = getActiveWebView();
-        if(hits.isEmpty()) return;
-        if(currentIndex < 0 || currentIndex == hits.size() - 1) currentIndex = 0;
-        else currentIndex++;
+        if (hits.isEmpty()) { searchFieldController.setResults(0, 0); return; }
+        if (currentIndex < 0 || currentIndex == hits.size() - 1) currentIndex = 0; else currentIndex++;
         selectGlobalRange(wv, hits.get(currentIndex).start(), hits.get(currentIndex).end());
-
-        searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
+        searchFieldController.setResults(currentIndex + 1, hits.size());
     }
 
     public void showSearchBar() {
-        searchField.requestFocus();
-        searchField.selectAll();
-
+        searchFieldController.focus();
         runSearch();
     }
 
@@ -154,6 +110,7 @@ public class SearchInTextController extends AbstractController {
             String innerHtml  = (String) wv.getEngine().executeScript(JS_GET_HTML);
             String clearText = clearHighlights(innerHtml);
             wv.getEngine().executeScript(jsSetHtml(toJsString(clearText)));
+            searchFieldController.setResults(0, 0);
         }
     }
 
@@ -201,48 +158,6 @@ public class SearchInTextController extends AbstractController {
         """);
     }
 
-    public Map<String, List<SearchService.Hit>> runFileTreeSearch(String query) {
-        Map<String, List<SearchService.Hit>> map = new HashMap<>();
-        if (query == null || query.isBlank()) return map;
-
-        final String needle = query.toLowerCase(java.util.Locale.ROOT);
-        final String rootAbs = vaultPath.getVaultPath();
-        final java.nio.file.Path rootPath = java.nio.file.Paths.get(rootAbs);
-        final String rootName = rootPath.getFileName() != null ? rootPath.getFileName().toString() : rootAbs;
-
-        fileSystemService.findByNameContains(rootAbs, query).stream()
-                .map(rel -> {
-                    String fileName = rel.getFileName() == null ? "" : rel.getFileName().toString();
-                    String hay = fileName.toLowerCase(java.util.Locale.ROOT);
-                    int from = 0, idx;
-                    var hits = new java.util.ArrayList<Hit>();
-                    while ((idx = hay.indexOf(needle, from)) >= 0) {
-                        hits.add(new Hit(idx, idx + needle.length()));
-                        from = idx + needle.length(); // перекрытия → idx+1
-                    }
-                    // ключ в формате <rootName>/<rel>
-                    String relStr = rel.toString().replace('\\','/');
-                    String key = relStr.isEmpty() ? rootName : (rootName + "/" + relStr);
-                    return java.util.Map.entry(key, hits);
-                })
-                .filter(e -> !e.getValue().isEmpty())
-                .forEach(e -> map.put(e.getKey(), e.getValue()));
-
-        {
-            String hay = rootName.toLowerCase(java.util.Locale.ROOT);
-            int from = 0, idx;
-            var hits = new java.util.ArrayList<Hit>();
-            while ((idx = hay.indexOf(needle, from)) >= 0) {
-                hits.add(new Hit(idx, idx + needle.length()));
-                from = idx + needle.length();
-            }
-            if (!hits.isEmpty()) {
-                map.put(rootName, hits); // ключ строго как getRelativePath для корня
-            }
-        }
-
-        return map;
-    }
 
         private void clearHighlights() {
         currentIndex = -1;
@@ -308,27 +223,21 @@ public class SearchInTextController extends AbstractController {
         List<TextNodeInfo> nodes = collectTextNodes(root);
         String linear = linearizeFromNodes(nodes);
 
-        String query = searchField.getText().trim();
+        String query = searchFieldController.getQuery();
         hits.clear();
         if(query.isEmpty()) {
-            fileTreeController.setHitsMap(new HashMap<>());
-            fileTreeController.refreshTree();
-            hitsMap.clear();
             wv.getEngine().executeScript(jsSetHtml(toJsString(clearText)));
-            searchResultsField.clear();
+            searchFieldController.clearResults();
             return;
         }
-        fileTreeController.refreshTree();
-        fileTreeController.setHitsMap(runFileTreeSearch(query));
 
         try (SearchService.Session session = searchService.openSession(() -> linear, () -> 0)) {
             this.hits.addAll(session.findAll(query));
         }
-        System.out.println(hits);
         String highlightedText = getHighlightedText(doc, nodes);
         wv.getEngine().executeScript(jsSetHtml(toJsString(highlightedText)));
 
-        searchResultsField.setText((currentIndex + 1) + "/" + hits.size());
+        searchFieldController.setResults(currentIndex + 1, hits.size());
     }
 
     private String getHighlightedText(Document doc, List<TextNodeInfo> nodes) {
@@ -385,11 +294,6 @@ public class SearchInTextController extends AbstractController {
     private WebView getActiveWebView() {
         Tab tab = tabPane.getSelectionModel().getSelectedItem();
         return (tab != null && tab.getUserData() instanceof WebView wv) ? wv : null;
-    }
-
-    @Override
-    protected String getFxmlSource() {
-        return "/ui/fxml/search-bar.fxml";
     }
 
     private List<List<Segment>> splitHitsPerNode(List<TextNodeInfo> nodes)
