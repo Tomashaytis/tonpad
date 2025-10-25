@@ -123,6 +123,8 @@ public class MainController extends AbstractController {
                 () -> {}
         ));
 
+        showSearchButton.setOnAction(e -> this.showSearchInFileTreeOverlay());
+
         setSearchShortCut(
                 new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN),
                 new KeyCodeCombination(KeyCode.ESCAPE),

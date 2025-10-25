@@ -1,6 +1,8 @@
 package org.example.tonpad.ui.controllers;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ContextMenu;
@@ -10,17 +12,21 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.ContextMenuEvent;
+import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.FileTree;
 import org.example.tonpad.core.models.SortKey;
 import org.example.tonpad.core.models.SortOptions;
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.ui.extentions.FileTreeItem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -31,11 +37,12 @@ import java.util.Map;
 import java.util.List;
 import java.util.function.Consumer;
 
-
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class FileTreeController extends AbstractController {
 
+    private static final Logger log = LoggerFactory.getLogger(FileTreeController.class);
     @FXML
     private TreeView<String> fileTreeView;
 
@@ -124,6 +131,8 @@ public class FileTreeController extends AbstractController {
         });
 
         refreshFilesButton.setOnAction(e -> refreshTree());
+
+        setDeleteShortCut();
 
         sortFilesButton.setOnAction(e -> {
             if (sortMenu == null) {
@@ -479,6 +488,40 @@ public class FileTreeController extends AbstractController {
         fileSystemService.makeDir(dirPath);
 
         return dirPath.toString();
+    }
+
+    private void setDeleteShortCut() {
+        fileTreeVBox.sceneProperty().addListener((obs, oldS, newS) -> {
+            if (newS != null) {
+                attachAccelerator(newS, new KeyCodeCombination(javafx.scene.input.KeyCode.DELETE), this::deleteFileTreeItem);
+            }
+        });
+    }
+
+    private void deleteFileTreeItem()
+    {
+        var sel = fileTreeView.getSelectionModel().getSelectedItem();
+
+        String name = sel.getValue();
+        var alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
+        var btnDelete = new javafx.scene.control.ButtonType("Да давайте", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        var btnCancel = new javafx.scene.control.ButtonType("Нет, я хочу к мамочке",      javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(btnDelete, btnCancel);
+        alert.setHeaderText("delete selected file or folder?");
+        var owner = fileTreeVBox.getScene() != null ? fileTreeVBox.getScene().getWindow() : null;
+        if (owner != null) alert.initOwner(owner);
+
+        var res = alert.showAndWait();
+//        if (res.isEmpty() || res.get() != javafx.scene.control.ButtonType.OK) return;
+        fileSystemService.delete(getFullPath(sel));
+        refreshTree();
+    }
+
+    private void attachAccelerator(Scene scene, KeyCodeCombination keyComb, Runnable callback) {
+        scene.getAccelerators().put(
+                keyComb,
+                () -> Platform.runLater(callback)
+        );
     }
 
     @Override
