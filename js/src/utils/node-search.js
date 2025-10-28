@@ -80,6 +80,34 @@ export class NodeSearch {
         };
     }
 
+    static findPreviousAuto($from) {
+        let depth = $from.depth;
+
+        while (depth >= 0) {
+            const result = this.findPrevious($from, depth);
+            if (result !== null) {
+                return result;
+            }
+            depth--;
+        }
+
+        return null;
+    }
+
+    static findNextAuto($from) {
+        let depth = $from.depth;
+
+        while (depth >= 0) {
+            const result = this.findNext($from, depth);
+            if (result !== null) {
+                return result;
+            }
+            depth--;
+        }
+
+        return null;
+    }
+
     static getSiblings($from) {
         const parent = $from.node($from.depth - 1);
         const siblings = [];

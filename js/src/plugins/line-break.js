@@ -46,7 +46,7 @@ function handleHeadingBlock(event, state, dispatch, $from, $to, notationBlock, n
     if ($from.parent.type.name === "heading")
         return handleHeadingEnter(event, state, dispatch, $from, $to, notationBlock, notationBlockPos);
 
-    if ($from.parent.type.name === "heading_spec")
+    if ($from.parent.type.name === "spec_block")
         return handleHeadingSpecEnter(event, state, dispatch, $from, $to, notationBlock, notationBlockPos);
 
     return false
@@ -103,7 +103,7 @@ function handleHeadingEnter(event, state, dispatch, $from, $to, notationBlock, n
 }
 
 function handleHeadingSpecEnter(event, state, dispatch, $from, $to, notationBlock, notationBlockPos) {
-    if ($from.parent.type.name !== "heading_spec") return false;
+    if ($from.parent.type.name !== "spec_block") return false;
 
     event.preventDefault();
 

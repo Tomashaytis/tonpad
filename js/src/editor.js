@@ -7,16 +7,17 @@ import { markdownSchema } from "./schema/markdown-schema.js";
 import { CustomMarkdownParser } from "./parser/markdown-parser.js";
 import { NodeConverter } from "./utils/node-converter.js";
 import { markdownSerializer } from "./serializer/markdown-serializer.js";
-import { headingNavigationPlugin } from "./plugins/heading-navigation.js"
-import { lineBreakPlugin } from "./plugins/line-break.js";
+import { blockNavigationPlugin } from "./plugins/block-navigation.js"
+import { enterPlugin } from "./plugins/enter.js";
 import { keymapPlugin } from "./plugins/keymap.js";
 import { inputRulesPlugin } from "./plugins/input-rules.js";
 import { backspacePlugin } from "./plugins/backspace.js";
 import { deletePlugin } from "./plugins/delete.js";
-import { headingInputPlugin } from "./plugins/heading-input.js"
+import { inputPlugin } from "./plugins/input.js"
 import { patternMatchPlugin } from "./plugins/pattern-matching.js"
 import { disableInsertPlugin } from "./plugins/disable-insert.js"
 import { hideSpecPlugin } from "./plugins/hide-spec.js"
+import { copyPlugin } from "./plugins/copy.js"
 
 export class Editor {
     constructor(target, content = '') {
@@ -59,26 +60,97 @@ export class Editor {
         let hasChanges = false;
 
         const changes = [];
+
         this.view.state.doc.descendants((node, pos) => {
             if (node.type.name === 'heading') {
-                changes.push({ node, pos });
+                changes.push({ type: 'heading', node, pos });
+            }
+
+            if (node.type.name === 'blockquote') {
+                changes.push({ type: 'blockquote', node, pos });
+            }
+
+            if (node.isText && node.marks.length > 0) {
+                const $pos = this.view.state.doc.resolve(pos);
+                let paragraphNode = null;
+                let paragraphPos = 0;
+
+                for (let depth = $pos.depth; depth >= 0; depth--) {
+                    if ($pos.node(depth).type.name === 'paragraph') {
+                        paragraphNode = $pos.node(depth);
+                        paragraphPos = $pos.start(depth);
+                        break;
+                    }
+                }
+
+                if (paragraphNode) {
+                    changes.push({
+                        type: 'mark',
+                        node: node,
+                        pos: pos,
+                        paragraphNode: paragraphNode,
+                        paragraphPos: paragraphPos
+                    });
+                }
             }
         });
 
-        changes.sort((a, b) => b.pos - a.pos).forEach(({ node, pos }) => {
-            const headingBlock = NodeConverter.constructHeading(node);
+        changes.sort((a, b) => b.pos - a.pos).forEach((change) => {
+            if (change.type === 'heading') {
+                const headingText = change.node.textContent.replace(/^#+\s/, '');
+                const level = change.node.attrs.level;
+                const headingBlock = NodeConverter.constructHeading(headingText, level);
+                tr = tr.replaceWith(change.pos, change.pos + change.node.nodeSize, headingBlock);
+                hasChanges = true;
+            } else if (change.type === 'blockquote') {
+                const blockquoteContent = change.node.content;
+                const blockquoteBlock = NodeConverter.constructBlockquote(blockquoteContent);
+                tr = tr.replaceWith(change.pos, change.pos + change.node.nodeSize, blockquoteBlock);
+                hasChanges = true;
+            } else if (change.type === 'mark') {
+                const textNode = change.node;
+                const paragraphNode = change.paragraphNode;
+                const paragraphPos = change.paragraphPos;
 
-            tr = tr.replaceWith(pos, pos + node.nodeSize, headingBlock);
-            hasChanges = true;
+                textNode.marks.forEach(mark => {
+                    const textContent = textNode.textContent;
+                    let markFragment;
+
+                    switch (mark.type.name) {
+                        case 'em':
+                            markFragment = NodeConverter.constructEm(textContent);
+                            break;
+                        case 'strong':
+                            markFragment = NodeConverter.constructStrong(textContent);
+                            break;
+                        case 'strike':
+                            markFragment = NodeConverter.constructStrike(textContent);
+                            break;
+                        case 'highlight':
+                            markFragment = NodeConverter.constructHighlight(textContent);
+                            break;
+                        case 'underline':
+                            markFragment = NodeConverter.constructUnderline(textContent);
+                            break;
+                        case 'code':
+                            markFragment = NodeConverter.constructCode(textContent);
+                            break;
+                        default:
+                            return;
+                    }
+
+                    tr = tr.replaceWith(change.pos, change.pos + textNode.nodeSize, markFragment);
+                    hasChanges = true;
+                });
+            }
         });
 
         if (hasChanges) {
             const currentPos = this.view.state.selection.from;
-
             this.view.dispatch(tr);
 
             const newSelection = this.view.state.selection.constructor.near(
-                this.view.state.doc.resolve(currentPos)
+                this.view.state.doc.resolve(Math.min(currentPos, this.view.state.doc.content.size - 1))
             );
             this.view.dispatch(this.view.state.tr.setSelection(newSelection));
         }
@@ -87,18 +159,20 @@ export class Editor {
     createPlugins() {
         return [
             history(),
-            lineBreakPlugin(),
+            //lineBreakPlugin(),
             backspacePlugin(),
             deletePlugin(),
+            enterPlugin(),
             keymapPlugin(this),
             dropCursor(),
             gapCursor(),
             inputRulesPlugin(),
-            headingNavigationPlugin(),
-            headingInputPlugin(),
+            blockNavigationPlugin(),
+            inputPlugin(),
             disableInsertPlugin(),
             //patternMatchPlugin(),
-            hideSpecPlugin(),
+            //hideSpecPlugin(),
+            copyPlugin(),
         ];
     }
 
@@ -209,6 +283,76 @@ export class Editor {
         this.view.destroy();
     }
 }
+
+/*
+rebuildTree() {
+        let tr = this.view.state.tr;
+        let hasChanges = false;
+
+        const changes = [];
+
+        this.view.state.doc.descendants((node, pos) => {
+            if (node.type.name === 'heading') {
+                changes.push({ type: 'heading', node, pos });
+            }
+            else if (node.isText && node.marks.length > 0) {
+                changes.push({ type: 'mark', node, pos, marks: [...node.marks] });
+            }
+        });
+
+        changes.sort((a, b) => b.pos - a.pos).forEach((change) => {
+            if (change.type === 'heading') {
+                const headingBlock = NodeConverter.constructHeading(change.node);
+                tr = tr.replaceWith(change.pos, change.pos + change.node.nodeSize, headingBlock);
+                hasChanges = true;
+            }
+            else if (change.type === 'mark') {
+                change.marks.forEach(mark => {
+                    const textNode = markdownSchema.text(change.node.text, change.node.marks);
+
+                    let markContainer;
+
+                    switch (mark.type.name) {
+                        case 'em':
+                            markContainer = NodeConverter.constructEm(textNode);
+                            break;
+                        case 'strong':
+                            markContainer = NodeConverter.constructStrong(textNode);
+                            break;
+                        case 'strike':
+                            markContainer = NodeConverter.constructStrike(textNode);
+                            break;
+                        case 'highlight':
+                            markContainer = NodeConverter.constructHighlight(textNode);
+                            break;
+                        case 'underline':
+                            markContainer = NodeConverter.constructUnderline(textNode);
+                            break;
+                        case 'code':
+                            markContainer = NodeConverter.constructCode(textNode);
+                            break;
+                        default:
+                            return;
+                    }
+
+                    tr = tr.replaceWith(change.pos, change.pos + change.node.nodeSize, markContainer);
+                    hasChanges = true;
+                });
+            }
+        });
+
+        if (hasChanges) {
+            const currentPos = this.view.state.selection.from;
+
+            this.view.dispatch(tr);
+
+            const newSelection = this.view.state.selection.constructor.near(
+                this.view.state.doc.resolve(currentPos)
+            );
+            this.view.dispatch(this.view.state.tr.setSelection(newSelection));
+        }
+    }
+ */
 
 /*import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
