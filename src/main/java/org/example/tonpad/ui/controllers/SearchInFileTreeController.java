@@ -72,7 +72,7 @@ public class SearchInFileTreeController
         showSearchBar();
     }
 
-    private void runSearch() {
+    public void runSearch() {
         currentIndex = -1;
 
         String query = searchFieldController.getQuery();
