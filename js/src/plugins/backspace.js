@@ -2,8 +2,6 @@ import { Plugin } from "prosemirror-state";
 import { NodeMerger } from "../utils/node-merger";
 import { NodeInputter } from "../utils/node-inputter";
 
-let isMerging = false;
-
 export function backspacePlugin() {
     return new Plugin({
         props: {
@@ -16,17 +14,15 @@ export function backspacePlugin() {
 
                     const isAtBlockStart = $from.parentOffset === 0;
 
-                    if (isAtBlockStart && !isMerging) {
-                        isMerging = true;
+                    if (isAtBlockStart) {
                         const tr = NodeMerger.mergeUp(state, state.selection);
                         
                         if (tr) {
                             event.preventDefault();
                             dispatch(tr);
-                            setTimeout(() => { isMerging = false; }, 0);
                             return true;
                         }
-                    } else if (!isMerging) {
+                    } else {
                         const from = $from.pos - 1;
                         const to = $from.pos;
                         return NodeInputter.handleDeleteChar(view, from, to);

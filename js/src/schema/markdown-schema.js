@@ -80,49 +80,55 @@ export const markdownSchema = new Schema({
                 ];
             },
         },
-        ordered_list: {
-            content: "list_item+",
-            group: "block",
+        tab_list_item: {
             attrs: {
-                order: { default: 1 },
-                tight: { default: false },
+                level: { default: 1 },
+                renderAs: { default: "li" }
             },
-            parseDOM: [
-                {
-                    tag: "ol",
-                    getAttrs: (dom) => ({
-                        order: dom.hasAttribute("start") ? +dom.getAttribute("start") : 1,
-                        tight: dom.hasAttribute("data-tight"),
-                    }),
-                },
-            ],
-            toDOM(node) {
-                return [
-                    "ol",
-                    {
-                        start: node.attrs.order == 1 ? null : node.attrs.order,
-                        "data-tight": node.attrs.tight ? "true" : null,
-                    },
-                    0,
-                ];
-            },
-        },
-        bullet_list: {
-            content: "list_item+",
+            content: "(text | image)*",
             group: "block",
-            attrs: { tight: { default: false } },
-            parseDOM: [
-                { tag: "ul", getAttrs: (dom) => ({ tight: dom.hasAttribute("data-tight") }) },
-            ],
-            toDOM(node) {
-                return ["ul", { "data-tight": node.attrs.tight ? "true" : null }, 0];
-            },
-        },
-        list_item: {
-            content: "block+",
             defining: true,
             parseDOM: [{ tag: "li" }],
-            toDOM() { return ["li", 0]; },
+            toDOM(node) { 
+                const tag = node.attrs.renderAs === "span" ? "span" : "li" + node.attrs.level;
+                const className = node.attrs.renderAs === "span" ? "li-content" : "li";
+
+                return [tag, { class: className }, 0];
+            },
+        },
+        bullet_list_item: {
+            attrs: {
+                level: { default: 1 },
+                marker: { default: ' ' },
+                renderAs: { default: "li" }
+            },
+            content: "(text | image)*",
+            group: "block",
+            defining: true,
+            parseDOM: [{ tag: "li" }],
+            toDOM(node) { 
+                const tag = node.attrs.renderAs === "span" ? "span" : "li" + node.attrs.level;
+                const className = node.attrs.renderAs === "span" ? "li-content" : "li";
+
+                return [tag, { class: className }, 0];
+            },
+        },
+        ordered_list_item: {
+            attrs: {
+                level: { default: 1 },
+                number: { default: 0 },
+                renderAs: { default: "li" }
+            },
+            content: "(text | image)*",
+            group: "block",
+            defining: true,
+            parseDOM: [{ tag: "li" }],
+            toDOM(node) { 
+                const tag = node.attrs.renderAs === "span" ? "span" : "li" + node.attrs.level;
+                const className = node.attrs.renderAs === "span" ? "li-content" : "li";
+
+                return [tag, { class: className }, 0];
+            },
         },
         text: {
             group: "inline",
@@ -147,13 +153,6 @@ export const markdownSchema = new Schema({
                 },
             ],
             toDOM(node) { return ["img", node.attrs]; },
-        },
-        hard_break: {
-            inline: true,
-            group: "inline",
-            selectable: false,
-            parseDOM: [{ tag: "br" }],
-            toDOM() { return ["br"]; },
         },
         html_comment: {
             group: "block",
@@ -188,7 +187,30 @@ export const markdownSchema = new Schema({
                 }
                 if (node.attrs.type === "blockquote") {
                     return ["div", {
-                        class: `notation-block-${node.attrs.layout} notation-block-quote`,
+                        class: `notation-block-${node.attrs.layout} notation-block-quote`
+                    }, 0]
+                }
+                if (node.attrs.type === "tab_list") {
+                    return ["div", {
+                        class: `notation-block-${node.attrs.layout} notation-block-tab-list`,
+                        'data-level': node.attrs.level
+                    }, 0]
+                }
+                if (node.attrs.type === "bullet_list") {
+                    return ["div", {
+                        class: `notation-block-${node.attrs.layout} notation-block-bullet-list`,
+                        'data-level': node.attrs.level
+                    }, 0]
+                }
+                if (node.attrs.type === "ordered_list") {
+                    return ["div", {
+                        class: `notation-block-${node.attrs.layout} notation-block-ordered-list`,
+                        'data-level': node.attrs.level
+                    }, 0]
+                }
+                if (node.attrs.type === "checkbox_list") {
+                    return ["div", {
+                        class: `notation-block-${node.attrs.layout} notation-block-checkbox-list`,
                         'data-level': node.attrs.level
                     }, 0]
                 }
@@ -227,6 +249,49 @@ export const markdownSchema = new Schema({
             parseDOM: [
                 {
                     tag: "span.mark-spec",
+                    getAttrs: (dom) => ({
+                        specClass: dom.getAttribute("class"),
+                    })
+                }
+            ],
+            toDOM(node) {
+                return [
+                    "span",
+                    {
+                        class: node.attrs.specClass,
+                    }
+                ];
+            },
+        },
+        tab: {
+            attrs: {
+                tabClass: { default: "tab" },
+                tabIndex: { default: 0 }
+            },
+            parseDOM: [
+                {
+                    tag: "span.tab",
+                    getAttrs: (dom) => ({
+                        tabClass: dom.getAttribute("class"),
+                    })
+                }
+            ],
+            toDOM(node) {
+                return [
+                    "span",
+                    {
+                        class: node.attrs.tabClass,
+                    }
+                ];
+            },
+        },
+        marker: {
+            attrs: {
+                specClass: { default: "marker" },
+            },
+            parseDOM: [
+                {
+                    tag: "span.marker",
                     getAttrs: (dom) => ({
                         specClass: dom.getAttribute("class"),
                     })
@@ -287,8 +352,9 @@ export const markdownSchema = new Schema({
         },
         link: {
             attrs: {
-                href: {},
+                href: { default: "#" },
                 title: { default: null },
+                linkClass: { default: "" },
             },
             inclusive: false,
             parseDOM: [
@@ -300,12 +366,21 @@ export const markdownSchema = new Schema({
                     }),
                 },
             ],
-            toDOM(node) { return ["a", node.attrs]; },
+            toDOM(node) {
+                return [
+                    "a",
+                    {
+                        href: node.attrs.href,
+                        title: node.attrs.title,
+                        class: node.attrs.linkClass,
+                    }
+                ];
+            },
         },
         code: {
             code: true,
             parseDOM: [{ tag: "code" }],
             toDOM() { return ["code"]; },
         },
-    },
+    }
 });

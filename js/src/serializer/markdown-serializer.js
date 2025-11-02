@@ -38,19 +38,25 @@ export const markdownSerializer = new ExtendedMarkdownSerializer(
         notation_block: (state, node) => {
             if (node.attrs.type === 'heading') {
                 state.write("#".repeat(node.attrs.level) + " ");
-                node.content.forEach(child => {
-                    if (child.type.name === 'heading') {
-                        state.renderInline(child);
-                    }
-                });
+                state.renderInline(node.child(1));
                 state.write("\n");
             } else if (node.attrs.type === 'blockquote') {
                 state.write("> ");
-                node.content.forEach(child => {
-                    if (child.type.name === 'blockquote') {
-                        state.renderInline(child);
-                    }
-                });
+                state.renderInline(node.child(1));
+                state.write("\n");
+            } else if (node.attrs.type === 'tab_list') {
+                state.write("\t".repeat(node.attrs.level));
+                state.renderInline(node.child(1));
+                state.write("\n");
+            } else if (node.attrs.type === 'bullet_list') {
+                state.write("\t".repeat(node.attrs.level));
+                state.write(node.child(1).attrs.marker + ' ')
+                state.renderInline(node.child(1));
+                state.write("\n");
+            } else if (node.attrs.type === 'ordered_list') {
+                state.write("\t".repeat(node.attrs.level));
+                state.write(`${node.child(1).attrs.number}. `)
+                state.renderInline(node.child(1));
                 state.write("\n");
             } else {
                 state.renderContent(node);
@@ -126,8 +132,8 @@ export const markdownSerializer = new ExtendedMarkdownSerializer(
             expelEnclosingWhitespace: true
         },
         link: {
-            open: "[",
-            close: (state, mark) => `](${mark.attrs.href}${mark.attrs.title ? ` "${mark.attrs.title}"` : ""})`,
+            open: "",
+            close: "",
             mixable: true,
             expelEnclosingWhitespace: true
         },

@@ -1,5 +1,6 @@
 import { markdownSchema } from "../schema/markdown-schema.js";
 import { NodeConverter } from "./node-converter.js";
+import { findTabLevel } from "./utils.js";
 
 export class NodeReconstructor {
     constructor() {
@@ -19,38 +20,78 @@ export class NodeReconstructor {
                 pattern: /^> (.*)$/,
                 handler: this.reconstructBlockquote.bind(this)
             },
+            {
+                name: 'bullet_list',
+                pattern: /^((?:(?:    )|\t)*)([+-]) (.*)$/,
+                handler: this.reconstructBulletListItem.bind(this)
+            },
+            {
+                name: 'ordered_list',
+                pattern: /^((?:(?:    )|\t)*)(\d+)\. (.*)$/,
+                handler: this.reconstructOrderedListItem.bind(this)
+            },
+            {
+                name: 'tab_list',
+                pattern: /^((?:(?:    )|\t)+)(.*)$/,
+                handler: this.reconstructTabListItem.bind(this)
+            },
         ];
 
         this.markRules = [
             {
                 name: 'strong',
-                pattern: /\*\*(.+?)\*\*/g,
+                pattern: /\*\*(.*)\*\*/g,
                 handler: this.wrapWithMark.bind(this, 'strong')
             },
             {
                 name: 'em',
-                pattern: /\*(.+?)\*/g,
+                pattern:/(?<!\*)\*(.*?)\*(?!\*)/g,
                 handler: this.wrapWithMark.bind(this, 'em')
             },
             {
                 name: 'code',
-                pattern: /`(.+?)`/g,
+                pattern: /`(.*)`/g,
                 handler: this.wrapWithMark.bind(this, 'code')
             },
             {
                 name: 'strike',
-                pattern: /~~(.+?)~~/g,
+                pattern: /~~(.*)~~/g,
                 handler: this.wrapWithMark.bind(this, 'strike')
             },
             {
                 name: 'highlight',
-                pattern: /==(.+?)==/g,
+                pattern: /==(.*)==/g,
                 handler: this.wrapWithMark.bind(this, 'highlight')
             },
             {
                 name: 'underline',
-                pattern: /__(.+?)__/g,
+                pattern: /__(.*)__/g,
                 handler: this.wrapWithMark.bind(this, 'underline')
+            },
+            {
+                name: 'note_link',
+                pattern: /\[(.*?)\](?!\()/g,
+                handler: this.wrapWithMark.bind(this, 'note_link')
+            },
+            {
+                name: 'link',
+                pattern: /\[(.*)\]\((.*)\)/g,
+                handler: this.wrapWithMark.bind(this, 'link')
+            },
+            {
+                name: 'url',
+                pattern: /((?:https?:\/\/|ftp:\/\/|www\.)[^\s<>"{}`|\\^\[\]]+)/g,
+                handler: this.wrapWithMark.bind(this, 'url')
+            },
+            {
+                name: 'email',
+                pattern: /(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b)/g,
+                handler: this.wrapWithMark.bind(this, 'email')
+            },
+            {
+                name: 'tag',
+                pattern: /(#\w+)/g,
+                handler: this.wrapWithMark.bind(this, 'tag')
             },
         ];
     }
@@ -114,7 +155,8 @@ export class NodeReconstructor {
                     content.push(markdownSchema.text(beforeText));
                 }
 
-                const markedFragment = bestRule.handler(bestMatch[1]);
+                const href = bestMatch.length > 2 ? bestMatch[2] : ""
+                const markedFragment = bestRule.handler(bestMatch[1], href);
                 markedFragment.forEach(node => content.push(node));
                 hasChanges = true;
 
@@ -177,11 +219,14 @@ export class NodeReconstructor {
             if (targetCursorIndex !== -1 && i < targetCursorIndex) {
                 const offset = targetCursorIndex - startPos;
                 if (reconstructed && reconstructed.type.name === 'notation_block' && reconstructed.attrs.layout === 'row') {
-                    if (offset > reconstructed.children[0].textContent.length * 2) {
+                    if (offset > reconstructed.child(0).nodeSize - 2) {
                         blocksBeforeCursor += 3;
                     } else {
                         blocksBeforeCursor += 1;
                     }
+                }
+                else {
+                    blocksBeforeCursor += 1;
                 }
             }
 
@@ -194,7 +239,7 @@ export class NodeReconstructor {
         };
     }
 
-    wrapWithMark(markName, text) {
+    wrapWithMark(markName, text, href = "") {
         switch (markName) {
             case 'strong':
                 return NodeConverter.constructStrong(text);
@@ -208,6 +253,16 @@ export class NodeReconstructor {
                 return NodeConverter.constructHighlight(text);
             case 'underline':
                 return NodeConverter.constructUnderline(text);
+            case 'link':
+                return NodeConverter.constructLink(text, href);
+            case 'note_link':
+                return NodeConverter.constructNoteLink(text, href);
+            case 'url':
+                return NodeConverter.constructUrl(text);
+            case 'email':
+                return NodeConverter.constructEmail(text);
+            case 'tag':
+                return NodeConverter.constructTag(text);
             default:
                 return [markdownSchema.text(text)];
         }
@@ -223,6 +278,30 @@ export class NodeReconstructor {
         const [_, content] = match;
 
         return NodeConverter.constructBlockquote(content);
+    }
+
+    reconstructTabListItem(match, originalParagraph, pos) {
+        const [_, spaces, content] = match;
+
+        const level = findTabLevel(spaces);
+
+        return NodeConverter.constructTabListItem(content, level);
+    }
+
+    reconstructBulletListItem(match, originalParagraph, pos) {
+        const [_, spaces, marker, content] = match;
+
+        const level = findTabLevel(spaces);
+
+        return NodeConverter.constructBulletListItem(content, level, marker);
+    }
+
+    reconstructOrderedListItem(match, originalParagraph, pos) {
+        const [_, spaces, number, content] = match;
+
+        const level = findTabLevel(spaces);
+
+        return NodeConverter.constructOrderedListItem(content, level, parseInt(number));
     }
 
     reconstructCodeBlock(match, originalParagraph, pos) {

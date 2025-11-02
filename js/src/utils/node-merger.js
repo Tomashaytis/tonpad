@@ -22,7 +22,7 @@ export class NodeMerger {
 
         const neighborInfo = this.findNeighbor(state, pos, depth, direction);
 
-        if (neighborInfo) {
+        if (neighborInfo && neighborInfo.node.textContent.length !== 0) {
             return this.performMerge(state, pos, neighborInfo, direction);
         }
 
@@ -108,24 +108,29 @@ export class NodeMerger {
             currentParent.type.name === 'notation_block' &&
             currentParent.attrs.layout === 'row') {
 
-            return this.handleNotationBlockRowMerge($current, currentParent);
+            return this.handleNotationBlockRowMerge($current, currentParent, direction);
         }
 
         return null;
     }
 
-    static handleNotationBlockRowMerge($current, currentParent) {
+    static handleNotationBlockRowMerge($current, currentParent, direction) {
         const blockDepth = $current.depth - 1;
         const from = $current.start(blockDepth) - 1;
         const to = from + currentParent.nodeSize;
 
-        const specContent = currentParent.child(0).textContent.slice(0, -1);
-        const nodeContent = currentParent.child(1).textContent;
+        let { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(currentParent);
+
+        if (direction === 'up') {
+            specContent = specContent.slice(1);
+        } else {
+            nodeContent = nodeContent.slice(1);
+        }
+
+        let cursorPos = from + specContent.length + 1;
         const mergedText = specContent + nodeContent;
 
         const mergedParagraph = NodeConverter.constructParagraph(mergedText);
-
-        const cursorPos = from + specContent.length + 1;
 
         return {
             from,
@@ -148,7 +153,7 @@ export class NodeMerger {
         const currentNode = $current.parent;
         const neighborPosAtDepth = neighborInfo.pos;
 
-        const from = Math.min(neighborPosAtDepth, currentPosAtDepth);
+        let from = Math.min(neighborPosAtDepth, currentPosAtDepth);
         const to = from + neighborInfo.node.nodeSize + currentNode.nodeSize;
 
         const currentParagraphs = NodeConverter.destructNode(currentNode);
@@ -184,6 +189,7 @@ export class NodeMerger {
                 mergedParagraphs = [...neighborParagraphs, ...currentParagraphs];
             }
         } else {
+            from -= 1;
             if (currentParagraphs.length > 0 && neighborParagraphs.length > 0) {
                 const lastCurrentPara = currentParagraphs[currentParagraphs.length - 1];
                 const firstNeighborPara = neighborParagraphs[0];
@@ -205,11 +211,10 @@ export class NodeMerger {
                 for (let i = 0; i < currentParagraphs.length - 1; i++) {
                     mergedParaPos += currentParagraphs[i].nodeSize;
                 }
-                cursorPos = mergedParaPos + lastCurrentPara.content.size;
+                cursorPos = mergedParaPos + lastCurrentPara.content.size + 1;
             } else {
                 mergedParagraphs = [...currentParagraphs, ...neighborParagraphs];
             }
-            cursorPos += 1;
         }
 
         return { from, to, mergedParagraphs, cursorPos };
@@ -217,10 +222,11 @@ export class NodeMerger {
 
     static executeMerge(state, from, to, mergedParagraphs, cursorPos) {
         const tr = state.tr;
-        
+
         const reconstructedData = this.applyReconstruction(tr, mergedParagraphs, from, to, cursorPos);
 
-        this.setCursorSelection(reconstructedData.tr, reconstructedData.cursorPos);
+        reconstructedData.tr.setSelection(TextSelection.create(reconstructedData.tr.doc, reconstructedData.cursorPos));
+        //this.setCursorSelection(reconstructedData.tr, reconstructedData.cursorPos);
 
         return reconstructedData.tr;
     }
