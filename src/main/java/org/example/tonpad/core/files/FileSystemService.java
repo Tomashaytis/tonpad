@@ -53,4 +53,30 @@ public interface FileSystemService {
     FileTree getFileTreeSorted(String path, SortOptions opt);
 
     FileTree getFileTreeSorted(Path path, SortOptions opt);
+
+    void copyFile(String path);
+
+    void copyFile(Path path);
+
+    void cutFile(String path);
+
+    void cutFile(Path path);
+
+    void pasteFile(String path);
+
+    void pasteFile(Path path);
+
+    void copyVaultPath();
+
+    void copyAbsFilePath(String path);
+
+    void copyAbsFilePath(Path path);
+
+    void copyRelFilePath(String path);
+
+    void copyRelFilePath(Path path);
+
+    void showFileInExplorer(String path);
+
+    void showFileInExplorer(Path path);
 }
