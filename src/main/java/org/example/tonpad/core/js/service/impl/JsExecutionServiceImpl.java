@@ -48,14 +48,16 @@ public class JsExecutionServiceImpl implements JsExecutionService {
         validateFunctionParams(function, params);
 
         String jsFunctionBody = function.getJsCode();
+        String functionName = extractFunctionName(jsFunctionBody);
+        String paramStr = generateParamsString(params);
         String jsFunctionExtended = JS_FUNCTION_EXTENDED_FORMAT_STRING.formatted(
                 jsFunctionBody,
-                extractFunctionName(jsFunctionBody),
-                generateParamsString(params)
+                functionName,
+                paramStr
         );
 
         CompletableFuture<T> future = new CompletableFuture<>();
-        Platform.runLater(() -> {
+        Runnable run = () -> {
             try {
                 @SuppressWarnings("unchecked")
                 T result = (T) webView.getEngine().executeScript(jsFunctionExtended);
@@ -63,7 +65,14 @@ public class JsExecutionServiceImpl implements JsExecutionService {
             } catch (Exception e) {
                 future.completeExceptionally(e);
             }
-        });
+        };
+
+        if(Platform.isFxApplicationThread()) {
+            run.run();
+        }
+        else {
+            Platform.runLater(run);
+        }
 
         return future;
     }
@@ -89,7 +98,6 @@ public class JsExecutionServiceImpl implements JsExecutionService {
         if (matcher.find()) {
             return matcher.group(1);
         }
-
         throw new ExtractJsFunctionNameException("не удалось получить название функции: " + jsFunctionBody);
     }
 
@@ -115,5 +123,4 @@ public class JsExecutionServiceImpl implements JsExecutionService {
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
     }
-
 }
