@@ -3,6 +3,7 @@
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     line-height: 1.6;
     font-size: 16px;
+    tab-size: 5;
 }
 
 /* Notation block как заголовок */
@@ -30,11 +31,27 @@ h6.notation-block-row {
     content: "";
     position: absolute;
     left: 0;
-    top: 2px;
-    bottom: 2px;
+    top: 0;
+    bottom: 0;
     width: 3px;
     background: #b8cb76;
+}
+
+/* Одиночная цитата - скругленные концы */
+.notation-block-row.notation-block-quote::before {
     border-radius: 2px;
+}
+
+/* Когда есть цитата сверху - убираем скругление верха */
+.notation-block-row.notation-block-quote + .notation-block-row.notation-block-quote::before {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+/* Когда есть цитата снизу - убираем скругление низа */
+.notation-block-row.notation-block-quote:has(+ .notation-block-row.notation-block-quote)::before {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
 }
 
 /* Heading внутри notation_block как span */
@@ -73,14 +90,6 @@ h6.notation-block-row {
     caret-color: black;
     font: inherit;
     font-style: normal;
-}
-
-.mark-spec {
-    color: #79854c;
-    font-weight: bold;
-    caret-color: black;
-    opacity: 0.7;
-    font: inherit;
 }
 
 /* Размеры для разных уровней заголовков */
@@ -146,6 +155,107 @@ h6.notation-block-row .heading-spec {
     padding: 0;
     font-style: italic;
     border-left: 3px solid #b8cb76;
+}
+
+/* оОбщие стили символов марок*/
+.mark-spec {
+    color: #79854c;
+    font-weight: bold;
+    caret-color: black;
+    opacity: 0.7;
+    font: inherit;
+}
+
+/* Строчный блок кода */
+.code-mark-spec-left {
+    background-color: var(--code-inline-bg, #f0f0f0);
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 0.85em;
+    color: #79854c;
+    font-weight: bold;
+    caret-color: black;
+    opacity: 0.7;
+}
+
+.code-mark-spec-right {
+    background-color: var(--code-inline-bg, #f0f0f0);
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 0.85em;
+    color: #79854c;
+    font-weight: bold;
+    caret-color: black;
+    opacity: 0.7;
+}
+
+code {
+    background-color: var(--code-inline-bg, #f0f0f0);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 0.85em;
+}
+
+/* Стили для ссылок */
+a {
+    color: var(--link-color, #620286);
+}
+
+a:hover {
+    color: var(--link-hover-color, #410158);
+    opacity: 0.6;
+}
+
+/* Стили для тега */
+.tag {
+    text-decoration: none;
+    background-color: rgba(184, 203, 118, 0.3);
+    border-radius: 10px;
+    padding: 5px;
+    font-size: 0.85em;
+}
+
+/* Стили для таба */
+.tab {
+    position: relative;
+}
+
+.tab:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: 2px;
+    top: -4px;
+    bottom: -4px;
+    width: 2px;
+    background: #79854c;
+}
+
+/* Стили для маркеров списка */
+.marker {
+    padding-left: 16px;
+    color: #79854c;
+}
+
+/* Стили для списка из табов */
+.notation-block-tab-list {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+}
+
+/* Стили для маркированного списка */
+.notation-block-bullet-list {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+}
+
+/* Стили для нумерованного списка */
+.notation-block-ordered-list {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
 }
 
 /* Скрытые спецификации */

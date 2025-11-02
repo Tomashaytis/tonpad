@@ -4,8 +4,8 @@ import { dropCursor } from "prosemirror-dropcursor";
 import { gapCursor } from "prosemirror-gapcursor";
 import { history, } from "prosemirror-history";
 import { markdownSchema } from "./schema/markdown-schema.js";
-import { CustomMarkdownParser } from "./parser/markdown-parser.js";
 import { NodeConverter } from "./utils/node-converter.js";
+import { NodeReconstructor } from "./utils/node-reconstructor.js";
 import { markdownSerializer } from "./serializer/markdown-serializer.js";
 import { blockNavigationPlugin } from "./plugins/block-navigation.js"
 import { enterPlugin } from "./plugins/enter.js";
@@ -14,7 +14,6 @@ import { inputRulesPlugin } from "./plugins/input-rules.js";
 import { backspacePlugin } from "./plugins/backspace.js";
 import { deletePlugin } from "./plugins/delete.js";
 import { inputPlugin } from "./plugins/input.js"
-import { patternMatchPlugin } from "./plugins/pattern-matching.js"
 import { disableInsertPlugin } from "./plugins/disable-insert.js"
 import { hideSpecPlugin } from "./plugins/hide-spec.js"
 import { copyPlugin } from "./plugins/copy.js"
@@ -23,8 +22,7 @@ export class Editor {
     constructor(target, content = '') {
         if (!target) throw new Error('Target element required');
 
-        const parser = new CustomMarkdownParser();
-        let doc = parser.parse(content);
+        const doc = this.createDocumentFromText(content);
 
         this.view = new EditorView(target, {
             state: EditorState.create({
@@ -38,110 +36,68 @@ export class Editor {
                 'data-gramm': "false",
                 'data-gramm-editor': "false",
                 style: `
-                    outline: none; 
-                    min-height: 300px; 
-                    padding: 15px;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                    font-size: 14px;
-                    line-height: 1.6;
-                    background: white;
-                    white-space: pre-wrap;
-                `
+                outline: none; 
+                min-height: 300px; 
+                padding: 15px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                background: white;
+                white-space: pre-wrap;
+            `
             }
         });
 
         this.rebuildTree();
     }
 
+    createDocumentFromText(content) {
+        if (!content.trim()) {
+            return markdownSchema.nodes.doc.create({}, [
+                NodeConverter.constructParagraph()
+            ]);
+        }
+
+        const lines = content.split('\n');
+        const paragraphs = [];
+
+        for (const line of lines) {
+            paragraphs.push(NodeConverter.constructParagraph(line));
+        }
+
+        return markdownSchema.nodes.doc.create({}, paragraphs);
+    }
+
     rebuildTree() {
         let tr = this.view.state.tr;
         let hasChanges = false;
 
+        const reconstructor = new NodeReconstructor();
         const changes = [];
 
         this.view.state.doc.descendants((node, pos) => {
-            if (node.type.name === 'heading') {
-                changes.push({ type: 'heading', node, pos });
-            }
-
-            if (node.type.name === 'blockquote') {
-                changes.push({ type: 'blockquote', node, pos });
-            }
-
-            if (node.isText && node.marks.length > 0) {
-                const $pos = this.view.state.doc.resolve(pos);
-                let paragraphNode = null;
-                let paragraphPos = 0;
-
-                for (let depth = $pos.depth; depth >= 0; depth--) {
-                    if ($pos.node(depth).type.name === 'paragraph') {
-                        paragraphNode = $pos.node(depth);
-                        paragraphPos = $pos.start(depth);
-                        break;
-                    }
-                }
-
-                if (paragraphNode) {
-                    changes.push({
-                        type: 'mark',
-                        node: node,
-                        pos: pos,
-                        paragraphNode: paragraphNode,
-                        paragraphPos: paragraphPos
-                    });
-                }
+            if (node.type.name === 'paragraph') {
+                changes.push({ type: 'paragraph', node, pos });
             }
         });
 
         changes.sort((a, b) => b.pos - a.pos).forEach((change) => {
-            if (change.type === 'heading') {
-                const headingText = change.node.textContent.replace(/^#+\s/, '');
-                const level = change.node.attrs.level;
-                const headingBlock = NodeConverter.constructHeading(headingText, level);
-                tr = tr.replaceWith(change.pos, change.pos + change.node.nodeSize, headingBlock);
-                hasChanges = true;
-            } else if (change.type === 'blockquote') {
-                const blockquoteContent = change.node.content;
-                const blockquoteBlock = NodeConverter.constructBlockquote(blockquoteContent);
-                tr = tr.replaceWith(change.pos, change.pos + change.node.nodeSize, blockquoteBlock);
-                hasChanges = true;
-            } else if (change.type === 'mark') {
-                const textNode = change.node;
-                const paragraphNode = change.paragraphNode;
-                const paragraphPos = change.paragraphPos;
+            if (change.type === 'paragraph') {
+                const paragraph = change.node;
+                const text = paragraph.textContent;
 
-                textNode.marks.forEach(mark => {
-                    const textContent = textNode.textContent;
-                    let markFragment;
+                const blockResult = reconstructor.applyBlockRules([paragraph], change.pos);
+                const reconstructedNode = blockResult.paragraphs[0];
 
-                    switch (mark.type.name) {
-                        case 'em':
-                            markFragment = NodeConverter.constructEm(textContent);
-                            break;
-                        case 'strong':
-                            markFragment = NodeConverter.constructStrong(textContent);
-                            break;
-                        case 'strike':
-                            markFragment = NodeConverter.constructStrike(textContent);
-                            break;
-                        case 'highlight':
-                            markFragment = NodeConverter.constructHighlight(textContent);
-                            break;
-                        case 'underline':
-                            markFragment = NodeConverter.constructUnderline(textContent);
-                            break;
-                        case 'code':
-                            markFragment = NodeConverter.constructCode(textContent);
-                            break;
-                        default:
-                            return;
-                    }
+                const markReconstruction = reconstructor.reconstructMarksInNode(reconstructedNode);
+                const finalNode = markReconstruction || reconstructedNode;
 
-                    tr = tr.replaceWith(change.pos, change.pos + textNode.nodeSize, markFragment);
+                if (finalNode !== paragraph) {
+                    tr = tr.replaceWith(change.pos, change.pos + paragraph.nodeSize, finalNode);
                     hasChanges = true;
-                });
+                }
             }
         });
 
@@ -155,11 +111,9 @@ export class Editor {
             this.view.dispatch(this.view.state.tr.setSelection(newSelection));
         }
     }
-
     createPlugins() {
         return [
             history(),
-            //lineBreakPlugin(),
             backspacePlugin(),
             deletePlugin(),
             enterPlugin(),
@@ -170,7 +124,6 @@ export class Editor {
             blockNavigationPlugin(),
             inputPlugin(),
             disableInsertPlugin(),
-            //patternMatchPlugin(),
             //hideSpecPlugin(),
             copyPlugin(),
         ];
@@ -178,13 +131,12 @@ export class Editor {
 
     setMarkdown(markdown) {
         try {
-            const parser = new CustomMarkdownParser();
-            let newDoc = parser.parse(markdown || "");
+            const newDoc = this.createDocumentFromText(markdown || "");
 
             const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
             this.view.dispatch(tr);
 
-            setTimeout(() => this.rebuildTree(), 0);
+            this.rebuildTree();
         } catch (error) {
             console.log(`Error: ${error}`);
         }

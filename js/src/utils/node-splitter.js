@@ -1,6 +1,7 @@
 import { NodeConverter } from "./node-converter.js";
 import { NodeReconstructor } from "./node-reconstructor.js";
 import { markdownSchema } from "../schema/markdown-schema.js";
+import { TextSelection } from "prosemirror-state";
 
 export class NodeSplitter {
     static handleEnter(view, event) {
@@ -49,13 +50,39 @@ export class NodeSplitter {
 
         const blockPos = $from.before($from.depth - 1);
         const blockSize = notationBlock.nodeSize;
+        let offset = 1;
 
         let newNodes = [];
 
-        const upperNode = NodeConverter.constructParagraph(beforeText)
-        newNodes.push(upperNode);
-
-        const lowerNode = NodeConverter.constructParagraph(afterText);
+        let upperNode
+        let lowerNode;
+        if (notationBlock.attrs.type === 'blockquote' && notationBlock.child(1).textContent.length !== 0) {
+            upperNode = NodeConverter.constructParagraph(beforeText);
+            lowerNode = NodeConverter.constructBlockquote(afterText);
+            offset += lowerNode.child(0).nodeSize - 1;
+            newNodes.push(upperNode);
+        } else if (notationBlock.attrs.type === 'tab_list' && notationBlock.child(1).textContent.length !== 0) {
+            upperNode = NodeConverter.constructParagraph(beforeText);
+            lowerNode = NodeConverter.constructTabListItem(afterText, notationBlock.attrs.level);
+            offset += lowerNode.child(0).nodeSize - 1;
+            newNodes.push(upperNode);
+        } else if (notationBlock.attrs.type === 'bullet_list' && notationBlock.child(1).textContent.length !== 0) {
+            upperNode = NodeConverter.constructParagraph(beforeText);
+            lowerNode = NodeConverter.constructBulletListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.marker);
+            offset += lowerNode.child(0).nodeSize - 1;
+            newNodes.push(upperNode);
+        } else if (notationBlock.attrs.type === 'ordered_list' && notationBlock.child(1).textContent.length !== 0) {
+            upperNode = NodeConverter.constructParagraph(beforeText);
+            lowerNode = NodeConverter.constructOrderedListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.number + 1);
+            offset += lowerNode.child(0).nodeSize - 1;
+            newNodes.push(upperNode);
+        } else {
+            if (!['blockquote', 'tab_list', 'bullet_list', 'ordered_list'].includes(notationBlock.attrs.type)) {
+                upperNode = NodeConverter.constructParagraph(beforeText);
+                newNodes.push(upperNode);
+            }
+            lowerNode = NodeConverter.constructParagraph(afterText);
+        }
         newNodes.push(lowerNode);
 
         let tr = state.tr;
@@ -63,7 +90,7 @@ export class NodeSplitter {
         tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNodes);
 
         if (reconstructedNodes.length > 1) {
-            const cursorPos = blockPos + reconstructedNodes[0].nodeSize + 1;
+            const cursorPos = blockPos + reconstructedNodes[0].nodeSize + offset;
             tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
         } else if (reconstructedNodes.length === 1) {
             const cursorPos = blockPos + reconstructedNodes[0].nodeSize - 1;
@@ -136,6 +163,7 @@ export class NodeSplitter {
         const nodeContent = notationBlock.child(1).textContent;
         const beforeText = nodeContent.slice(0, cursorOffset);
         const afterText = nodeContent.slice(cursorOffset);
+        let offset = 1;
 
         let newNodes = [];
 
@@ -143,14 +171,29 @@ export class NodeSplitter {
 
         newNodes.push(upperNode);
 
-        const lowerNode = NodeConverter.constructParagraph(afterText);
+        let lowerNode;
+        if (notationBlock.attrs.type === 'blockquote') {
+            lowerNode = NodeConverter.constructBlockquote(afterText);
+            offset += lowerNode.child(0).nodeSize - 1;
+        } else if (notationBlock.attrs.type === 'tab_list') {
+            lowerNode = NodeConverter.constructTabListItem(afterText, notationBlock.attrs.level);
+            offset += lowerNode.child(0).nodeSize - 1;
+        } else if (notationBlock.attrs.type === 'bullet_list') {
+            lowerNode = NodeConverter.constructBulletListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.marker);
+            offset += lowerNode.child(0).nodeSize - 1;
+        } else if (notationBlock.attrs.type === 'ordered_list') {
+            lowerNode = NodeConverter.constructOrderedListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.number + 1);
+            offset += lowerNode.child(0).nodeSize - 1;
+        } else {
+            lowerNode = NodeConverter.constructParagraph(afterText);
+        }
         newNodes.push(lowerNode);
 
         let tr = state.tr;
         const reconstructedNodes = this.applyReconstruction(newNodes);
         tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNodes);
 
-        const cursorPos = blockPos + (beforeText ? reconstructedNodes[0].nodeSize : nodeSpecContent.length + 4) + 1;
+        const cursorPos = blockPos + (beforeText ? reconstructedNodes[0].nodeSize : nodeSpecContent.length + 4) + offset;
         tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
 
         dispatch(tr);

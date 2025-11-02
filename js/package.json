@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "rollup -c",
     "dev": "rollup -c --watch"
   },
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^16.0.2",
-    "rollup": "^4.52.4"
+    "rollup": "^4.52.4",
+    "vitest": "^2.1.4"
   }
 }

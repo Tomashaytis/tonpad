@@ -1,6 +1,7 @@
 import { Plugin } from "prosemirror-state";
 import { keydownHandler } from "prosemirror-keymap";
 import { TextSelection } from "prosemirror-state";
+import { correctCursorPos, findNodePosition, getNavigationInfo, getNeighbor } from "../utils/utils.js";
 
 export function blockNavigationPlugin() {
     return new Plugin({
@@ -10,37 +11,56 @@ export function blockNavigationPlugin() {
                     const { $from } = state.selection;
                     const navInfo = getNavigationInfo(state);
                     const nextNode = getNeighbor(navInfo, 'next');
+                    let currentOffset = $from.parentOffset;
+                    if ($from.parent.type.name === 'spec_block') {
+                        currentOffset = 0;
+                    }
+                    
+                    let tr = state.tr;
 
                     if (navInfo.targetNode.type.name === 'notation_block' && navInfo.targetNode.attrs.layout === 'col') {
                         return false;
                     }
-                    if (nextNode.type.name === 'notation_block' && nextNode.attrs.layout === 'col') {
-                        return false;
-                    }
 
                     if (nextNode) {
+                        if (nextNode.type.name === 'notation_block' && nextNode.attrs.layout === 'col') {
+                            return false;
+                        }
+
                         if (nextNode.type.name === 'notation_block' && nextNode.childCount >= 2) {
                             const nextNodePos = findNodePosition(state, nextNode);
                             if (nextNodePos !== -1) {
                                 const secondChildPos = nextNodePos + nextNode.child(0).nodeSize + 2;
                                 const $pos = state.doc.resolve(secondChildPos);
 
-                                const targetOffset = Math.min($from.parentOffset, $pos.parent.content.size, nextNode.nodeSize - 2);
-                                const targetPos = $pos.pos + targetOffset;
+                                const targetOffset = Math.min(currentOffset, $pos.parent.content.size, nextNode.nodeSize - 2);
+                                let targetPos = $pos.pos + targetOffset;
 
-                                const selection = TextSelection.create(state.doc, targetPos);
-                                dispatch(state.tr.setSelection(selection));
+                                const correctedSelection = correctCursorPos(tr, targetPos);
+                                if (correctedSelection) {
+                                    tr = tr.setSelection(correctedSelection);
+                                } else {
+                                    tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
+                                }
+                                
+                                dispatch(tr);
                                 return true;
                             }
                         } else {
                             const nextNodePos = findNodePosition(state, nextNode);
                             if (nextNodePos !== -1) {
                                 const $pos = state.doc.resolve(nextNodePos);
-                                const targetOffset = Math.min($from.parentOffset, $pos.parent.content.size, nextNode.nodeSize - 2);
-                                const targetPos = $pos.pos + targetOffset + 1;
+                                const targetOffset = Math.min(currentOffset, $pos.parent.content.size, nextNode.nodeSize - 2);
+                                let targetPos = $pos.pos + targetOffset + 1;
 
-                                const selection = TextSelection.create(state.doc, targetPos);
-                                dispatch(state.tr.setSelection(selection));
+                                const correctedSelection = correctCursorPos(tr, targetPos);
+                                if (correctedSelection) {
+                                    tr = tr.setSelection(correctedSelection);
+                                } else {
+                                    tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
+                                }
+                                
+                                dispatch(tr);
                                 return true;
                             }
                         }
@@ -49,24 +69,36 @@ export function blockNavigationPlugin() {
                 },
                 "ArrowUp": (state, dispatch, view) => {
                     const { $from } = state.selection;
-                    const currentOffset = $from.parentOffset;
+                    let currentOffset = $from.parentOffset;
+                    if ($from.parent.type.name === 'spec_block') {
+                        currentOffset = 0;
+                    }
                     const navInfo = getNavigationInfo(state);
                     const prevNode = getNeighbor(navInfo, 'previous');
+                    
+                    let tr = state.tr;
 
                     if (navInfo.targetNode.type.name === 'notation_block' && navInfo.targetNode.attrs.layout === 'col') {
                         return false;
                     }
 
-                    if (navInfo && navInfo.targetNode && navInfo.targetNode.type.name === 'notation_block' && $from.parent.type.name != "spec_block") {
+                    /*if (navInfo && navInfo.targetNode && navInfo.targetNode.type.name === 'notation_block' && !($from.parent.type.name === 'spec_block' && currentOffset === 0)) {
                         const notationBlock = navInfo.targetNode;
                         const notationPos = findNodePosition(state, notationBlock);
                         if (notationPos !== -1) {
-                            const firstChildPos = notationPos + 2;
-                            const selection = TextSelection.create(state.doc, firstChildPos);
-                            dispatch(state.tr.setSelection(selection));
+                            let targetPos = notationPos + 2;
+
+                            const correctedSelection = correctCursorPosWithoutChanges(tr, targetPos);
+                            if (correctedSelection) {
+                                tr = tr.setSelection(correctedSelection);
+                            } else {
+                                tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
+                            }
+                            
+                            dispatch(tr);
                             return true;
                         }
-                    }
+                    }*/
 
                     if (prevNode.type.name === 'notation_block' && prevNode.attrs.layout === 'col') {
                         return false;
@@ -91,8 +123,14 @@ export function blockNavigationPlugin() {
                         }
 
                         if (targetPos !== undefined) {
-                            const selection = TextSelection.create(state.doc, targetPos);
-                            dispatch(state.tr.setSelection(selection));
+                            const correctedSelection = correctCursorPos(tr, targetPos);
+                            if (correctedSelection) {
+                                tr = tr.setSelection(correctedSelection);
+                            } else {
+                                tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
+                            }
+                            
+                            dispatch(tr);
                             return true;
                         }
                     }
@@ -101,64 +139,4 @@ export function blockNavigationPlugin() {
             })
         }
     });
-}
-
-function findNodePosition(state, targetNode) {
-    let foundPos = -1;
-    state.doc.descendants((node, pos) => {
-        if (node === targetNode) {
-            foundPos = pos;
-            return false;
-        }
-    });
-    return foundPos;
-}
-
-function getNavigationInfo(state) {
-    const { $from } = state.selection;
-    const parentNode = $from.depth > 0 ? $from.node($from.depth - 1) : null;
-
-    let targetNode, container;
-
-    if (parentNode && parentNode.type.name === 'notation_block') {
-        targetNode = parentNode;
-        container = $from.depth > 1 ? $from.node($from.depth - 2) : null;
-    } else {
-        targetNode = $from.parent;
-        container = parentNode;
-    }
-
-    if (!container) return null;
-
-    let index = -1;
-    for (let i = 0; i < container.childCount; i++) {
-        if (container.child(i) === targetNode) {
-            index = i;
-            break;
-        }
-    }
-
-    if (index === -1) return null;
-
-    return {
-        targetNode,
-        container,
-        index
-    };
-}
-
-function getNeighbor(navInfo, direction) {
-    if (!navInfo) return null;
-
-    const { container, index } = navInfo;
-
-    if (direction === 'next' && index < container.childCount - 1) {
-        return container.child(index + 1);
-    }
-
-    if (direction === 'previous' && index > 0) {
-        return container.child(index - 1);
-    }
-
-    return null;
 }
