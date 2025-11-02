@@ -11,8 +11,17 @@ export function lineBreakPlugin() {
                     const { $from, $to } = state.selection;
 
                     const currentNode = $from.parent;
-                    if (currentNode.type.name === "paragraph")
-                        return false;
+                    if (currentNode.type.name === "paragraph") {
+                        const prevText = currentNode.textContent.slice(0, $from.parentOffset);
+                        const nextText = currentNode.textContent.slice($from.parentOffset);
+
+                        let isHandled = false;
+                        if (/^(#{1,6})\s/.test(prevText) || /^(#{1,6})\s/.test(nextText)) {
+                            handleHeadingPattern(state, dispatch, $from, prevText, nextText);
+                            isHandled = true;
+                        }
+                        return isHandled;
+                    }
 
                     const { node: notationBlock, pos: notationBlockPos } = NodeSearch.getParent($from);
 
@@ -37,30 +46,40 @@ function handleHeadingBlock(event, state, dispatch, $from, $to, notationBlock, n
     if ($from.parent.type.name === "heading")
         return handleHeadingEnter(event, state, dispatch, $from, $to, notationBlock, notationBlockPos);
 
-    if ($from.parent.type.name === "heading_spec")
+    if ($from.parent.type.name === "spec_block")
         return handleHeadingSpecEnter(event, state, dispatch, $from, $to, notationBlock, notationBlockPos);
 
     return false
 }
 
 function handleHeadingEnter(event, state, dispatch, $from, $to, notationBlock, notationBlockPos) {
-    if ($from.parent.type.name !== "heading") return false;
-
     event.preventDefault();
 
     if ($from.pos === $to.pos) {
-        const headingText = $from.parent.textContent;
-        const beforeText = headingText.slice(0, $from.parentOffset);
-        const afterText = headingText.slice($from.parentOffset);
+        const headingNode = $from.parent;
+        const headingText = headingNode.textContent;
+        const prevText = headingText.slice(0, $from.parentOffset);
+        const nextText = headingText.slice($from.parentOffset);
 
-        const newParagraph = state.schema.nodes.paragraph.create(
-            null,
-            afterText ? state.schema.text(afterText) : null
-        );
+        const match = nextText.match(/^(#{1,6})\s(.*)$/);
+
+        let newNode;
+        if (match) {
+            const newHeading = state.schema.nodes.heading.create(
+                { level: match[1].length },
+                match[2] ? state.schema.text(match[2]) : null
+            );
+            newNode = NodeConverter.constructHeading(newHeading);
+        } else {
+            newNode = state.schema.nodes.paragraph.create(
+                null,
+                nextText ? state.schema.text(nextText) : null
+            );
+        }
 
         const updatedHeading = state.schema.nodes.heading.create(
-            { level: $from.parent.attrs.level },
-            beforeText ? state.schema.text(beforeText) : null
+            { level: headingNode.attrs.level },
+            prevText ? state.schema.text(prevText) : null
         );
 
         const headingBlock = NodeConverter.constructHeading(updatedHeading)
@@ -73,10 +92,10 @@ function handleHeadingEnter(event, state, dispatch, $from, $to, notationBlock, n
             headingBlock
         );
 
-        const paragraphPos = notationBlockPos + headingBlock.nodeSize;
-        tr = tr.insert(paragraphPos, newParagraph);
+        const newNodePos = notationBlockPos + headingBlock.nodeSize;
+        tr = tr.insert(newNodePos, newNode);
 
-        const cursorPos = paragraphPos + 1;
+        const cursorPos = newNodePos + 1;
         dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
         return true;
     }
@@ -84,7 +103,7 @@ function handleHeadingEnter(event, state, dispatch, $from, $to, notationBlock, n
 }
 
 function handleHeadingSpecEnter(event, state, dispatch, $from, $to, notationBlock, notationBlockPos) {
-    if ($from.parent.type.name !== "heading_spec") return false;
+    if ($from.parent.type.name !== "spec_block") return false;
 
     event.preventDefault();
 
@@ -206,4 +225,80 @@ function handleHeadingSpecEnter(event, state, dispatch, $from, $to, notationBloc
         }
     }
     return false;
+}
+
+function handleHeadingPattern(state, dispatch, $from, prevText, nextText) {
+    const prevHeadingMatch = prevText.match(/^(#{1,6})\s(.*)$/);
+    const nextHeadingMatch = nextText.match(/^(#{1,6})\s(.*)$/);
+
+    let tr = state.tr;
+    if (prevHeadingMatch) {
+        const level = prevHeadingMatch[1].length;
+        const headingText = prevHeadingMatch[2];
+
+        const headingNode = state.schema.nodes.heading.create(
+            { level: level },
+            headingText ? state.schema.text(headingText) : null
+        );
+
+        const headingBlock = NodeConverter.constructHeading(headingNode);
+        const paragraphPos = $from.before(1);
+
+        tr.replaceWith(
+            paragraphPos,
+            paragraphPos + $from.parent.nodeSize,
+            headingBlock
+        );
+
+    } else {
+        const paragraphNode = state.schema.nodes.paragraph.create(
+            null,
+            prevText ? state.schema.text(prevText) : null
+        );
+
+        const paragraphPos = $from.before(1);
+
+        tr.replaceWith(
+            paragraphPos,
+            paragraphPos + $from.parent.nodeSize,
+            paragraphNode
+        );
+    }
+
+    if (nextHeadingMatch) {
+        const level = nextHeadingMatch[1].length;
+        const headingText = nextHeadingMatch[2];
+
+        const headingNode = state.schema.nodes.heading.create(
+            { level: level },
+            headingText ? state.schema.text(headingText) : null
+        );
+
+        const headingBlock = NodeConverter.constructHeading(headingNode);
+
+        const paragraphPos = $from.before(1);
+
+        tr.insert(
+            paragraphPos + prevText.length + 1,
+            headingBlock
+        );
+    } else {
+        const paragraphNode = state.schema.nodes.paragraph.create(
+            null,
+            nextText ? state.schema.text(nextText) : null
+        );
+
+        const paragraphPos = $from.before(1);
+
+        tr.insert(
+            paragraphPos + prevText.length,
+            paragraphNode
+        );
+    }
+
+    const cursorPos = $from.parentOffset + 2;
+
+    dispatch(tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos))));
+
+    return true;
 }

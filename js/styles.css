@@ -1,32 +1,154 @@
-.notation-block {
-    display: flex;
-    align-items: baseline;
-}
-
-.heading-spec {
-    color: #b8cb76;
-    caret-color: black;
-}
-
-.heading,
-.heading-spec {
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    line-height: inherit;
-}
-
-.notation-block h1, .notation-block:has(> h1) .heading-spec { font-size: 28px; }
-.notation-block h2, .notation-block:has(> h2) .heading-spec { font-size: 24px; }
-.notation-block h3, .notation-block:has(> h3) .heading-spec { font-size: 20px; }
-.notation-block h4, .notation-block:has(> h4) .heading-spec { font-size: 16px; }
-.notation-block h5, .notation-block:has(> h5) .heading-spec { font-size: 14px; }
-.notation-block h6, .notation-block:has(> h6) .heading-spec { font-size: 12px; }
-
-/* Общие стили редактора */
+/* Базовые стили редактора */
 .markdown-editor {
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     line-height: 1.6;
+    font-size: 16px;
 }
 
+/* Notation block как заголовок */
+h1.notation-block-row,
+h2.notation-block-row,
+h3.notation-block-row, 
+h4.notation-block-row,
+h5.notation-block-row,
+h6.notation-block-row {
+    min-height: 1.6em;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+/* Notation block для цитат */
+.notation-block-row.notation-block-quote {
+    position: relative;
+    padding-left: 12px; /* место для вертикальной линии */
+}
+
+/* Вертикальная линия как в Obsidian */
+.notation-block-row.notation-block-quote::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 2px;
+    bottom: 2px;
+    width: 3px;
+    background: #b8cb76;
+    border-radius: 2px;
+}
+
+/* Heading внутри notation_block как span */
+.heading-content {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font: inherit;
+}
+
+/* Blockquote внутри notation_block как span */
+.blockquote-content {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font: inherit;
+    font-style: italic;
+}
+
+/* Spec блоки для заголовков */
+.heading-spec {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    color: #b8cb76;
+    caret-color: black;
+    font: inherit;
+}
+
+/* Spec блоки для цитат */
+.blockquote-spec {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    color: #b8cb76;
+    caret-color: black;
+    font: inherit;
+    font-style: normal;
+}
+
+.mark-spec {
+    color: #79854c;
+    font-weight: bold;
+    caret-color: black;
+    opacity: 0.7;
+    font: inherit;
+}
+
+/* Размеры для разных уровней заголовков */
+h1.notation-block-row, 
+h1.notation-block-row .heading-content, 
+h1.notation-block-row .heading-spec { 
+    font-size: 32px; 
+    line-height: 1.3; 
+}
+
+h2.notation-block-row, 
+h2.notation-block-row .heading-content, 
+h2.notation-block-row .heading-spec { 
+    font-size: 28px; 
+    line-height: 1.3; 
+}
+
+h3.notation-block-row, 
+h3.notation-block-row .heading-content, 
+h3.notation-block-row .heading-spec { 
+    font-size: 24px; 
+    line-height: 1.4; 
+}
+
+h4.notation-block-row, 
+h4.notation-block-row .heading-content, 
+h4.notation-block-row .heading-spec { 
+    font-size: 20px; 
+    line-height: 1.4; 
+}
+
+h5.notation-block-row, 
+h5.notation-block-row .heading-content, 
+h5.notation-block-row .heading-spec { 
+    font-size: 18px; 
+    line-height: 1.5; 
+}
+
+h6.notation-block-row, 
+h6.notation-block-row .heading-content, 
+h6.notation-block-row .heading-spec { 
+    font-size: 16px; 
+    line-height: 1.5; 
+}
+
+/* Обычные параграфы */
+.markdown-editor p {
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+/* Обычные заголовки (вне notation_block) */
+.heading {
+    margin: 1em 0 0.5em 0;
+    font-weight: bold;
+}
+
+/* Обычные blockquote (вне notation_block) */
+.blockquote {
+    margin: 0;
+    padding: 0;
+    font-style: italic;
+    border-left: 3px solid #b8cb76;
+}
+
+/* Скрытые спецификации */
 .spec-hidden {
     display: none;
 }

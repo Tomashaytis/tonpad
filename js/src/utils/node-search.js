@@ -58,14 +58,15 @@ export class NodeSearch {
         };
     }
 
-    static findNext($from) {
-        const currentIndex = $from.index();
-        const parent = $from.node($from.depth - 1);
+    static findNext($from, targetDepth = null) {
+        const depth = targetDepth !== null ? targetDepth : $from.depth - 1;
+        const currentIndex = $from.index(depth);
+        const parent = $from.node(depth);
 
         if (currentIndex >= parent.childCount - 1) return null;
 
         const nextNode = parent.child(currentIndex + 1);
-        let nextPos = $from.start($from.depth - 1);
+        let nextPos = $from.start(depth);
 
         for (let i = 0; i <= currentIndex; i++) {
             nextPos += parent.child(i).nodeSize;
@@ -74,8 +75,37 @@ export class NodeSearch {
         return {
             node: nextNode,
             pos: nextPos,
-            index: currentIndex + 1
+            index: currentIndex + 1,
+            depth: depth
         };
+    }
+
+    static findPreviousAuto($from) {
+        let depth = $from.depth;
+
+        while (depth >= 0) {
+            const result = this.findPrevious($from, depth);
+            if (result !== null) {
+                return result;
+            }
+            depth--;
+        }
+
+        return null;
+    }
+
+    static findNextAuto($from) {
+        let depth = $from.depth;
+
+        while (depth >= 0) {
+            const result = this.findNext($from, depth);
+            if (result !== null) {
+                return result;
+            }
+            depth--;
+        }
+
+        return null;
     }
 
     static getSiblings($from) {
