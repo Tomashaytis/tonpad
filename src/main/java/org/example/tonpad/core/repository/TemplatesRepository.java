@@ -11,6 +11,8 @@ public interface TemplatesRepository {
 
     Optional<TemplateRecord> getById(int id);
 
+    Optional<TemplateRecord> getByName(String name);
+
     void save(TemplateRecord template);
 
     void delete(int id);

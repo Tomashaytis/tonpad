@@ -11,7 +11,11 @@ public interface TemplateFieldsRepository {
 
     Optional<TemplateFieldRecord> getById(int id);
 
+    List<String> getByTemplateId(int templateId);
+
     void save(TemplateFieldRecord field);
 
     void delete(int id);
+
+    void deleteByTemplateId(int templateId);
 }

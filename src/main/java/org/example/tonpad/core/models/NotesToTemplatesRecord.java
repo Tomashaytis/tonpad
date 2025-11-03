@@ -5,21 +5,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
-
 @Setter
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class TemplateRecord {
+public class NotesToTemplatesRecord {
 
-    public TemplateRecord(String name) {
-        this.name = name;
+    public NotesToTemplatesRecord(int noteId, int templateId) {
+        this.noteId = noteId;
+        this.templateId = templateId;
     }
 
     private Integer id;
 
-    private String name;
+    private int noteId;
 
-    private List<String> fields;
+    private int templateId;
 }
