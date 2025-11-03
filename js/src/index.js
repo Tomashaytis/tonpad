@@ -5,7 +5,13 @@ window.CustomEditor = Editor;
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('editor');
     if (container) {
-        window.editor = new Editor(container, `
+        window.editor = new Editor(container, 
+`---
+author: pavel
+time: 12:15
+message: Hi
+---
+
 # Heading 1
 ## Heading 2
 
@@ -26,8 +32,7 @@ Lists:
 
 Marks: *em* **strong** ~~strike~~ ==highlight== __underline__ \`code\`
 
-Links: [note] [link](https://example.com) https://example.com my_email@mail.ru #tag
-`
+Links: [note] [link](https://example.com) https://example.com my_email@mail.ru #tag`
         );
     }
 });

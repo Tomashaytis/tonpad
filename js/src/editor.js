@@ -17,12 +17,21 @@ import { inputPlugin } from "./plugins/input.js"
 import { disableInsertPlugin } from "./plugins/disable-insert.js"
 import { hideSpecPlugin } from "./plugins/hide-spec.js"
 import { copyPlugin } from "./plugins/copy.js"
+import jsYAML from 'js-yaml';
 
 export class Editor {
     constructor(target, content = '') {
         if (!target) throw new Error('Target element required');
 
-        const doc = this.createDocumentFromText(content);
+        const docContent = this.parseDoc(content)
+
+        this.frontMatter = docContent.frontMatter;
+
+        const doc = this.createDocumentFromText(docContent.markdown);
+
+        this.frontMatterTable = document.getElementById('frontmatter-table');
+        this.frontMatterBody = document.getElementById('frontmatter-body');
+        this.updateFrontMatterTable();
 
         this.view = new EditorView(target, {
             state: EditorState.create({
@@ -129,10 +138,172 @@ export class Editor {
         ];
     }
 
+    parseDoc(text) {
+        const yamlRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
+        const match = text.match(yamlRegex);
+
+        if (match) {
+            const yamlContent = match[1];
+            const markdownContent = match[2];
+
+            return {
+                frontMatter: this.parseYAML(yamlContent),
+                markdown: markdownContent
+            };
+        }
+
+        return {
+            frontMatter: {},
+            markdown: text
+        };
+    }
+
+    parseYAML(yamlString) {
+        try {
+            return jsYAML.load(yamlString);
+        } catch (error) {
+            console.warn('Invalid YAML front matter:', error);
+            return {};
+        }
+    }
+
+    updateFrontMatterTable() {
+        this.frontMatterBody.innerHTML = '';
+
+        if (this.frontMatter && Object.keys(this.frontMatter).length > 0) {
+            Object.entries(this.frontMatter).forEach(([key, value]) => {
+                const row = document.createElement('tr');
+
+                // Ячейка ключа
+                const keyCell = document.createElement('td');
+                const keyInput = document.createElement('input');
+                keyInput.type = 'text';
+                keyInput.value = key;
+                keyInput.className = 'frontmatter-input';
+                keyInput.addEventListener('change', (e) => this.updateFrontMatterKey(key, e.target.value, row));
+                keyCell.appendChild(keyInput);
+
+                // Ячейка значения
+                const valueCell = document.createElement('td');
+                const valueInput = document.createElement('input');
+                valueInput.type = 'text';
+                valueInput.value = String(value);
+                valueInput.className = 'frontmatter-input';
+                valueInput.addEventListener('change', (e) => this.updateFrontMatterValue(key, e.target.value));
+                valueCell.appendChild(valueInput);
+
+                // Ячейка действий
+                const actionCell = document.createElement('td');
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '×';
+                deleteButton.className = 'frontmatter-delete-btn';
+                deleteButton.addEventListener('click', () => this.deleteFrontMatterField(key));
+                actionCell.appendChild(deleteButton);
+
+                row.appendChild(keyCell);
+                row.appendChild(valueCell);
+                row.appendChild(actionCell);
+                this.frontMatterBody.appendChild(row);
+            });
+
+            const addRow = document.createElement('tr');
+            const emptyCell1 = document.createElement('td');
+            const emptyCell2 = document.createElement('td');
+            const addCell = document.createElement('td');
+
+            const addButton = document.createElement('button');
+            addButton.textContent = '+';
+            addButton.className = 'frontmatter-add-btn';
+            addButton.onclick = () => this.addFrontMatterField();
+
+            addCell.appendChild(addButton);
+
+            addRow.appendChild(emptyCell1);
+            addRow.appendChild(emptyCell2);
+            addRow.appendChild(addCell);
+            this.frontMatterBody.appendChild(addRow);
+
+            this.frontMatterTable.style.display = 'table';
+        } else {
+            const addRow = document.createElement('tr');
+            const emptyCell1 = document.createElement('td');
+            const emptyCell2 = document.createElement('td');
+            const addCell = document.createElement('td');
+
+            const addButton = document.createElement('button');
+            addButton.textContent = '+';
+            addButton.className = 'frontmatter-add-btn';
+            addButton.onclick = () => this.addFrontMatterField();
+
+            addCell.appendChild(addButton);
+
+            addRow.appendChild(emptyCell1);
+            addRow.appendChild(emptyCell2);
+            addRow.appendChild(addCell);
+            this.frontMatterBody.appendChild(addRow);
+
+            this.frontMatterTable.style.display = 'table';
+        }
+    }
+
+    updateFrontMatterKey(oldKey, newKey, row) {
+        if (oldKey === newKey) return;
+
+        if (this.frontMatter[newKey]) {
+            alert('Поле с таким именем уже существует!');
+            row.querySelector('input[type="text"]').value = oldKey;
+            return;
+        }
+
+        const value = this.frontMatter[oldKey];
+
+        delete this.frontMatter[oldKey];
+        this.frontMatter[newKey] = value;
+
+        this.updateDocumentWithFrontMatter();
+    }
+
+    updateFrontMatterValue(key, newValue) {
+        if (this.frontMatter[key] === newValue) return;
+
+        this.frontMatter[key] = newValue;
+        this.updateDocumentWithFrontMatter();
+    }
+
+    deleteFrontMatterField(key) {
+        if (confirm(`Удалить поле "${key}"?`)) {
+            delete this.frontMatter[key];
+
+            if (Object.keys(this.frontMatter).length === 0) {
+                this.frontMatter = {};
+            }
+
+            this.updateDocumentWithFrontMatter();
+        }
+    }
+
+    addFrontMatterField() {
+        const newKey = `new_field_${Date.now()}`;
+        this.frontMatter[newKey] = '';
+        this.updateFrontMatterTable();
+    }
+
+    updateDocumentWithFrontMatter() {
+        this.updateFrontMatterTable();
+
+        const currentMarkdown = this.getMarkdown();
+
+        const newContent = this.getNoteContent(currentMarkdown);
+        this.setMarkdown(newContent);
+    }
+
     setMarkdown(markdown) {
         try {
-            const newDoc = this.createDocumentFromText(markdown || "");
+            const docContent = this.parseDoc(markdown);
+            this.frontMatter = docContent.frontMatter;
+            this.updateFrontMatterTable();
 
+            const newDoc = this.createDocumentFromText(docContent.markdown);
             const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
             this.view.dispatch(tr);
 
@@ -163,8 +334,26 @@ export class Editor {
         }
     }
 
+    getFrontMatter() {
+        if (this.frontMatter && Object.keys(this.frontMatter).length > 0) {
+            let frontMatterContent = "---\n";
+            Object.entries(this.frontMatter).forEach(([key, value]) => {
+                frontMatterContent += `${key}: ${value}\n`
+            });
+            frontMatterContent += "---\n\n"
+            return frontMatterContent;
+        } else {
+            console.log('No front matter found');
+            return "";
+        }
+    }
+
     getDoc() {
         return this.view.state.doc.toJSON();
+    }
+
+    getNoteContent() {
+        return this.getFrontMatter() + this.getMarkdown();
     }
 
     getCursorInfo() {

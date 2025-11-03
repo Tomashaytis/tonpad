@@ -112,6 +112,30 @@ export function keymapPlugin(editor) {
                     console.log(lineNumber + ' ' + line);
                 }
             });
+        },
+        "Alt-5": () => {
+            console.log('=== FRONT MATTER ===');
+            const frontMatter = editor.getFrontMatter();
+            const lines = frontMatter.split('\n');
+
+            lines.forEach((line, index) => {
+                if (line.trim()) {
+                    const lineNumber = (index + 1).toString().padStart(3, '0');
+                    console.log(lineNumber + ' ' + line);
+                }
+            });
+        },
+        "Alt-6": () => {
+            console.log('=== NOTE CONTENT ===');
+            const noteContent = editor.getNoteContent();
+            const lines = noteContent.split('\n');
+
+            lines.forEach((line, index) => {
+                if (line.trim()) {
+                    const lineNumber = (index + 1).toString().padStart(3, '0');
+                    console.log(lineNumber + ' ' + line);
+                }
+            });
         }
     });
 }
