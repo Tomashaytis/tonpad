@@ -1,6 +1,5 @@
 package org.example.tonpad.ui.controllers;
 
-import jakarta.annotation.PostConstruct;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -16,13 +15,9 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.springframework.stereotype.Component;
-
-import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -87,6 +82,8 @@ public class MainController extends AbstractController {
 
     private final FileTreeController fileTreeController;
 
+    private final SearchInFileTreeController searchInFileTreeController;
+
     private final VaultPath vaultPath;
 
     public void init(Stage stage) {
@@ -105,33 +102,80 @@ public class MainController extends AbstractController {
 
         searchInTextController.setTabPane(tabPane);
         searchInTextController.init(searchInTextPane);
+
+        searchInFileTreeController.setTabPane(tabPane);
+        searchInFileTreeController.init(searchInTextPane);
     }
 
     private void setupEventHandlers() {
         fileTreeController.setFileOpenHandler(this::openFileInEditor);
 
         showFilesButton.setOnAction(event -> togglePane(
-                leftStackPane,
-                fileTreePane,
-                showFilesButton,
-                () -> {},
-                () -> {}
+                leftStackPane, fileTreePane, showFilesButton, () -> {}, () -> {}
         ));
 
-        setSearchShortCut(
+        showSearchButton.setOnAction(e -> this.showSearchInFileTreeOverlay());
+
+        setOpenShortcut(
                 new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN),
-                new KeyCodeCombination(KeyCode.ESCAPE),
-                this::showSearchOverlay,
-                this::hideSearchOverlay
+                this::showSearchOverlay
         );
+
+        setOpenShortcut(
+                new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN),
+                this::showSearchInFileTreeOverlay
+        );
+
+        setEscShortcut(this::hideEverythingSearchRelated);
     }
 
-    private void showSearchOverlay()
-    {
+    private void hideEverythingSearchRelated() {
+        searchInTextController.hideSearchBar();
+        if (fileTreePane.isVisible()) {
+            searchInFileTreeController.hideSearchBar();
+        }
+        if (searchInTextPane.isVisible()) searchInTextPane.setVisible(false);
+        if (fileTreePane.isVisible()) {
+            leftStackPane.setManaged(false);
+            fileTreePane.setVisible(false);
+            showFilesButton.getStyleClass().remove("toggled-icon-button");
+        }
+        if (searchPane.isVisible()) searchPane.setVisible(false);
+        if (bookmarksPane.isVisible()) bookmarksPane.setVisible(false);
+    }
+
+    private void setOpenShortcut(KeyCodeCombination openKeyComb, Runnable show) {
+        if (tabPane.getScene() != null) {
+            attachAccelerator(tabPane.getScene(), openKeyComb, show);
+            tabPane.sceneProperty().addListener((obs, oldS, newS) -> {
+                if (newS != null) attachAccelerator(newS, openKeyComb, show);
+            });
+        }
+    }
+
+    private void setEscShortcut(Runnable hideAll) {
+        KeyCodeCombination esc = new KeyCodeCombination(KeyCode.ESCAPE);
+        if (tabPane.getScene() != null) {
+            attachAccelerator(tabPane.getScene(), esc, hideAll);
+            tabPane.sceneProperty().addListener((obs, oldS, newS) -> {
+                if (newS != null) attachAccelerator(newS, esc, hideAll);
+            });
+        }
+    }
+
+    private void attachAccelerator(Scene scene, KeyCodeCombination keyComb, Runnable callback) {
+        scene.getAccelerators().put(keyComb, () -> Platform.runLater(callback));
+    }
+
+    private void showSearchOverlay() {
         if (!searchInTextPane.isVisible()) {
             searchInTextPane.setVisible(true);
         }
-        searchInTextController.showSearchBar();
+        searchInTextController.activateSearchBar();
+
+        if (fileTreePane.isVisible()) {
+            searchInFileTreeController.hideSearchBar();
+        }
     }
 
     private void hideSearchOverlay() {
@@ -141,26 +185,46 @@ public class MainController extends AbstractController {
         }
     }
 
+    private void showSearchInFileTreeOverlay() {
+        if (!searchInTextPane.isVisible()) {
+            searchInTextPane.setVisible(true);
+        }
+        if (!fileTreePane.isVisible()) {
+            togglePane(
+                    leftStackPane,
+                    fileTreePane,
+                    showFilesButton,
+                    () -> {},
+                    () -> {}
+            );
+        }
+        searchInFileTreeController.activateSearchBar();
+        searchInTextController.hideSearchBar();
+    }
+
+    private void hideSearchInFileTreeOverlay() {
+        if (searchInTextPane.isVisible()) {
+            searchInFileTreeController.hideSearchBar();
+            searchInTextPane.setVisible(false);
+        }
+    }
+
     private void togglePane(StackPane stackPane, AnchorPane anchorPane, Button button, Runnable show, Runnable hide) {
         if (anchorPane.isVisible()) {
             button.getStyleClass().remove("toggled-icon-button");
             anchorPane.setVisible(false);
             stackPane.setManaged(false);
-
             hide.run();
         } else {
             for (Node child : stackPane.getChildren()) {
                 child.setVisible(false);
             }
-
             for (Node child : stackPane.getChildren()) {
                 child.getStyleClass().remove("toggled-icon-button");
             }
-
             button.getStyleClass().add("toggled-icon-button");
             stackPane.setManaged(true);
             anchorPane.setVisible(true);
-
             show.run();
         }
     }
@@ -170,14 +234,12 @@ public class MainController extends AbstractController {
             for (Node child : stackPane.getChildren()) {
                 child.setVisible(false);
             }
-
             for (Node child : stackPane.getChildren()) {
                 child.getStyleClass().remove("toggled-icon-button");
             }
 
             stackPane.setManaged(true);
             anchorPane.setVisible(true);
-
             show.run();
         }
     }
@@ -186,29 +248,8 @@ public class MainController extends AbstractController {
         if (anchorPane.isVisible()) {
             anchorPane.setVisible(false);
             stackPane.setManaged(false);
-
             hide.run();
         }
-    }
-
-    private void setSearchShortCut(KeyCodeCombination openKeyComb, KeyCodeCombination closeKeyComb, Runnable show, Runnable hide) {
-        if (tabPane.getScene() != null) {
-            attachAccelerator(tabPane.getScene(), openKeyComb, show);
-            attachAccelerator(tabPane.getScene(), closeKeyComb, hide);
-            tabPane.sceneProperty().addListener((obs, oldS, newS) -> {
-                if (newS != null) {
-                    attachAccelerator(newS, openKeyComb, show);
-                    attachAccelerator(newS, closeKeyComb, hide);
-                }
-            });
-        }
-    }
-
-    private void attachAccelerator(Scene scene, KeyCodeCombination keyComb, Runnable callback) {
-        scene.getAccelerators().put(
-                keyComb,
-                () -> Platform.runLater(callback)
-        );
     }
 
     private void openFileInEditor(String path) {

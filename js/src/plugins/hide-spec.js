@@ -43,9 +43,9 @@ function createDecorations(doc, notationBlockFocused = false) {
 
     doc.descendants((node, pos) => {
         if (node.type.name === "notation_block") {
-            const hasHeadingSpec = node.content.content.some(child => child.type.name === "heading_spec");
+            const hasHeadingSpec = node.content.content.some(child => child.type.name === "spec_block");
             if (hasHeadingSpec) {
-                const specNode = node.content.content.find(child => child.type.name === "heading_spec");
+                const specNode = node.content.content.find(child => child.type.name === "spec_block");
                 const specPos = pos + node.content.content.indexOf(specNode) + 1;
 
                 decorations.push(

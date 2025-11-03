@@ -1,11 +1,17 @@
 package org.example.tonpad.ui.controllers;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -16,11 +22,14 @@ import javafx.stage.StageStyle;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+
+import org.example.tonpad.core.files.RecentVaultService;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -49,6 +58,13 @@ public class QuickStartDialogController extends AbstractController {
     @FXML
     private Button settingsButton;
 
+    @FXML
+    private ListView<String> recentVaultsListView;
+
+    private final RecentVaultService recentVaultService;
+
+    private final ObservableList<String> recentVaults = FXCollections.observableArrayList();
+
     private final VaultPath vaultPath;
 
     private Stage stage;
@@ -65,10 +81,55 @@ public class QuickStartDialogController extends AbstractController {
         setupEventHandlers();
         setStage(stage, quickStartDialogMainHBox, StageStyle.TRANSPARENT);
         setupDragHandlers();
+        recentVaults.setAll(recentVaultService.load());
+        recentVaultService.bindAutoSave(recentVaults);
+        setupRecentVaultsList();
     }
 
     public void close() {
         stage.close();
+    }
+
+    private void setupRecentVaultsList() {
+        recentVaultsListView.setPlaceholder(new Label("no recent vaults"));
+        recentVaultsListView.setItems(recentVaults);
+        recentVaultsListView.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(String path, boolean empty) {
+                super.updateItem(path, empty);
+                if(empty || path == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+                setText(path);
+            }
+        });
+
+        recentVaultsListView.setOnMouseClicked(ev -> {
+            if (ev.getClickCount() == 2) openRecentSelected();
+        });
+        recentVaultsListView.setOnKeyPressed(ev -> {
+            if (ev.getCode() == KeyCode.ENTER) {
+                openRecentSelected();
+            }
+        });
+    }
+
+    private void openRecentSelected() {
+        String path = recentVaultsListView.getSelectionModel().getSelectedItem();
+        if(path == null || path.isBlank()) return; 
+        File dir = new File(path);
+        if(!dir.exists() || !dir.isDirectory()) {
+            if(confirmToRemoveBrokenRecent(path)) recentVaults.remove(path);
+            return;
+        }
+        vaultPath.setVaultPath(path);
+        if(createVaultHandler != null) {
+            recentVaultService.setFirstRecent(recentVaults, path);
+            createVaultHandler.accept(path);
+            close();
+        }
     }
 
     private void setupEventHandlers() {
@@ -108,6 +169,8 @@ public class QuickStartDialogController extends AbstractController {
 
             vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
             createVaultHandler.accept(vaultPath.getVaultPath());
+            recentVaultService.setFirstRecent(recentVaults, vaultPath.getVaultPath());
+            close();
         }
     }
 
@@ -137,16 +200,30 @@ public class QuickStartDialogController extends AbstractController {
         directoryChooser.setTitle("Select Vault Directory");
 
         File selectedDirectory = directoryChooser.showDialog(stage);
-        vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
+        if(selectedDirectory == null) return;
+        String path = selectedDirectory.getAbsolutePath();
+        vaultPath.setVaultPath(path);
+        recentVaultService.setFirstRecent(recentVaults, path);
+        if(createVaultHandler != null) {
+            System.out.println(vaultPath.getVaultPath());
+            createVaultHandler.accept(vaultPath.getVaultPath());
+            close();
+        }
 //        String vaultPath = selectedDirectory.getAbsolutePath();
-        System.out.println(vaultPath.getVaultPath());
-        createVaultHandler.accept(vaultPath.getVaultPath());
     }
 
     private void ensureEmptyDirectory(File directory) {
         if (!directory.exists()) {
             directory.mkdirs();
         }
+    }
+    
+    private boolean confirmToRemoveBrokenRecent(String path) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("path not found");
+        alert.setHeaderText("Vault path is not accessible");
+        alert.setContentText("Remove from Recent?\n\n" + path);
+        return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
     }
 
     @Override

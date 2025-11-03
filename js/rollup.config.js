@@ -12,7 +12,7 @@ export default {
             'prosemirror-state': 'prosemirrorState',
             'prosemirror-view': 'prosemirrorView',
             'prosemirror-markdown': 'prosemirrorMarkdown',
-            'markdown-it': 'MarkdownIt'
+            'js-yaml': 'jsyaml'
         }
     },
     plugins: [resolve(), commonjs()]

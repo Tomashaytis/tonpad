@@ -1,11 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <title>ProseMirror Editor</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="editor"></div>
+    <div class="editor-container">
+        <table id="frontmatter-table" class="frontmatter-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Key</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody id="frontmatter-body">
+                <!-- Данные будут добавляться через JS -->
+            </tbody>
+        </table>
+        <div id="editor"></div>
+    </div>
     <script src="dist/bundle.js"></script>
 </body>
 </html>

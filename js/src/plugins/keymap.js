@@ -1,15 +1,57 @@
 import { keymap } from "prosemirror-keymap";
 import { baseKeymap, toggleMark, chainCommands, newlineInCode, createParagraphNear, liftEmptyBlock, splitBlock, joinBackward, selectNodeBackward } from "prosemirror-commands";
 import { undo, redo } from "prosemirror-history";
-import { splitListItem, sinkListItem } from "prosemirror-schema-list";
 import { markdownSchema } from "../schema/markdown-schema.js";
+import { NodeInputter } from "../utils/node-inputter.js";
+import { NodeConverter } from "../utils/node-converter.js";
+import { NodeReconstructor } from "../utils/node-reconstructor.js";
+import { TextSelection } from "prosemirror-state";
+import { correctCursorPos } from "../utils/utils.js";
 
 export function keymapPlugin(editor) {
     return keymap({
         ...baseKeymap,
+        "Tab": (state, dispatch, view) => {
+            const { from, to } = state.selection;
+            const { $from } = state.selection;
+
+            if ($from.parent.type.name === 'spec_block') {
+                return NodeInputter.handleInputInSpec(view, from, to, '\t');
+            }
+
+            if ($from.parent.type.name === 'paragraph') {
+                const level = 1;
+                const blockStart = $from.before(1);
+                const blockEnd = $from.after(1);
+                const currentBlock = $from.node(1);
+
+                const fullText = currentBlock.textContent;
+                const nodeText = fullText;
+
+                const nodeBlock = NodeConverter.constructTabListItem(nodeText, level);
+
+                const reconstructor = new NodeReconstructor();
+                const nodeWithMarks = reconstructor.reconstructMarksInNode(nodeBlock);
+
+                let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || nodeBlock);
+
+                const containerPos = tr.mapping.map(blockStart);
+                const specNode = (nodeWithMarks || nodeBlock).content.child(0);
+                const cursorPos = containerPos + specNode.nodeSize;
+
+                let selection = TextSelection.create(tr.doc, cursorPos);
+                const newSelection = correctCursorPos(tr, cursorPos);
+                if (newSelection) {
+                    selection = newSelection;
+                }
+
+                dispatch(tr.setSelection(selection));
+                return true;
+            }
+
+            return NodeInputter.handleInputInNormalNode(view, from, to, '\t');
+        },
         "Enter": chainCommands(
-            splitListItem(markdownSchema.nodes.list_item),
-            sinkListItem(markdownSchema.nodes.list_item),
             newlineInCode,
             createParagraphNear,
             liftEmptyBlock,
@@ -63,6 +105,30 @@ export function keymapPlugin(editor) {
             console.log('=== MARKDOWN ===');
             const markdown = editor.getMarkdown();
             const lines = markdown.split('\n');
+
+            lines.forEach((line, index) => {
+                if (line.trim()) {
+                    const lineNumber = (index + 1).toString().padStart(3, '0');
+                    console.log(lineNumber + ' ' + line);
+                }
+            });
+        },
+        "Alt-5": () => {
+            console.log('=== FRONT MATTER ===');
+            const frontMatter = editor.getFrontMatter();
+            const lines = frontMatter.split('\n');
+
+            lines.forEach((line, index) => {
+                if (line.trim()) {
+                    const lineNumber = (index + 1).toString().padStart(3, '0');
+                    console.log(lineNumber + ' ' + line);
+                }
+            });
+        },
+        "Alt-6": () => {
+            console.log('=== NOTE CONTENT ===');
+            const noteContent = editor.getNoteContent();
+            const lines = noteContent.split('\n');
 
             lines.forEach((line, index) => {
                 if (line.trim()) {

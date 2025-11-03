@@ -1,176 +1,165 @@
 import { MarkdownSerializer } from "prosemirror-markdown";
 
-export const markdownSerializer = new MarkdownSerializer(
+export class ExtendedMarkdownSerializer extends MarkdownSerializer {
+    serializeFragment(fragment, options = {}) {
+        const state = new this.State(this.nodes, this.marks, options);
+        
+        let nodes = [];
+        fragment.forEach(node => nodes.push(node));
+        
+        nodes.forEach((node, index) => {
+            const handler = this.nodes[node.type.name];
+            if (handler) {
+                handler(state, node);
+            }
+            
+            if (node.isBlock && index < nodes.length - 1) {
+                state.write("\n");
+            }
+        });
+        
+        return state.out;
+    }
+}
+
+export const markdownSerializer = new ExtendedMarkdownSerializer(
     {
         paragraph: (state, node) => {
             state.renderInline(node);
-            state.closeBlock(node);
+            state.write("\n");
         },
-        
+
         heading: (state, node) => {
             state.write("#".repeat(node.attrs.level) + " ");
             state.renderInline(node);
-            state.closeBlock(node);
+            state.write("\n");
         },
-        
+
+        notation_block: (state, node) => {
+            if (node.attrs.type === 'heading') {
+                state.write("#".repeat(node.attrs.level) + " ");
+                state.renderInline(node.child(1));
+                state.write("\n");
+            } else if (node.attrs.type === 'blockquote') {
+                state.write("> ");
+                state.renderInline(node.child(1));
+                state.write("\n");
+            } else if (node.attrs.type === 'tab_list') {
+                state.write("\t".repeat(node.attrs.level));
+                state.renderInline(node.child(1));
+                state.write("\n");
+            } else if (node.attrs.type === 'bullet_list') {
+                state.write("\t".repeat(node.attrs.level));
+                state.write(node.child(1).attrs.marker + ' ')
+                state.renderInline(node.child(1));
+                state.write("\n");
+            } else if (node.attrs.type === 'ordered_list') {
+                state.write("\t".repeat(node.attrs.level));
+                state.write(`${node.child(1).attrs.number}. `)
+                state.renderInline(node.child(1));
+                state.write("\n");
+            } else {
+                state.renderContent(node);
+            }
+        },
+
         blockquote: (state, node) => {
             state.wrapBlock("> ", null, node, () => state.renderContent(node));
+            state.write("\n");
         },
-        
+
         horizontal_rule: (state) => {
             state.write("---\n");
-            state.ensureNewLine();
         },
-        
+
         code_block: (state, node) => {
             state.write("```" + (node.attrs.params || "") + "\n");
             state.text(node.textContent, false);
-            state.ensureNewLine();
-            state.write("```\n");
-            state.ensureNewLine();
+            state.write("\n```\n");
         },
-        
+
         bullet_list: (state, node) => {
             state.renderList(node, "  ", () => "- ");
+            state.write("\n");
         },
-        
+
         ordered_list: (state, node) => {
             const start = node.attrs.order || 1;
             state.renderList(node, "  ", (i) => `${start + i}. `);
+            state.write("\n");
         },
-        
+
         list_item: (state, node) => {
             state.renderContent(node);
         },
-        
+
         image: (state, node) => {
             state.write(`![${node.attrs.alt || ""}](${node.attrs.src}${node.attrs.title ? ` "${node.attrs.title}"` : ""})`);
         },
-        
+
         hard_break: (state) => {
             state.write("\\\n");
         },
-        
-        customTag: (state, node) => {
-            const params = Object.entries(node.attrs.params)
-                .map(([k, v]) => `${k}="${v}"`)
-                .join(" ");
-            state.write(`<!-- ${node.attrs.name} ${params} -->\n`);
-            state.renderContent(node);
-            state.ensureNewLine();
-            state.write(`<!-- /${node.attrs.name} -->\n`);
-            state.ensureNewLine();
-        },
-        
-        notation_block: (state, node) => {
-            state.renderContent(node);
+
+        spec_block: (state, node) => {
         },
 
-        heading_spec: () => {
+        html_comment: (state, node) => {
         },
-        
+
         text: (state, node) => {
             state.text(node.text);
         }
     },
     {
-        em: { 
-            open: "*", 
-            close: "*", 
-            mixable: true, 
-            expelEnclosingWhitespace: true 
+        spec: {
+            open: "",
+            close: "",
+            mixable: true,
+            expelEnclosingWhitespace: true,
+            escape: false
         },
-        strong: { 
-            open: "**", 
-            close: "**", 
-            mixable: true, 
-            expelEnclosingWhitespace: true 
-        },
-        link: {
-            open: "[",
-            close: (state, mark) => `](${mark.attrs.href}${mark.attrs.title ? ` "${mark.attrs.title}"` : ""})`,
+        em: {
+            open: "",
+            close: "",
             mixable: true,
             expelEnclosingWhitespace: true
         },
-        code: { 
-            open: "`", 
-            close: "`", 
-            mixable: false, 
-            expelEnclosingWhitespace: false 
+        strong: {
+            open: "",
+            close: "",
+            mixable: true,
+            expelEnclosingWhitespace: true
+        },
+        link: {
+            open: "",
+            close: "",
+            mixable: true,
+            expelEnclosingWhitespace: true
+        },
+        code: {
+            open: "",
+            close: "",
+            mixable: false,
+            expelEnclosingWhitespace: false
+        },
+        strike: {
+            open: "",
+            close: "",
+            mixable: true,
+            expelEnclosingWhitespace: true
+        },
+        highlight: {
+            open: "",
+            close: "",
+            mixable: true,
+            expelEnclosingWhitespace: true
+        },
+        underline: {
+            open: "",
+            close: "",
+            mixable: true,
+            expelEnclosingWhitespace: true
         }
     }
 );
-
-/*import { MarkdownSerializer } from "prosemirror-markdown";
-import { markdownSchema } from "../schema/markdown-schema.js";
-
-export const markdownSerializer = new MarkdownSerializer(
-    {
-        paragraph: (state, node) => {
-            state.renderInline(node);
-            state.closeBlock(node);
-        },
-        heading: (state, node) => {
-            state.write("#".repeat(node.attrs.level) + " ");
-            state.renderInline(node);
-            state.closeBlock(node);
-        },
-        heading_focus: (state, node) => {
-            state.write("#".repeat(node.attrs.level) + " ");
-            state.renderInline(node);
-            state.closeBlock(node);
-        },
-        customTag: (state, node) => {
-            const params = Object.entries(node.attrs.params)
-                .map(([k, v]) => `${k}="${v}"`)
-                .join(" ");
-            state.write(`<!-- ${node.attrs.name} ${params} -->\n`);
-            state.renderContent(node);
-            state.ensureNewLine();
-            state.write(`<!-- /${node.attrs.name} -->\n`);
-            state.ensureNewLine();
-        },
-        code_block: (state, node) => {
-            state.write("```" + (node.attrs.params || "") + "\n");
-            state.text(node.textContent, false);
-            state.ensureNewLine();
-            state.write("```\n");
-            state.ensureNewLine();
-        },
-        blockquote: (state, node) => {
-            state.wrapBlock("> ", null, node, () => state.renderContent(node));
-        },
-        horizontal_rule: (state) => {
-            state.write("---\n");
-            state.ensureNewLine();
-        },
-        bullet_list: (state, node) => {
-            state.renderList(node, "  ", () => "- ");
-        },
-        ordered_list: (state, node) => {
-            const start = node.attrs.order || 1;
-            state.renderList(node, "  ", (i) => `${start + i}. `);
-        },
-        list_item: (state, node) => {
-            state.renderContent(node);
-        },
-        image: (state, node) => {
-            state.write(`![${node.attrs.alt || ""}](${node.attrs.src}${node.attrs.title ? ` "${node.attrs.title}"` : ""})`);
-            state.closeBlock(node);
-        },
-        hard_break: (state) => {
-            state.write("\\\n");
-        }
-    },
-    {
-        em: { open: "*", close: "*", mixable: true, expelEnclosingWhitespace: true },
-        strong: { open: "**", close: "**", mixable: true, expelEnclosingWhitespace: true },
-        link: {
-            open: "[",
-            close: (state, mark) => `](${mark.attrs.href}${mark.attrs.title ? ` "${mark.attrs.title}"` : ""})`,
-            mixable: true,
-            expelEnclosingWhitespace: true
-        },
-        code: { open: "`", close: "`", mixable: false, expelEnclosingWhitespace: false }
-    }
-);*/
