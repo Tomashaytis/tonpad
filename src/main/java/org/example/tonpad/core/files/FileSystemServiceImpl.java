@@ -4,7 +4,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.exceptions.CustomIOException;
-import org.example.tonpad.core.models.SortOptions;
+import org.example.tonpad.core.sort.SortOptions;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -62,22 +62,8 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public FileTree getFileTree(Path path) {
-        try (Stream<Path> elements = Files.list(path)) {
-            List<FileTree> subtrees = new ArrayList<>();
-
-            elements.forEach(el -> {
-                if (Files.isDirectory(el)) {
-                    subtrees.add(getFileTree(el));
-                } else {
-                    subtrees.add(new FileTree(Path.of(path.toString(), el.getFileName().toString()), null));
-                }
-            });
-
-            return new FileTree(path, subtrees);
-        } catch (IOException e) {
-            log.warn(DIR_READING_ERROR, e);
-            throw new CustomIOException(DIR_READING_ERROR, e);
-        }
+        SortOptions opt = SortOptions.defaults();
+        return getFileTreeSorted(path, opt);
     }
 
     public Optional<Path> findFileInDir(Path rootDir, String fileName) {
@@ -460,14 +446,13 @@ public class FileSystemServiceImpl implements FileSystemService {
             }
         });
 
-        Comparator<Path> base;
-        switch (opt.key()) {
-            case NAME_ASC -> base = byName;
-            case NAME_DESC -> base = byName.reversed();
-            case CREATED_NEWEST -> base = byCreated.reversed().thenComparing(byName);
-            case CREATED_OLDEST -> base = byCreated.thenComparing(byName);
-            default -> base = Comparator.comparing(p -> p.getFileName().toString());
-        }
+        Comparator<Path> base = switch (opt.key()) {
+            case NAME_ASC -> byName;
+            case NAME_DESC -> byName.reversed();
+            case CREATED_NEWEST -> byCreated.reversed().thenComparing(byName);
+            case CREATED_OLDEST -> byCreated.thenComparing(byName);
+            default -> Comparator.comparing(p -> p.getFileName().toString());
+        };
 
         if(opt.foldersFirst()) {
             Comparator<Path> byIsDirDesc = Comparator.<Path, Integer>comparing(p -> Files.isDirectory(p) ? 1 : 0).reversed();

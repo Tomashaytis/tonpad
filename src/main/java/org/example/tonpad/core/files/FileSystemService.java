@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-import org.example.tonpad.core.models.SortOptions;
+import org.example.tonpad.core.sort.SortOptions;
 
 public interface FileSystemService {
 

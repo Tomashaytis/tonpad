@@ -1,4 +1,4 @@
-package org.example.tonpad.core.models;
+package org.example.tonpad.core.sort;
 
 public record SortOptions(SortKey key, boolean foldersFirst, boolean relevantOnly) {
     public static SortOptions defaults()
