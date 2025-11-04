@@ -3,6 +3,8 @@ package org.example.tonpad.core.repository.impl;
 import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.models.NoteRecord;
 import org.example.tonpad.core.repository.NotesRepository;
+import org.example.tonpad.core.service.db.ConnectionProviderService;
+import org.example.tonpad.ui.extentions.VaultPath;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
@@ -21,10 +23,14 @@ public class NotesRepositoryImpl implements NotesRepository {
     public static final Field<Integer> ID_FIELD = DSL.field("id", Integer.class);
     public static final Field<String> NAME_FIELD = DSL.field("name", String.class);
 
-    private final DSLContext ctx;
+    private final ConnectionProviderService connectionProviderService;
+
+    private final VaultPath vaultPath;
 
     @Override
     public List<NoteRecord> getAll() {
+        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+
         return ctx.select()
                 .from(NOTES_TABLE)
                 .fetchInto(NoteRecord.class);
@@ -32,6 +38,8 @@ public class NotesRepositoryImpl implements NotesRepository {
 
     @Override
     public Optional<NoteRecord> getById(int id) {
+        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+
         return ctx.select()
                 .from(NOTES_TABLE)
                 .where(ID_FIELD.eq(id))
@@ -40,6 +48,8 @@ public class NotesRepositoryImpl implements NotesRepository {
 
     @Override
     public void save(NoteRecord note) {
+        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+
         if (note.getId() == null) {
             Integer id = ctx.insertInto(NOTES_TABLE)
                     .set(NAME_FIELD, note.getName())
@@ -56,6 +66,8 @@ public class NotesRepositoryImpl implements NotesRepository {
 
     @Override
     public void delete(int id) {
+        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+
         ctx.deleteFrom(NOTES_TABLE)
                 .where(ID_FIELD.eq(id))
                 .execute();
