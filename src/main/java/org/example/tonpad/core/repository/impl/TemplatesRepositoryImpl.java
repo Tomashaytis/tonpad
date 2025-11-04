@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.models.TemplateRecord;
 import org.example.tonpad.core.repository.TemplatesRepository;
 import org.example.tonpad.core.service.db.ConnectionProviderService;
-import org.example.tonpad.ui.extentions.VaultPath;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
@@ -25,11 +24,9 @@ public class TemplatesRepositoryImpl implements TemplatesRepository {
 
     private final ConnectionProviderService connectionProviderService;
 
-    private final VaultPath vaultPath;
-
     @Override
     public List<TemplateRecord> getAll() {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         return ctx.select()
                 .from(TEMPLATES_TABLE)
@@ -38,7 +35,7 @@ public class TemplatesRepositoryImpl implements TemplatesRepository {
 
     @Override
     public Optional<TemplateRecord> getById(int id) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         return ctx.select()
                 .from(TEMPLATES_TABLE)
@@ -48,7 +45,7 @@ public class TemplatesRepositoryImpl implements TemplatesRepository {
 
     @Override
     public Optional<TemplateRecord> getByName(String name) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         return ctx.select()
                 .from(TEMPLATES_TABLE)
@@ -58,7 +55,7 @@ public class TemplatesRepositoryImpl implements TemplatesRepository {
 
     @Override
     public void save(TemplateRecord template) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         if (template.getId() == null) {
             Integer id = ctx.insertInto(TEMPLATES_TABLE)
@@ -76,7 +73,7 @@ public class TemplatesRepositoryImpl implements TemplatesRepository {
 
     @Override
     public void delete(int id) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         ctx.deleteFrom(TEMPLATES_TABLE)
                 .where(ID_FIELD.eq(id))

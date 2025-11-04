@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.models.NoteRecord;
 import org.example.tonpad.core.repository.NotesRepository;
 import org.example.tonpad.core.service.db.ConnectionProviderService;
-import org.example.tonpad.ui.extentions.VaultPath;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
@@ -25,11 +24,9 @@ public class NotesRepositoryImpl implements NotesRepository {
 
     private final ConnectionProviderService connectionProviderService;
 
-    private final VaultPath vaultPath;
-
     @Override
     public List<NoteRecord> getAll() {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         return ctx.select()
                 .from(NOTES_TABLE)
@@ -38,7 +35,7 @@ public class NotesRepositoryImpl implements NotesRepository {
 
     @Override
     public Optional<NoteRecord> getById(int id) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         return ctx.select()
                 .from(NOTES_TABLE)
@@ -48,7 +45,7 @@ public class NotesRepositoryImpl implements NotesRepository {
 
     @Override
     public void save(NoteRecord note) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         if (note.getId() == null) {
             Integer id = ctx.insertInto(NOTES_TABLE)
@@ -66,7 +63,7 @@ public class NotesRepositoryImpl implements NotesRepository {
 
     @Override
     public void delete(int id) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         ctx.deleteFrom(NOTES_TABLE)
                 .where(ID_FIELD.eq(id))

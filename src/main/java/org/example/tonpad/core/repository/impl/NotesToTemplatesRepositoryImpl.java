@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.models.NotesToTemplatesRecord;
 import org.example.tonpad.core.repository.NotesToTemplatesRepository;
 import org.example.tonpad.core.service.db.ConnectionProviderService;
-import org.example.tonpad.ui.extentions.VaultPath;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
@@ -26,11 +25,9 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
 
     private final ConnectionProviderService connectionProviderService;
 
-    private final VaultPath vaultPath;
-
     @Override
     public List<NotesToTemplatesRecord> getAll() {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         return ctx.select()
                 .from(NOTES_TO_TEMPLATES_TABLE)
@@ -39,7 +36,7 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
 
     @Override
     public Optional<NotesToTemplatesRecord> getById(int id) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         return ctx.select()
                 .from(NOTES_TO_TEMPLATES_TABLE)
@@ -49,7 +46,7 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
 
     @Override
     public List<NotesToTemplatesRecord> getByNoteId(int noteId) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         return ctx.select()
                 .from(NOTES_TO_TEMPLATES_TABLE)
@@ -59,7 +56,7 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
 
     @Override
     public List<NotesToTemplatesRecord> getByTemplateId(int templateId) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         return ctx.select()
                 .from(NOTES_TO_TEMPLATES_TABLE)
@@ -69,7 +66,7 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
 
     @Override
     public void save(NotesToTemplatesRecord record) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         if (record.getId() == null) {
             Integer id = ctx.insertInto(NOTES_TO_TEMPLATES_TABLE)
@@ -89,7 +86,7 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
 
     @Override
     public void delete(int id) {
-        DSLContext ctx = connectionProviderService.getDSLContext(vaultPath.getVaultPath());
+        DSLContext ctx = connectionProviderService.getDSLContext();
 
         ctx.delete(NOTES_TO_TEMPLATES_TABLE)
                 .where(ID_FIELD.eq(id))
