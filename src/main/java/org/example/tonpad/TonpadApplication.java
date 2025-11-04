@@ -3,8 +3,10 @@ package org.example.tonpad;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import lombok.RequiredArgsConstructor;
+import org.example.tonpad.ui.controllers.FileTreeController;
 import org.example.tonpad.ui.controllers.MainController;
 import org.example.tonpad.ui.controllers.QuickStartDialogController;
+import org.example.tonpad.ui.controllers.TabController;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.example.tonpad.ui.controllers.TestFieldController;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +21,6 @@ import org.springframework.context.ApplicationContext;
 @EnableConfigurationProperties({TonpadConfig.class})
 public class TonpadApplication extends Application {
 
-    private ApplicationContext springContext;
-
     @Autowired
     private MainController mainController;
 
@@ -33,9 +33,17 @@ public class TonpadApplication extends Application {
     @Autowired
     private TestFieldController testFieldController;
 
+    @Autowired
+    private FileTreeController fileTreeController;
+
+    @Autowired
+    private TabController tabController;
+
+    private boolean initialized = false;
+
     @Override
     public void init() {
-        springContext = new SpringApplicationBuilder(getClass()).run();
+        ApplicationContext springContext = new SpringApplicationBuilder(getClass()).run();
         springContext.getAutowireCapableBeanFactory().autowireBean(this);
     }
 
@@ -44,10 +52,18 @@ public class TonpadApplication extends Application {
         //testFieldController.init(primaryStage);
         quickStartDialogController.init();
         quickStartDialogController.setCreateVaultHandler(selectedPath -> {
-            quickStartDialogController.close();
+            quickStartDialogController.hide();
 
             vaultPath.setVaultPath(selectedPath);
-            mainController.init(primaryStage);
+
+            if (!initialized) {
+                mainController.init(primaryStage);
+                initialized = true;
+            } else {
+                tabController.clearAllTabs();
+            }
+
+            fileTreeController.refreshTree();
         });
     }
 
