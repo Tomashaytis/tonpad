@@ -1,0 +1,345 @@
+/* Стили FrontMatter */
+.frontmatter-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+
+.frontmatter-table th:nth-child(1),
+.frontmatter-table td:nth-child(1) {
+    width: 30%; /* Ширина для ключей */
+}
+
+.frontmatter-table th:nth-child(2),
+.frontmatter-table td:nth-child(2) {
+    width: 65%; /* Ширина для значений */
+}
+
+.frontmatter-table th:nth-child(3),
+.frontmatter-table td:nth-child(3) {
+    width: 20px; /* Ширина для кнопок */
+    text-align: center;
+}
+
+.frontmatter-table th,
+.frontmatter-table td {
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    text-align: left;
+}
+
+.frontmatter-table th {
+    background: #e9ecef;
+    font-weight: bold;
+}
+
+.frontmatter-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+}
+
+.frontmatter-delete-btn {
+    font-family: "Arial", "Segoe UI Symbol", "Symbola", sans-serif;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.frontmatter-delete-btn:hover {
+    background: #c82333;
+}
+
+.frontmatter-add-btn {
+    font-family: "Arial", "Segoe UI Symbol", "Symbola", sans-serif;
+    padding: 4px 8px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    align-self: right;
+}
+
+.frontmatter-add-btn:hover {
+    background: #0056b3;
+}
+
+.editor-container {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Базовые стили редактора */
+.markdown-editor {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+    font-size: 16px;
+    tab-size: 5;
+}
+
+/* Notation block как заголовок */
+h1.notation-block-row,
+h2.notation-block-row,
+h3.notation-block-row,
+h4.notation-block-row,
+h5.notation-block-row,
+h6.notation-block-row {
+    min-height: 1.6em;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+/* Notation block для цитат */
+.notation-block-row.notation-block-quote {
+    position: relative;
+    padding-left: 12px;
+    /* место для вертикальной линии */
+}
+
+/* Вертикальная линия как в Obsidian */
+.notation-block-row.notation-block-quote::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #b8cb76;
+}
+
+/* Одиночная цитата - скругленные концы */
+.notation-block-row.notation-block-quote::before {
+    border-radius: 2px;
+}
+
+/* Когда есть цитата сверху - убираем скругление верха */
+.notation-block-row.notation-block-quote+.notation-block-row.notation-block-quote::before {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+/* Когда есть цитата снизу - убираем скругление низа */
+.notation-block-row.notation-block-quote:has(+ .notation-block-row.notation-block-quote)::before {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+/* Heading внутри notation_block как span */
+.heading-content {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font: inherit;
+}
+
+/* Blockquote внутри notation_block как span */
+.blockquote-content {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font: inherit;
+    font-style: italic;
+}
+
+/* Spec блоки для заголовков */
+.heading-spec {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    color: #b8cb76;
+    caret-color: black;
+    font: inherit;
+}
+
+/* Spec блоки для цитат */
+.blockquote-spec {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    color: #b8cb76;
+    caret-color: black;
+    font: inherit;
+    font-style: normal;
+}
+
+/* Размеры для разных уровней заголовков */
+h1.notation-block-row,
+h1.notation-block-row .heading-content,
+h1.notation-block-row .heading-spec {
+    font-size: 32px;
+    line-height: 1.3;
+}
+
+h2.notation-block-row,
+h2.notation-block-row .heading-content,
+h2.notation-block-row .heading-spec {
+    font-size: 28px;
+    line-height: 1.3;
+}
+
+h3.notation-block-row,
+h3.notation-block-row .heading-content,
+h3.notation-block-row .heading-spec {
+    font-size: 24px;
+    line-height: 1.4;
+}
+
+h4.notation-block-row,
+h4.notation-block-row .heading-content,
+h4.notation-block-row .heading-spec {
+    font-size: 20px;
+    line-height: 1.4;
+}
+
+h5.notation-block-row,
+h5.notation-block-row .heading-content,
+h5.notation-block-row .heading-spec {
+    font-size: 18px;
+    line-height: 1.5;
+}
+
+h6.notation-block-row,
+h6.notation-block-row .heading-content,
+h6.notation-block-row .heading-spec {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+/* Обычные параграфы */
+.markdown-editor p {
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+/* Обычные заголовки (вне notation_block) */
+.heading {
+    margin: 1em 0 0.5em 0;
+    font-weight: bold;
+}
+
+/* Обычные blockquote (вне notation_block) */
+.blockquote {
+    margin: 0;
+    padding: 0;
+    font-style: italic;
+    border-left: 3px solid #b8cb76;
+}
+
+/* оОбщие стили символов марок*/
+.mark-spec {
+    color: #79854c;
+    font-weight: bold;
+    caret-color: black;
+    opacity: 0.7;
+    font: inherit;
+}
+
+/* Строчный блок кода */
+.code-mark-spec-left {
+    background-color: var(--code-inline-bg, #f0f0f0);
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 0.85em;
+    color: #79854c;
+    font-weight: bold;
+    caret-color: black;
+    opacity: 0.7;
+}
+
+.code-mark-spec-right {
+    background-color: var(--code-inline-bg, #f0f0f0);
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 0.85em;
+    color: #79854c;
+    font-weight: bold;
+    caret-color: black;
+    opacity: 0.7;
+}
+
+code {
+    background-color: var(--code-inline-bg, #f0f0f0);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 0.85em;
+}
+
+/* Стили для ссылок */
+a {
+    color: var(--link-color, #620286);
+}
+
+a:hover {
+    color: var(--link-hover-color, #410158);
+    opacity: 0.6;
+}
+
+/* Стили для тега */
+.tag {
+    text-decoration: none;
+    background-color: rgba(184, 203, 118, 0.3);
+    border-radius: 10px;
+    padding: 5px;
+    font-size: 0.85em;
+}
+
+/* Стили для таба */
+.tab {
+    position: relative;
+}
+
+.tab:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: 2px;
+    top: -4px;
+    bottom: -4px;
+    width: 2px;
+    background: #79854c;
+}
+
+/* Стили для маркеров списка */
+.marker {
+    padding-left: 16px;
+    color: #79854c;
+}
+
+/* Стили для списка из табов */
+.notation-block-tab-list {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+}
+
+/* Стили для маркированного списка */
+.notation-block-bullet-list {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+}
+
+/* Стили для нумерованного списка */
+.notation-block-ordered-list {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+}
+
+/* Скрытые спецификации */
+.spec-hidden {
+    display: none;
+}

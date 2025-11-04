@@ -47,12 +47,11 @@ export class NodeInputter {
 
         let tr = state.tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
 
-        if (cursorOffset === notationBlock.child(0).nodeSize - 2) {
-            cursorOffset += 1
-        }
-
         if (reconstructedNode.type.name == 'notation_block') {
-            cursorOffset += 1;
+            if (cursorOffset === notationBlock.child(0).nodeSize - 2) {
+                cursorOffset -= 1;
+            }
+            cursorOffset += 3;
         }
 
         const cursorPos = blockPos + cursorOffset + marksCheck.offset + 2;
@@ -224,12 +223,8 @@ export class NodeInputter {
 
         tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
 
-        if (cursorOffset === notationBlock.child(0).nodeSize - 2 && forward && ['bullet_list', 'ordered_list'].includes(notationBlock.attrs.type)) {
-            cursorOffset += 2
-        }
-
         if (reconstructedNode.type.name == 'notation_block') {
-            cursorOffset += blockResult.blocksBeforeCursor + 1;
+            cursorOffset += 1;
         }
 
         const cursorPos = blockPos + cursorOffset;

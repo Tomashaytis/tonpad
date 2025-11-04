@@ -22,7 +22,7 @@ export class NodeMerger {
 
         const neighborInfo = this.findNeighbor(state, pos, depth, direction);
 
-        if (neighborInfo && neighborInfo.node.textContent.length !== 0) {
+        if (neighborInfo) {
             return this.performMerge(state, pos, neighborInfo, direction);
         }
 
@@ -121,13 +121,15 @@ export class NodeMerger {
 
         let { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(currentParent);
 
+        let cursorPos;
         if (direction === 'up') {
             specContent = specContent.slice(1);
+            cursorPos = from + specContent.length + 1;
         } else {
             nodeContent = nodeContent.slice(1);
+            cursorPos = from + specContent.length + 2;
         }
 
-        let cursorPos = from + specContent.length + 1;
         const mergedText = specContent + nodeContent;
 
         const mergedParagraph = NodeConverter.constructParagraph(mergedText);
@@ -226,7 +228,6 @@ export class NodeMerger {
         const reconstructedData = this.applyReconstruction(tr, mergedParagraphs, from, to, cursorPos);
 
         reconstructedData.tr.setSelection(TextSelection.create(reconstructedData.tr.doc, reconstructedData.cursorPos));
-        //this.setCursorSelection(reconstructedData.tr, reconstructedData.cursorPos);
 
         return reconstructedData.tr;
     }

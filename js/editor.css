@@ -45,6 +45,7 @@
 }
 
 .frontmatter-delete-btn {
+    font-family: "Arial", "Segoe UI Symbol", "Symbola", sans-serif;
     background: #dc3545;
     color: white;
     border: none;
@@ -58,6 +59,7 @@
 }
 
 .frontmatter-add-btn {
+    font-family: "Arial", "Segoe UI Symbol", "Symbola", sans-serif;
     padding: 4px 8px;
     background: #007bff;
     color: white;

@@ -1,9 +1,5 @@
 package org.example.tonpad.ui.controllers;
 
-import com.vladsch.flexmark.util.ast.Document;
-import javafx.animation.PauseTransition;
-import javafx.application.Platform;
-import javafx.concurrent.Worker;
 import javafx.fxml.FXML;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
@@ -11,16 +7,21 @@ import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import javafx.util.Duration;
 import lombok.RequiredArgsConstructor;
 import netscape.javascript.JSException;
-import org.example.tonpad.core.service.MarkdownService;
+import org.example.tonpad.core.editor.Editor;
+import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Time;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
 
 @Component
@@ -34,7 +35,7 @@ public class TestFieldController extends AbstractController {
 
     private WebEngine webEngine;
 
-    private final MarkdownService markdownService;
+    private Editor editor;
 
     public void init(Stage stage) {
         setStage(stage, mainVBox, StageStyle.DECORATED);
@@ -43,43 +44,26 @@ public class TestFieldController extends AbstractController {
 
     public void loadFile() {
         try {
-            Path filePath = Path.of("/Welcome.md");
-            String fileContent = Files.readString(filePath);
+            URL noteUrl = Objects.requireNonNull(getClass().getResource("/note.md"));
+            Path notePath = Paths.get(noteUrl.toURI());
+            String note = Files.readString(notePath);
 
-            //Document markdownFile = markdownService.parseMarkdownFile(fileContent);
-            //String html = markdownService.renderMarkdownFileToHtml(markdownFile);
-            //createWebViewOld(html);
-            createWebView(fileContent);
+            createWebView(note);
         } catch (IOException e) {
             createWebView("Error loading content");
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
-    }
-
-    private void createWebViewOld(String html) {
-        AnchorPane content = new AnchorPane();
-        webView = new WebView();
-        webEngine = webView.getEngine();
-
-        webEngine.loadContent(html);
-
-        AnchorPane.setTopAnchor(webView, 0.0);
-        AnchorPane.setBottomAnchor(webView, 0.0);
-        AnchorPane.setLeftAnchor(webView, 0.0);
-        AnchorPane.setRightAnchor(webView, 0.0);
-        content.getChildren().add(webView);
-        mainVBox.getChildren().add(content);
     }
 
     private void createWebView(String markdown) {
         AnchorPane content = new AnchorPane();
         webView = new WebView();
-        webEngine = webView.getEngine();
 
-        // Логи JS-консоли в Java
-        webEngine.setOnAlert(e -> System.out.println("JS Log: " + e.getData()));
-        webEngine.setOnError(e -> System.err.println("JS Error: " + e.getMessage()));
-
-        webEngine.load(Objects.requireNonNull(getClass().getResource("/ui/html/editor.html")).toString());
+        editor = new EditorImpl(webView.getEngine(), true);
+        if (!markdown.isEmpty()) {
+            editor.setContent(markdown);
+        }
 
         AnchorPane.setTopAnchor(webView, 0.0);
         AnchorPane.setBottomAnchor(webView, 0.0);
@@ -110,10 +94,6 @@ public class TestFieldController extends AbstractController {
             }
         }
         return null;
-    }
-
-    private String escapeJavaScript(String str) {
-        return str.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r");
     }
 
     @Override
