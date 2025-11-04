@@ -57,7 +57,6 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class FileTreeController extends AbstractController {
 
-    private static final Logger log = LoggerFactory.getLogger(FileTreeController.class);
     @FXML
     private TreeView<String> fileTreeView;
 
@@ -299,7 +298,7 @@ public class FileTreeController extends AbstractController {
     }
 
     private String getRelativePath(TreeItem<String> item) {
-        var parts = new java.util.ArrayList<String>();
+        var parts = new ArrayList<String>();
         for (TreeItem<String> cur = item; cur != null; cur = cur.getParent()) {
             if (cur.getValue() == null || cur.getValue().isEmpty()) break;
             parts.add(0, cur.getValue()); // корень тоже включаем
@@ -397,42 +396,33 @@ public class FileTreeController extends AbstractController {
     private ContextMenu buildContextMenu(TreeCell<String> cell)
     {
         MenuItem copy = new MenuItem("Copy (Ctrl+C)");
-        copy.setId("ctxCopy");
         copy.setOnAction(e -> onCopy(cell.getTreeItem()));
 
         MenuItem cut = new MenuItem("Cut (Ctrl+X)");
-        cut.setId("ctxCut");
         cut.setOnAction(e -> onCut(cell.getTreeItem()));
 
         MenuItem paste = new MenuItem("Paste (Ctrl+V)");
-        paste.setId("ctxPaste");
         paste.setOnAction(e -> onPaste(cell.getTreeItem()));
 
         MenuItem copyTonpadUrl = new MenuItem("Copy vault path");
-        copyTonpadUrl.setId("ctxCopyVaultPath");
         copyTonpadUrl.setOnAction(e -> onCopyVaultPath());
 
         MenuItem copyAbsPath = new MenuItem("Copy absolute path");
-        copyAbsPath.setId("ctxCopyAbsPath");
         copyAbsPath.setOnAction(e -> onCopyAbsPath(cell.getTreeItem()));
 
         MenuItem copyRelPath = new MenuItem("Copy relative path");
-        copyRelPath.setId("ctxCopyRelPath");
         copyRelPath.setOnAction(e -> onCopyRelPath(cell.getTreeItem()));
 
         MenuItem showInExplorer = new MenuItem("Show in explorer");
-        showInExplorer.setId("ctxShowInExplorer");
         showInExplorer.setOnAction(e -> onShowInExplorer(cell.getTreeItem()));
 
         MenuItem rename = new MenuItem("Rename (F2)");
-        rename.setId("ctxRename");
-        rename.setOnAction(e -> 
+        rename.setOnAction(e ->
         {
             onRename(cell.getTreeItem());}
         );
 
         MenuItem del = new MenuItem("Delete");
-        del.setId("ctxDel");
         del.setOnAction(e -> confirmAndDeleteForItem(cell.getTreeItem()));
 
         return new ContextMenu(
@@ -465,22 +455,17 @@ public class FileTreeController extends AbstractController {
     }
     private void onPaste(TreeItem<String> target) 
     {
-        if(!(buffer.getCopyBuffer() == null) && !buffer.getCopyBuffer().isEmpty())
+        if(target != null)
         {
-            Path targetDir = resolveTargetDirForPaste(target);
-            if(target == null)
+            if(Files.isDirectory(Path.of(getFullPath(target))))
             {
-                targetDir = Path.of(vaultPath);
+                fileSystemService.pasteFile(Path.of(getFullPath(target)));
+                refreshTree();
             }
-            fileSystemService.pasteFile(targetDir);
-            refreshTree();
-            if (!buffer.getCopyBuffer().isEmpty()) {
-                Path firstDst = targetDir.resolve(buffer.getCopyBuffer().get(0).toString());//подсветка
-                selectItem(firstDst.toString());
-            }
-            if (buffer.isCutMode()) {
-                buffer.setCopyBuffer(List.of());
-                buffer.setCutMode(false);
+            else
+            {
+                fileSystemService.pasteFile(Path.of(getFullPath(target.getParent())));
+                refreshTree();
             }
         }
     }
@@ -502,12 +487,11 @@ public class FileTreeController extends AbstractController {
         }
     }
 
-
     private void onCopyRelPath(TreeItem<String> node) 
     {
         if (node != null)
         {
-            fileSystemService.copyRelFilePath(getFullPath(node));
+            fileSystemService.copyRelFilePath(getRelativePath(node));
         }
     }
 
@@ -522,13 +506,13 @@ public class FileTreeController extends AbstractController {
 
     private void onRename(TreeItem<String> node) {
         if (node != null && node.getParent() != null) {
-            fileTreeView.getSelectionModel().select(node);  // <── этого достаточно
+            fileTreeView.getSelectionModel().select(node);
             fileTreeView.getFocusModel().focus(fileTreeView.getRow(node));
             fileTreeView.scrollTo(fileTreeView.getRow(node));
             fileTreeView.requestFocus();
 
             programmaticEdit.set(true);
-            Platform.runLater(() -> fileTreeView.edit(node));  // триггерим edit
+            Platform.runLater(() -> fileTreeView.edit(node));
         }
     }
 
