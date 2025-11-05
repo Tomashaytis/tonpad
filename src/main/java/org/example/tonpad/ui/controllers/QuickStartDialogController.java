@@ -3,34 +3,26 @@ package org.example.tonpad.ui.controllers;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import org.example.tonpad.core.files.RecentVaultService;
+import org.example.tonpad.core.service.VaultInitializerService;
 import org.example.tonpad.ui.extentions.VaultPath;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 @Component
@@ -63,6 +55,8 @@ public class QuickStartDialogController extends AbstractController {
 
     private final RecentVaultService recentVaultService;
 
+    private final VaultInitializerService vaultManager;
+
     private final ObservableList<String> recentVaults = FXCollections.observableArrayList();
 
     private final VaultPath vaultPath;
@@ -86,8 +80,12 @@ public class QuickStartDialogController extends AbstractController {
         setupRecentVaultsList();
     }
 
-    public void close() {
-        stage.close();
+    public void hide() {
+        stage.hide();
+    }
+
+    public void show() {
+        stage.show();
     }
 
     private void setupRecentVaultsList() {
@@ -128,7 +126,7 @@ public class QuickStartDialogController extends AbstractController {
         if(createVaultHandler != null) {
             recentVaultService.setFirstRecent(recentVaults, path);
             createVaultHandler.accept(path);
-            close();
+            hide();
         }
     }
 
@@ -168,9 +166,10 @@ public class QuickStartDialogController extends AbstractController {
             }
 
             vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
+            vaultManager.initVault(selectedDirectory.toPath());
             createVaultHandler.accept(vaultPath.getVaultPath());
             recentVaultService.setFirstRecent(recentVaults, vaultPath.getVaultPath());
-            close();
+            hide();
         }
     }
 
@@ -207,7 +206,7 @@ public class QuickStartDialogController extends AbstractController {
         if(createVaultHandler != null) {
             System.out.println(vaultPath.getVaultPath());
             createVaultHandler.accept(vaultPath.getVaultPath());
-            close();
+            hide();
         }
 //        String vaultPath = selectedDirectory.getAbsolutePath();
     }

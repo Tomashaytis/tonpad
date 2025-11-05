@@ -1,15 +1,14 @@
-package org.example.tonpad.core.repository;
+package org.example.tonpad.core.service.db;
 
 import org.example.tonpad.core.models.NoteRecord;
 
 import java.util.List;
-import java.util.Optional;
 
-public interface NotesRepository {
+public interface NotesService {
 
     List<NoteRecord> getAll();
 
-    Optional<NoteRecord> getById(int id);
+    NoteRecord getById(int id);
 
     void save(NoteRecord note);
 
