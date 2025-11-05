@@ -1,27 +1,27 @@
 /* common-action-icons.css - иконки для общих операций, светлая тема */
 
 .settings-icon {
-    -fx-image: url(../icons/light/settings.png);
+    -fx-image: url(/ui/icons/light/settings.png);
 }
 
 .more-options-icon {
-    -fx-image: url(../icons/light/more-options.png);
+    -fx-image: url(/ui/icons/light/more-options.png);
 }
 
 .version-history-icon {
-    -fx-image: url(../icons/light/version-history.png);
+    -fx-image: url(/ui/icons/light/version-history.png);
 }
 
 .sort-down-icon {
-    -fx-image: url(../icons/light/sort-down.png);
+    -fx-image: url(/ui/icons/light/sort-down.png);
 }
 
 .sort-up-icon {
-    -fx-image: url(../icons/light/sort-up.png);
+    -fx-image: url(/ui/icons/light/sort-up.png);
 }
 
 .expand-icon {
-    -fx-image: url(../icons/light/expand.png);
+    -fx-image: url(/ui/icons/light/expand.png);
 }
 
 .change-vault-icon {
@@ -29,25 +29,25 @@
 }
 
 .collapse-icon {
-    -fx-image: url(../icons/light/collapse.png);
+    -fx-image: url(/ui/icons/light/collapse.png);
 }
 
 .refresh-icon {
-    -fx-image: url(../icons/light/refresh.png);
+    -fx-image: url(/ui/icons/light/refresh.png);
 }
 
 .bookmark-icon {
-    -fx-image: url(../icons/light/bookmark.png);
+    -fx-image: url(/ui/icons/light/bookmark.png);
 }
 
 .merge-icon {
-    -fx-image: url(../icons/light/merge.png);
+    -fx-image: url(/ui/icons/light/merge.png);
 }
 
 .arrow-down-icon {
-    -fx-image: url(../icons/light/arrow-down.png);
+    -fx-image: url(/ui/icons/light/arrow-down.png);
 }
 
 .arrow-up-icon {
-    -fx-image: url(../icons/light/arrow-up.png);
+    -fx-image: url(/ui/icons/light/arrow-up.png);
 }

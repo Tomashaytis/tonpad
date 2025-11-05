@@ -1,13 +1,13 @@
 /* app-action-icons.css - иконки для заголовка приложения, тёмная тема */
 
 .close-app-icon {
-    -fx-image: url(../icons/dark/close-app.png);
+    -fx-image: url(/ui/icons/dark/close-app.png);
 }
 
 .resize-app-icon {
-    -fx-image: url(../icons/dark/resize-app.png);
+    -fx-image: url(/ui/icons/dark/resize-app.png);
 }
 
 .collapse-app-icon {
-    -fx-image: url(../icons/dark/collapse-app.png);
+    -fx-image: url(/ui/icons/dark/collapse-app.png);
 }
