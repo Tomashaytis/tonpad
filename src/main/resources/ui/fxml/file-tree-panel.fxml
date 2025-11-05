@@ -139,6 +139,22 @@
                   <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="expand-icon" />
                </graphic>
             </Button>
+            <Button fx:id="changeVaultButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="E" textAlignment="CENTER">
+               <padding>
+                  <Insets right="3.0" />
+               </padding>
+               <tooltip>
+                  <Tooltip text="Change vault">
+                     <styleClass>
+                        <String fx:value="custom-tooltip" />
+                        <String fx:value="tooltip-bottom" />
+                     </styleClass>
+                  </Tooltip>
+               </tooltip>
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="expand-icon" />
+               </graphic>
+            </Button>
          </children>
          <padding>
             <Insets bottom="5.0" top="5.0" />

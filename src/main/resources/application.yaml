@@ -6,8 +6,7 @@ spring:
     driver-class-name: org.sqlite.JDBC
   sql:
     init:
-      mode: always
-      schema-locations: classpath:db/changelog/schema.sql
+      mode: never
 
 app:
   data-path: "basePath"
@@ -15,3 +14,4 @@ app:
     templates-dir: "templates"
     notes-dir: "notes"
   js-functions-directory: classpath:js
+  changelog-path: db/changelog/schema.sql

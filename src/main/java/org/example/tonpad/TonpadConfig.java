@@ -8,7 +8,8 @@ import java.nio.file.Path;
 public record TonpadConfig(
         String dataPath,
         ReservedDirNames reservedNames,
-        Path jsFunctionsDirectory
+        Path jsFunctionsDirectory,
+        String changelogPath
 ) {
 
     public record ReservedDirNames(String templatesDir, String notesDir) {}

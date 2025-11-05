@@ -95,7 +95,7 @@ public class MainController extends AbstractController {
     }
 
     private void setupControllers() {
-        fileTreeController.init(fileTreePane, vaultPath.getVaultPath());
+        fileTreeController.init(fileTreePane);
 
         tabController.setTabPane(tabPane);
         tabController.init("/test.md");
