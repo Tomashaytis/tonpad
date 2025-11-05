@@ -8,7 +8,7 @@ create table if not exists template_fields (
     template_id int not null,
     field text not null,
 
-    unique (template_id, field),
+    CONSTRAINT template_fields_template_id_field_unique unique (template_id, field),
     foreign key(template_id) references templates(id)
 );
 
@@ -22,7 +22,7 @@ create table if not exists notes_associations (
     src_id int not null,
     dst_id int not null,
 
-    unique (src_id, dst_id),
+    CONSTRAINT notes_associations_src_id_dst_id_unique unique (src_id, dst_id),
     foreign key(src_id) references notes(id),
     foreign key(dst_id) references notes(id)
 );
@@ -32,7 +32,7 @@ create table if not exists notes_to_templates (
     note_id int not null,
     template_id int not null,
 
-    unique (note_id, template_id),
+    CONSTRAINT notes_to_templates_note_id_template_id_unique unique (note_id, template_id),
     foreign key(note_id) references notes(id),
     foreign key(template_id) references templates(id)
-)
+);

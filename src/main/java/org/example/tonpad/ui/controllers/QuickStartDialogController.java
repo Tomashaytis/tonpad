@@ -18,11 +18,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import org.example.tonpad.core.files.RecentVaultService;
-import org.example.tonpad.core.service.VaultInitializerService;
+import org.example.tonpad.core.service.VaultService;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 @Component
@@ -55,7 +56,7 @@ public class QuickStartDialogController extends AbstractController {
 
     private final RecentVaultService recentVaultService;
 
-    private final VaultInitializerService vaultManager;
+    private final VaultService vaultService;
 
     private final ObservableList<String> recentVaults = FXCollections.observableArrayList();
 
@@ -122,7 +123,10 @@ public class QuickStartDialogController extends AbstractController {
             if(confirmToRemoveBrokenRecent(path)) recentVaults.remove(path);
             return;
         }
+
+        vaultService.checkVaultInitialization(Path.of(path));
         vaultPath.setVaultPath(path);
+
         if(createVaultHandler != null) {
             recentVaultService.setFirstRecent(recentVaults, path);
             createVaultHandler.accept(path);
@@ -166,7 +170,7 @@ public class QuickStartDialogController extends AbstractController {
             }
 
             vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
-            vaultManager.initVault(selectedDirectory.toPath());
+            vaultService.initVault(selectedDirectory.toPath());
             createVaultHandler.accept(vaultPath.getVaultPath());
             recentVaultService.setFirstRecent(recentVaults, vaultPath.getVaultPath());
             hide();
@@ -199,8 +203,13 @@ public class QuickStartDialogController extends AbstractController {
         directoryChooser.setTitle("Select Vault Directory");
 
         File selectedDirectory = directoryChooser.showDialog(stage);
-        if(selectedDirectory == null) return;
+        if(selectedDirectory == null) {
+            return;
+        }
+
         String path = selectedDirectory.getAbsolutePath();
+        vaultService.checkVaultInitialization(Path.of(path));
+
         vaultPath.setVaultPath(path);
         recentVaultService.setFirstRecent(recentVaults, path);
         if(createVaultHandler != null) {
