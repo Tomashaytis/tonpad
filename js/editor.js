@@ -14568,7 +14568,7 @@
               },
               {
                   name: 'code',
-                  pattern: /`(.*?)`/g, 
+                  pattern: /`(.*?)`/g,
                   handler: this.wrapWithMark.bind(this, 'code')
               },
               {
@@ -14737,8 +14737,10 @@
               if (targetCursorIndex !== -1 && i < targetCursorIndex) {
                   const offset = targetCursorIndex - startPos;
                   if (reconstructed && reconstructed.type.name === 'notation_block' && reconstructed.attrs.layout === 'row') {
-                      if (offset > reconstructed.child(0).nodeSize) {
+                      if (offset > reconstructed.child(0).nodeSize - 1) {
                           blocksBeforeCursor += 3;
+                      } else {
+                          blocksBeforeCursor += 1;
                       }
                   }
               }
@@ -24930,14 +24932,13 @@
 
           let { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(currentParent);
 
-          let cursorPos;
           if (direction === 'up') {
               specContent = specContent.slice(1);
-              cursorPos = from + specContent.length + 1;
           } else {
               nodeContent = nodeContent.slice(1);
-              cursorPos = from + specContent.length + 2;
           }
+
+          let cursorPos = from + specContent.length + 1;
 
           const mergedText = specContent + nodeContent;
 
@@ -24965,7 +24966,7 @@
           const neighborPosAtDepth = neighborInfo.pos;
 
           let from = Math.min(neighborPosAtDepth, currentPosAtDepth);
-          const to = from + neighborInfo.node.nodeSize + currentNode.nodeSize;
+          const to = from + (neighborInfo.node.textContent.length != 0 ? neighborInfo.node.nodeSize : 1) + (currentNode.textContent.length != 0 ? currentNode.nodeSize : 1);
 
           const currentParagraphs = NodeConverter.destructNode(currentNode);
           const neighborParagraphs = NodeConverter.destructNode(neighborInfo.node);
@@ -25023,6 +25024,8 @@
                       mergedParaPos += currentParagraphs[i].nodeSize;
                   }
                   cursorPos = mergedParaPos + lastCurrentPara.content.size + 1;
+
+                  
               } else {
                   mergedParagraphs = [...currentParagraphs, ...neighborParagraphs];
               }
@@ -25316,7 +25319,9 @@
 
           if (cursorOffset === notationBlock.child(0).nodeSize - 2) {
               marksCheck = this.checkMarks(text, $from);
-              marksCheck.offset += 1;
+              if (marksCheck.text !== '') {
+                  marksCheck.offset += 3;
+              }
           }
 
           const newSpecContent =
@@ -25342,10 +25347,22 @@
           let tr = state.tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
 
           if (reconstructedNode.type.name == 'notation_block') {
-              if (cursorOffset === notationBlock.child(0).nodeSize - 2) {
-                  cursorOffset -= 1;
+              console.log(cursorOffset, reconstructedNode.child(0).nodeSize, notationBlock.child(0).nodeSize);
+              if (['tab_list', 'bullet_list', 'ordered_list'].includes(reconstructedNode.attrs.type) && text === '\t') {
+                  if (notationBlock.child(0).nodeSize - cursorOffset === 2) {
+                      cursorOffset -= 2;
+                  } else {
+                      cursorOffset += 1;
+                  }
+              } else {
+                  if (reconstructedNode.child(0).nodeSize === notationBlock.child(0).nodeSize) {
+                      cursorOffset += 0;
+                  } else if (reconstructedNode.child(0).nodeSize < notationBlock.child(0).nodeSize) {
+                      cursorOffset += 3;
+                  } else {
+                      cursorOffset += 1;
+                  }
               }
-              cursorOffset += 3;
           }
 
           const cursorPos = blockPos + cursorOffset + marksCheck.offset + 2;
@@ -25401,7 +25418,7 @@
           return false;
       }
 
-      static handleDeleteChar(view, from, to, forward = true) {
+      static handleDeleteChar(view, from, to, backward = true) {
           const { state, dispatch } = view;
           const { selection } = state;
           const { $from } = selection;
@@ -25410,16 +25427,16 @@
           const textContent = node.textContent;
           let cursorOffset = $from.parentOffset;
 
-          if (cursorOffset === 0 && forward || cursorOffset === node.nodeSize - 2 && !forward) {
+          if (cursorOffset === 0 && backward || cursorOffset === node.nodeSize - 2 && !backward) {
               return false;
           }
 
           if (node.type.name === 'spec_block') {
-              return this.handleDeleteInSpec(view, from, to, forward);
+              return this.handleDeleteInSpec(view, from, to, backward);
           }
 
           let newText;
-          if (forward) {
+          if (backward) {
               newText = textContent.slice(0, cursorOffset - 1) + textContent.slice(cursorOffset);
           } else {
               newText = textContent.slice(0, cursorOffset) + textContent.slice(cursorOffset + 1);
@@ -25444,7 +25461,7 @@
               newNode = blockResult.paragraphs[0];
           }
 
-          if (forward && cursorOffset === 1) {
+          if (backward && cursorOffset === 1) {
               const parent = $from.node($from.depth - 1);
               if (parent && parent.type.name === 'notation_block') {
                   const childIndex = $from.indexAfter();
@@ -25475,7 +25492,7 @@
           return true;
       }
 
-      static handleDeleteInSpec(view, from, to, forward = true) {
+      static handleDeleteInSpec(view, from, to, backward = true) {
           const { state, dispatch } = view;
           const { selection } = state;
           const { $from } = selection;
@@ -25488,12 +25505,12 @@
 
           let cursorOffset = $from.parentOffset;
 
-          if (cursorOffset === 0 && forward || cursorOffset === notationBlock.child(0).nodeSize - 2 && !forward) {
+          if (cursorOffset === 0 && backward || cursorOffset === notationBlock.child(0).nodeSize - 2 && !backward) {
               return false;
           }
 
           let newSpecContent;
-          if (forward) {
+          if (backward) {
               newSpecContent = specContent.slice(0, cursorOffset - 1) + specContent.slice(cursorOffset);
           } else {
               newSpecContent = specContent.slice(0, cursorOffset) + specContent.slice(cursorOffset + 1);
@@ -25518,7 +25535,15 @@
           tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
 
           if (reconstructedNode.type.name == 'notation_block') {
-              cursorOffset += 1;
+              if (notationBlock.child(0).nodeSize - cursorOffset === 2 && backward) {
+                  if (notationBlock.attrs.type == 'tab_list') {
+                      cursorOffset += 1;
+                  } else {
+                      cursorOffset += 3;
+                  }
+              } else {
+                  cursorOffset += 1;
+              }
           }
 
           const cursorPos = blockPos + cursorOffset;
@@ -25760,7 +25785,7 @@
           },
           "Alt-5": () => {
               console.log('=== FRONT MATTER ===');
-              const frontMatter = editor.getFrontMatter();
+              const frontMatter = editor.getFrontMatterYAML();
               const lines = frontMatter.split('\n');
 
               lines.forEach((line, index) => {
@@ -30523,20 +30548,68 @@
       updateFrontMatterKey(oldKey, newKey, row) {
           if (oldKey === newKey) return;
 
-          if (this.frontMatter[newKey]) {
-              alert('Поле с таким именем уже существует!');
+          // Используем ту же валидацию
+          const validateFieldName = (fieldName) => {
+              if (!fieldName.trim()) {
+                  return 'Имя поля не может быть пустым';
+              }
+
+              if (this.frontMatter[fieldName]) {
+                  return 'Поле с таким именем уже существует';
+              }
+
+              if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName)) {
+                  return 'Имя поля может содержать только буквы, цифры и подчеркивания, и должно начинаться с буквы или подчеркивания';
+              }
+
+              return '';
+          };
+
+          const error = validateFieldName(newKey);
+          if (error) {
+              this.showErrorDialog('Ошибка', error);
               row.querySelector('input[type="text"]').value = oldKey;
               return;
           }
 
           const value = this.frontMatter[oldKey];
-
           delete this.frontMatter[oldKey];
           this.frontMatter[newKey] = value;
 
           this.updateDocumentWithFrontMatter();
       }
 
+      showErrorDialog(title, message) {
+          const modal = document.createElement('div');
+          modal.className = 'frontmatter-add-modal';
+
+          const dialog = document.createElement('div');
+          dialog.className = 'frontmatter-add-dialog';
+
+          dialog.innerHTML = `
+        <h3 class="frontmatter-add-title">${title}</h3>
+        <div style="margin-bottom: 20px; color: #666;">${message}</div>
+        <div class="frontmatter-add-buttons">
+            <button class="frontmatter-add-btn primary">OK</button>
+        </div>
+    `;
+
+          modal.appendChild(dialog);
+          document.body.appendChild(modal);
+
+          const okButton = dialog.querySelector('.frontmatter-add-btn.primary');
+
+          const closeModal = () => {
+              document.body.removeChild(modal);
+          };
+
+          okButton.addEventListener('click', closeModal);
+          modal.addEventListener('click', (e) => {
+              if (e.target === modal) closeModal();
+          });
+
+          setTimeout(() => okButton.focus(), 0);
+      }
       updateFrontMatterValue(key, newValue) {
           if (this.frontMatter[key] === newValue) return;
 
@@ -30545,21 +30618,205 @@
       }
 
       deleteFrontMatterField(key) {
-          if (confirm(`Удалить поле "${key}"?`)) {
-              delete this.frontMatter[key];
+          this.showConfirmDialog(
+              `Удалить поле "${key}"?`,
+              () => {
+                  delete this.frontMatter[key];
 
-              if (Object.keys(this.frontMatter).length === 0) {
-                  this.frontMatter = {};
+                  if (Object.keys(this.frontMatter).length === 0) {
+                      this.frontMatter = {};
+                  }
+
+                  this.updateDocumentWithFrontMatter();
               }
+          );
+      }
 
-              this.updateDocumentWithFrontMatter();
-          }
+      showConfirmDialog(message, onConfirm) {
+          const modal = document.createElement('div');
+          modal.className = 'frontmatter-confirm-modal';
+
+          const dialog = document.createElement('div');
+          dialog.className = 'frontmatter-confirm-dialog';
+
+          dialog.innerHTML = `
+        <div class="frontmatter-confirm-message">${message}</div>
+        <div class="frontmatter-confirm-buttons">
+            <button class="frontmatter-confirm-btn cancel">Отмена</button>
+            <button class="frontmatter-confirm-btn delete">Удалить</button>
+        </div>
+    `;
+
+          modal.appendChild(dialog);
+          document.body.appendChild(modal);
+
+          const cancelBtn = dialog.querySelector('.cancel');
+          const deleteBtn = dialog.querySelector('.delete');
+
+          const closeModal = () => {
+              document.body.removeChild(modal);
+          };
+
+          cancelBtn.addEventListener('click', closeModal);
+          deleteBtn.addEventListener('click', () => {
+              onConfirm();
+              closeModal();
+          });
+
+          modal.addEventListener('click', (e) => {
+              if (e.target === modal) {
+                  closeModal();
+              }
+          });
+
+          const escHandler = (e) => {
+              if (e.key === 'Escape') {
+                  closeModal();
+                  document.removeEventListener('keydown', escHandler);
+              }
+          };
+          document.addEventListener('keydown', escHandler);
+
+          cancelBtn.focus();
       }
 
       addFrontMatterField() {
-          const newKey = `new_field_${Date.now()}`;
-          this.frontMatter[newKey] = '';
-          this.updateFrontMatterTable();
+          this.showAddFieldDialog();
+      }
+
+      showAddFieldDialog() {
+          const modal = document.createElement('div');
+          modal.className = 'frontmatter-add-modal';
+
+          const dialog = document.createElement('div');
+          dialog.className = 'frontmatter-add-dialog';
+
+          dialog.innerHTML = `
+        <h3 class="frontmatter-add-title">Добавить новое поле</h3>
+        <div class="frontmatter-add-form">
+            <div class="frontmatter-add-field">
+                <label class="frontmatter-add-label">Имя поля:</label>
+                <input type="text" class="frontmatter-add-input" placeholder="Введите имя поля">
+                <div class="frontmatter-add-error"></div>
+            </div>
+            <div class="frontmatter-add-field">
+                <label class="frontmatter-add-label">Значение:</label>
+                <input type="text" class="frontmatter-add-input" placeholder="Введите значение">
+                <div class="frontmatter-add-error"></div>
+            </div>
+            <div class="frontmatter-add-buttons">
+                <button class="frontmatter-add-btn cancel">Отмена</button>
+                <button class="frontmatter-add-btn primary" disabled>Добавить</button>
+            </div>
+        </div>
+    `;
+
+          modal.appendChild(dialog);
+          document.body.appendChild(modal);
+
+          const nameInput = dialog.querySelector('.frontmatter-add-input');
+          const valueInput = dialog.querySelectorAll('.frontmatter-add-input')[1];
+          const nameError = dialog.querySelector('.frontmatter-add-error');
+          const addButton = dialog.querySelector('.frontmatter-add-btn.primary');
+          const cancelButton = dialog.querySelector('.frontmatter-add-btn.cancel');
+
+          const validateFieldName = (fieldName) => {
+              if (!fieldName.trim()) {
+                  return 'Имя поля не может быть пустым';
+              }
+
+              if (this.frontMatter[fieldName]) {
+                  return 'Поле с таким именем уже существует';
+              }
+
+              const invalidChars = /[:{}\[\]]/;
+              if (invalidChars.test(fieldName)) {
+                  return 'Имя поля не может содержать символы : { } [ ]';
+              }
+
+              if (fieldName !== fieldName.trim()) {
+                  return 'Имя поля не должно начинаться или заканчиваться пробелами';
+              }
+
+              // Предупреждение для ключей, которые могут требовать кавычки в YAML
+              const mayNeedQuotes = /[#&*!|>'"%@`-]|\s/;
+              if (mayNeedQuotes.test(fieldName)) {
+                  return 'Имя поля содержит символы, которые могут требовать кавычек в YAML. Это допустимо, но может усложнить чтение.';
+              }
+
+              return '';
+          };
+
+          const updateAddButtonState = () => {
+              const name = nameInput.value.trim();
+              const nameErrorText = validateFieldName(name);
+              const isValid = !nameErrorText && name.length > 0;
+
+              addButton.disabled = !isValid;
+
+              if (nameErrorText) {
+                  nameInput.classList.add('error');
+              } else {
+                  nameInput.classList.remove('error');
+              }
+          };
+
+          nameInput.addEventListener('input', updateAddButtonState);
+          nameInput.addEventListener('blur', () => {
+              const error = validateFieldName(nameInput.value.trim());
+              nameError.textContent = error;
+          });
+
+          const closeModal = () => {
+              document.body.removeChild(modal);
+              document.removeEventListener('keydown', escHandler);
+          };
+
+          const addField = () => {
+              const fieldName = nameInput.value.trim();
+              const fieldValue = valueInput.value.trim();
+
+              const error = validateFieldName(fieldName);
+              if (error) {
+                  nameError.textContent = error;
+                  nameInput.focus();
+                  return;
+              }
+
+              this.frontMatter[fieldName] = fieldValue;
+              this.updateDocumentWithFrontMatter();
+              closeModal();
+          };
+
+          cancelButton.addEventListener('click', closeModal);
+          addButton.addEventListener('click', addField);
+
+          const handleKeyPress = (e) => {
+              if (e.key === 'Enter' && !addButton.disabled) {
+                  addField();
+              }
+          };
+
+          nameInput.addEventListener('keypress', handleKeyPress);
+          valueInput.addEventListener('keypress', handleKeyPress);
+
+          modal.addEventListener('click', (e) => {
+              if (e.target === modal) {
+                  closeModal();
+              }
+          });
+
+          const escHandler = (e) => {
+              if (e.key === 'Escape') {
+                  closeModal();
+              }
+          };
+          document.addEventListener('keydown', escHandler);
+
+          setTimeout(() => {
+              nameInput.focus();
+              nameInput.select();
+          }, 0);
       }
 
       updateDocumentWithFrontMatter() {
@@ -30608,14 +30865,26 @@
           }
       }
 
-      getFrontMatter() {
+      getFrontMatterYAML() {
           if (this.frontMatter && Object.keys(this.frontMatter).length > 0) {
-              let frontMatterContent = "---\n";
-              Object.entries(this.frontMatter).forEach(([key, value]) => {
-                  frontMatterContent += `${key}: ${value}\n`;
-              });
-              frontMatterContent += "---\n\n";
-              return frontMatterContent;
+              try {
+                  const yamlContent = jsYaml.dump(this.frontMatter, {
+                      indent: 2,
+                      lineWidth: -1,
+                      skipInvalid: true,
+                      noRefs: true,
+                      noCompatMode: true
+                  });
+
+                  return yamlContent;
+              } catch (error) {
+                  console.error('Error formatting YAML front matter:', error);
+                  let frontMatterContent = "";
+                  Object.entries(this.frontMatter).forEach(([key, value]) => {
+                      frontMatterContent += `${key}: ${value}\n`;
+                  });
+                  return frontMatterContent;
+              }
           } else {
               console.log('No front matter found');
               return "";
@@ -30640,7 +30909,7 @@
       }
 
       getNoteContent() {
-          return this.getFrontMatter() + this.getMarkdown();
+          return "---\n" + this.getFrontMatterYAML() + "---\n\n" + this.getMarkdown();
       }
 
       getCursorInfo() {
@@ -30878,6 +31147,33 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
       const container = document.getElementById('editor');
       if (container) {
           window.editor = new Editor(container);
+          window.editor.setNoteContent(`---
+author: pavel
+time: 12:15
+message: Hi
+---
+
+# Heading 1
+## Heading 2
+
+Quotes:
+> "It's easy!"
+> ProseMirror
+
+Lists:
+    1
+        2
+- item 1
+- item 2
+    - item 3
+    - item 4
+1. one
+2. two
+3. thee
+
+Marks: *em* **strong** ~~strike~~ ==highlight== __underline__ \`code\`
+
+Links: [note] [link](https://example.com) https://example.com my_email@mail.ru #tag`);
       }
   });
 

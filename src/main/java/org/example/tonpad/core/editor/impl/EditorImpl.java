@@ -62,7 +62,7 @@ public class EditorImpl implements Editor {
 
     @Override
     public void getFrontMatter(JsCallback callback, boolean jsonFormat) {
-        String jsCode = jsonFormat ? "editor.getFrontMatterJSON();" : "editor.getFrontMatter();";
+        String jsCode = jsonFormat ? "editor.getFrontMatterJSON();" : "editor.getFrontMatterYAML();";
         executeJs(jsCode)
                 .thenAccept(callback::onResult)
                 .exceptionally(throwable -> {

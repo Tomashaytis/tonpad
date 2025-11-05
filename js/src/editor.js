@@ -243,20 +243,68 @@ export class Editor {
     updateFrontMatterKey(oldKey, newKey, row) {
         if (oldKey === newKey) return;
 
-        if (this.frontMatter[newKey]) {
-            alert('Поле с таким именем уже существует!');
+        // Используем ту же валидацию
+        const validateFieldName = (fieldName) => {
+            if (!fieldName.trim()) {
+                return 'Имя поля не может быть пустым';
+            }
+
+            if (this.frontMatter[fieldName]) {
+                return 'Поле с таким именем уже существует';
+            }
+
+            if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName)) {
+                return 'Имя поля может содержать только буквы, цифры и подчеркивания, и должно начинаться с буквы или подчеркивания';
+            }
+
+            return '';
+        };
+
+        const error = validateFieldName(newKey);
+        if (error) {
+            this.showErrorDialog('Ошибка', error);
             row.querySelector('input[type="text"]').value = oldKey;
             return;
         }
 
         const value = this.frontMatter[oldKey];
-
         delete this.frontMatter[oldKey];
         this.frontMatter[newKey] = value;
 
         this.updateDocumentWithFrontMatter();
     }
 
+    showErrorDialog(title, message) {
+        const modal = document.createElement('div');
+        modal.className = 'frontmatter-add-modal';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'frontmatter-add-dialog';
+
+        dialog.innerHTML = `
+        <h3 class="frontmatter-add-title">${title}</h3>
+        <div style="margin-bottom: 20px; color: #666;">${message}</div>
+        <div class="frontmatter-add-buttons">
+            <button class="frontmatter-add-btn primary">OK</button>
+        </div>
+    `;
+
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+
+        const okButton = dialog.querySelector('.frontmatter-add-btn.primary');
+
+        const closeModal = () => {
+            document.body.removeChild(modal);
+        };
+
+        okButton.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        setTimeout(() => okButton.focus(), 0);
+    }
     updateFrontMatterValue(key, newValue) {
         if (this.frontMatter[key] === newValue) return;
 
@@ -265,21 +313,205 @@ export class Editor {
     }
 
     deleteFrontMatterField(key) {
-        if (confirm(`Удалить поле "${key}"?`)) {
-            delete this.frontMatter[key];
+        this.showConfirmDialog(
+            `Удалить поле "${key}"?`,
+            () => {
+                delete this.frontMatter[key];
 
-            if (Object.keys(this.frontMatter).length === 0) {
-                this.frontMatter = {};
+                if (Object.keys(this.frontMatter).length === 0) {
+                    this.frontMatter = {};
+                }
+
+                this.updateDocumentWithFrontMatter();
             }
+        );
+    }
 
-            this.updateDocumentWithFrontMatter();
-        }
+    showConfirmDialog(message, onConfirm) {
+        const modal = document.createElement('div');
+        modal.className = 'frontmatter-confirm-modal';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'frontmatter-confirm-dialog';
+
+        dialog.innerHTML = `
+        <div class="frontmatter-confirm-message">${message}</div>
+        <div class="frontmatter-confirm-buttons">
+            <button class="frontmatter-confirm-btn cancel">Отмена</button>
+            <button class="frontmatter-confirm-btn delete">Удалить</button>
+        </div>
+    `;
+
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+
+        const cancelBtn = dialog.querySelector('.cancel');
+        const deleteBtn = dialog.querySelector('.delete');
+
+        const closeModal = () => {
+            document.body.removeChild(modal);
+        };
+
+        cancelBtn.addEventListener('click', closeModal);
+        deleteBtn.addEventListener('click', () => {
+            onConfirm();
+            closeModal();
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+        cancelBtn.focus();
     }
 
     addFrontMatterField() {
-        const newKey = `new_field_${Date.now()}`;
-        this.frontMatter[newKey] = '';
-        this.updateFrontMatterTable();
+        this.showAddFieldDialog();
+    }
+
+    showAddFieldDialog() {
+        const modal = document.createElement('div');
+        modal.className = 'frontmatter-add-modal';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'frontmatter-add-dialog';
+
+        dialog.innerHTML = `
+        <h3 class="frontmatter-add-title">Добавить новое поле</h3>
+        <div class="frontmatter-add-form">
+            <div class="frontmatter-add-field">
+                <label class="frontmatter-add-label">Имя поля:</label>
+                <input type="text" class="frontmatter-add-input" placeholder="Введите имя поля">
+                <div class="frontmatter-add-error"></div>
+            </div>
+            <div class="frontmatter-add-field">
+                <label class="frontmatter-add-label">Значение:</label>
+                <input type="text" class="frontmatter-add-input" placeholder="Введите значение">
+                <div class="frontmatter-add-error"></div>
+            </div>
+            <div class="frontmatter-add-buttons">
+                <button class="frontmatter-add-btn cancel">Отмена</button>
+                <button class="frontmatter-add-btn primary" disabled>Добавить</button>
+            </div>
+        </div>
+    `;
+
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+
+        const nameInput = dialog.querySelector('.frontmatter-add-input');
+        const valueInput = dialog.querySelectorAll('.frontmatter-add-input')[1];
+        const nameError = dialog.querySelector('.frontmatter-add-error');
+        const addButton = dialog.querySelector('.frontmatter-add-btn.primary');
+        const cancelButton = dialog.querySelector('.frontmatter-add-btn.cancel');
+
+        const validateFieldName = (fieldName) => {
+            if (!fieldName.trim()) {
+                return 'Имя поля не может быть пустым';
+            }
+
+            if (this.frontMatter[fieldName]) {
+                return 'Поле с таким именем уже существует';
+            }
+
+            const invalidChars = /[:{}\[\]]/;
+            if (invalidChars.test(fieldName)) {
+                return 'Имя поля не может содержать символы : { } [ ]';
+            }
+
+            if (fieldName !== fieldName.trim()) {
+                return 'Имя поля не должно начинаться или заканчиваться пробелами';
+            }
+
+            // Предупреждение для ключей, которые могут требовать кавычки в YAML
+            const mayNeedQuotes = /[#&*!|>'"%@`-]|\s/;
+            if (mayNeedQuotes.test(fieldName)) {
+                return 'Имя поля содержит символы, которые могут требовать кавычек в YAML. Это допустимо, но может усложнить чтение.';
+            }
+
+            return '';
+        };
+
+        const updateAddButtonState = () => {
+            const name = nameInput.value.trim();
+            const nameErrorText = validateFieldName(name);
+            const isValid = !nameErrorText && name.length > 0;
+
+            addButton.disabled = !isValid;
+
+            if (nameErrorText) {
+                nameInput.classList.add('error');
+            } else {
+                nameInput.classList.remove('error');
+            }
+        };
+
+        nameInput.addEventListener('input', updateAddButtonState);
+        nameInput.addEventListener('blur', () => {
+            const error = validateFieldName(nameInput.value.trim());
+            nameError.textContent = error;
+        });
+
+        const closeModal = () => {
+            document.body.removeChild(modal);
+            document.removeEventListener('keydown', escHandler);
+        };
+
+        const addField = () => {
+            const fieldName = nameInput.value.trim();
+            const fieldValue = valueInput.value.trim();
+
+            const error = validateFieldName(fieldName);
+            if (error) {
+                nameError.textContent = error;
+                nameInput.focus();
+                return;
+            }
+
+            this.frontMatter[fieldName] = fieldValue;
+            this.updateDocumentWithFrontMatter();
+            closeModal();
+        };
+
+        cancelButton.addEventListener('click', closeModal);
+        addButton.addEventListener('click', addField);
+
+        const handleKeyPress = (e) => {
+            if (e.key === 'Enter' && !addButton.disabled) {
+                addField();
+            }
+        };
+
+        nameInput.addEventListener('keypress', handleKeyPress);
+        valueInput.addEventListener('keypress', handleKeyPress);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+        setTimeout(() => {
+            nameInput.focus();
+            nameInput.select();
+        }, 0);
     }
 
     updateDocumentWithFrontMatter() {
@@ -328,14 +560,26 @@ export class Editor {
         }
     }
 
-    getFrontMatter() {
+    getFrontMatterYAML() {
         if (this.frontMatter && Object.keys(this.frontMatter).length > 0) {
-            let frontMatterContent = "---\n";
-            Object.entries(this.frontMatter).forEach(([key, value]) => {
-                frontMatterContent += `${key}: ${value}\n`
-            });
-            frontMatterContent += "---\n\n"
-            return frontMatterContent;
+            try {
+                const yamlContent = jsYAML.dump(this.frontMatter, {
+                    indent: 2,
+                    lineWidth: -1,
+                    skipInvalid: true,
+                    noRefs: true,
+                    noCompatMode: true
+                });
+
+                return yamlContent;
+            } catch (error) {
+                console.error('Error formatting YAML front matter:', error);
+                let frontMatterContent = "";
+                Object.entries(this.frontMatter).forEach(([key, value]) => {
+                    frontMatterContent += `${key}: ${value}\n`
+                });
+                return frontMatterContent;
+            }
         } else {
             console.log('No front matter found');
             return "";
@@ -360,7 +604,7 @@ export class Editor {
     }
 
     getNoteContent() {
-        return this.getFrontMatter() + this.getMarkdown();
+        return "---\n" + this.getFrontMatterYAML() + "---\n\n" + this.getMarkdown();
     }
 
     getCursorInfo() {

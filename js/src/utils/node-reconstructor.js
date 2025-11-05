@@ -50,7 +50,7 @@ export class NodeReconstructor {
             },
             {
                 name: 'code',
-                pattern: /`(.*?)`/g, 
+                pattern: /`(.*?)`/g,
                 handler: this.wrapWithMark.bind(this, 'code')
             },
             {
@@ -219,8 +219,10 @@ export class NodeReconstructor {
             if (targetCursorIndex !== -1 && i < targetCursorIndex) {
                 const offset = targetCursorIndex - startPos;
                 if (reconstructed && reconstructed.type.name === 'notation_block' && reconstructed.attrs.layout === 'row') {
-                    if (offset > reconstructed.child(0).nodeSize) {
+                    if (offset > reconstructed.child(0).nodeSize - 1) {
                         blocksBeforeCursor += 3;
+                    } else {
+                        blocksBeforeCursor += 1;
                     }
                 }
             }

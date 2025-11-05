@@ -1,3 +1,175 @@
+/* Стили для модального окна добавления поля */
+.frontmatter-add-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.frontmatter-add-dialog {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    width: 90%;
+}
+
+.frontmatter-add-title {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.frontmatter-add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.frontmatter-add-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.frontmatter-add-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+}
+
+.frontmatter-add-input {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.frontmatter-add-input:focus {
+    outline: none;
+    border-color: #007acc;
+    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+}
+
+.frontmatter-add-input.error {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+}
+
+.frontmatter-add-error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+    min-height: 16px;
+}
+
+.frontmatter-add-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.frontmatter-add-btn {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.frontmatter-add-btn.primary {
+    background: #007acc;
+    color: white;
+    border-color: #007acc;
+}
+
+.frontmatter-add-btn.primary:hover:not(:disabled) {
+    background: #005a9e;
+}
+
+.frontmatter-add-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.frontmatter-add-btn.cancel {
+    background: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.frontmatter-add-btn.cancel:hover {
+    background: #545b62;
+}
+
+/* Стили для модального окна на подтверждение */
+.frontmatter-confirm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.frontmatter-confirm-dialog {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    width: 90%;
+}
+
+.frontmatter-confirm-message {
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.frontmatter-confirm-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.frontmatter-confirm-btn {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.frontmatter-confirm-btn.delete {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+.frontmatter-confirm-btn.cancel {
+    background: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
 /* Стили FrontMatter */
 .frontmatter-table {
     width: 100%;

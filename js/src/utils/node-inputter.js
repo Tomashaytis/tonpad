@@ -22,7 +22,9 @@ export class NodeInputter {
 
         if (cursorOffset === notationBlock.child(0).nodeSize - 2) {
             marksCheck = this.checkMarks(text, $from);
-            marksCheck.offset += 1;
+            if (marksCheck.text !== '') {
+                marksCheck.offset += 3;
+            }
         }
 
         const newSpecContent =
@@ -48,10 +50,22 @@ export class NodeInputter {
         let tr = state.tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
 
         if (reconstructedNode.type.name == 'notation_block') {
-            if (cursorOffset === notationBlock.child(0).nodeSize - 2) {
-                cursorOffset -= 1;
+            console.log(cursorOffset, reconstructedNode.child(0).nodeSize, notationBlock.child(0).nodeSize)
+            if (['tab_list', 'bullet_list', 'ordered_list'].includes(reconstructedNode.attrs.type) && text === '\t') {
+                if (notationBlock.child(0).nodeSize - cursorOffset === 2) {
+                    cursorOffset -= 2;
+                } else {
+                    cursorOffset += 1;
+                }
+            } else {
+                if (reconstructedNode.child(0).nodeSize === notationBlock.child(0).nodeSize) {
+                    cursorOffset += 0;
+                } else if (reconstructedNode.child(0).nodeSize < notationBlock.child(0).nodeSize) {
+                    cursorOffset += 3;
+                } else {
+                    cursorOffset += 1;
+                }
             }
-            cursorOffset += 3;
         }
 
         const cursorPos = blockPos + cursorOffset + marksCheck.offset + 2;
@@ -107,7 +121,7 @@ export class NodeInputter {
         return false;
     }
 
-    static handleDeleteChar(view, from, to, forward = true) {
+    static handleDeleteChar(view, from, to, backward = true) {
         const { state, dispatch } = view;
         const { selection } = state;
         const { $from } = selection;
@@ -116,16 +130,16 @@ export class NodeInputter {
         const textContent = node.textContent;
         let cursorOffset = $from.parentOffset;
 
-        if (cursorOffset === 0 && forward || cursorOffset === node.nodeSize - 2 && !forward) {
+        if (cursorOffset === 0 && backward || cursorOffset === node.nodeSize - 2 && !backward) {
             return false;
         }
 
         if (node.type.name === 'spec_block') {
-            return this.handleDeleteInSpec(view, from, to, forward);
+            return this.handleDeleteInSpec(view, from, to, backward);
         }
 
         let newText;
-        if (forward) {
+        if (backward) {
             newText = textContent.slice(0, cursorOffset - 1) + textContent.slice(cursorOffset);
         } else {
             newText = textContent.slice(0, cursorOffset) + textContent.slice(cursorOffset + 1);
@@ -150,7 +164,7 @@ export class NodeInputter {
             newNode = blockResult.paragraphs[0];
         }
 
-        if (forward && cursorOffset === 1) {
+        if (backward && cursorOffset === 1) {
             const parent = $from.node($from.depth - 1);
             if (parent && parent.type.name === 'notation_block') {
                 const childIndex = $from.indexAfter();
@@ -181,7 +195,7 @@ export class NodeInputter {
         return true;
     }
 
-    static handleDeleteInSpec(view, from, to, forward = true) {
+    static handleDeleteInSpec(view, from, to, backward = true) {
         const { state, dispatch } = view;
         const { selection } = state;
         const { $from } = selection;
@@ -194,12 +208,12 @@ export class NodeInputter {
 
         let cursorOffset = $from.parentOffset;
 
-        if (cursorOffset === 0 && forward || cursorOffset === notationBlock.child(0).nodeSize - 2 && !forward) {
+        if (cursorOffset === 0 && backward || cursorOffset === notationBlock.child(0).nodeSize - 2 && !backward) {
             return false;
         }
 
         let newSpecContent;
-        if (forward) {
+        if (backward) {
             newSpecContent = specContent.slice(0, cursorOffset - 1) + specContent.slice(cursorOffset);
         } else {
             newSpecContent = specContent.slice(0, cursorOffset) + specContent.slice(cursorOffset + 1);
@@ -224,7 +238,15 @@ export class NodeInputter {
         tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
 
         if (reconstructedNode.type.name == 'notation_block') {
-            cursorOffset += 1;
+            if (notationBlock.child(0).nodeSize - cursorOffset === 2 && backward) {
+                if (notationBlock.attrs.type == 'tab_list') {
+                    cursorOffset += 1;
+                } else {
+                    cursorOffset += 3;
+                }
+            } else {
+                cursorOffset += 1;
+            }
         }
 
         const cursorPos = blockPos + cursorOffset;

@@ -121,14 +121,13 @@ export class NodeMerger {
 
         let { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(currentParent);
 
-        let cursorPos;
         if (direction === 'up') {
             specContent = specContent.slice(1);
-            cursorPos = from + specContent.length + 1;
         } else {
             nodeContent = nodeContent.slice(1);
-            cursorPos = from + specContent.length + 2;
         }
+
+        let cursorPos = from + specContent.length + 1;
 
         const mergedText = specContent + nodeContent;
 
@@ -156,7 +155,7 @@ export class NodeMerger {
         const neighborPosAtDepth = neighborInfo.pos;
 
         let from = Math.min(neighborPosAtDepth, currentPosAtDepth);
-        const to = from + neighborInfo.node.nodeSize + currentNode.nodeSize;
+        const to = from + (neighborInfo.node.textContent.length != 0 ? neighborInfo.node.nodeSize : 1) + (currentNode.textContent.length != 0 ? currentNode.nodeSize : 1);
 
         const currentParagraphs = NodeConverter.destructNode(currentNode);
         const neighborParagraphs = NodeConverter.destructNode(neighborInfo.node);
@@ -191,7 +190,7 @@ export class NodeMerger {
                 mergedParagraphs = [...neighborParagraphs, ...currentParagraphs];
             }
         } else {
-            from -= 1;
+            from -= 1
             if (currentParagraphs.length > 0 && neighborParagraphs.length > 0) {
                 const lastCurrentPara = currentParagraphs[currentParagraphs.length - 1];
                 const firstNeighborPara = neighborParagraphs[0];
@@ -214,6 +213,8 @@ export class NodeMerger {
                     mergedParaPos += currentParagraphs[i].nodeSize;
                 }
                 cursorPos = mergedParaPos + lastCurrentPara.content.size + 1;
+
+                
             } else {
                 mergedParagraphs = [...currentParagraphs, ...neighborParagraphs];
             }

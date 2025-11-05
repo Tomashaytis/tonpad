@@ -180,7 +180,7 @@ export function keymapPlugin(editor) {
         },
         "Alt-5": () => {
             console.log('=== FRONT MATTER ===');
-            const frontMatter = editor.getFrontMatter();
+            const frontMatter = editor.getFrontMatterYAML();
             const lines = frontMatter.split('\n');
 
             lines.forEach((line, index) => {
