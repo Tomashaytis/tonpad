@@ -3,6 +3,7 @@ package org.example.tonpad.core.repository.impl;
 import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.models.TemplateRecord;
 import org.example.tonpad.core.repository.TemplatesRepository;
+import org.example.tonpad.core.service.db.ConnectionProviderService;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
@@ -21,10 +22,12 @@ public class TemplatesRepositoryImpl implements TemplatesRepository {
     public static final Field<Integer> ID_FIELD = DSL.field("id", Integer.class);
     public static final Field<String> NAME_FIELD = DSL.field("name", String.class);
 
-    private final DSLContext ctx;
+    private final ConnectionProviderService connectionProviderService;
 
     @Override
     public List<TemplateRecord> getAll() {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         return ctx.select()
                 .from(TEMPLATES_TABLE)
                 .fetchInto(TemplateRecord.class);
@@ -32,6 +35,8 @@ public class TemplatesRepositoryImpl implements TemplatesRepository {
 
     @Override
     public Optional<TemplateRecord> getById(int id) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         return ctx.select()
                 .from(TEMPLATES_TABLE)
                 .where(ID_FIELD.eq(id))
@@ -40,6 +45,8 @@ public class TemplatesRepositoryImpl implements TemplatesRepository {
 
     @Override
     public Optional<TemplateRecord> getByName(String name) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         return ctx.select()
                 .from(TEMPLATES_TABLE)
                 .where(NAME_FIELD.eq(name))
@@ -48,6 +55,8 @@ public class TemplatesRepositoryImpl implements TemplatesRepository {
 
     @Override
     public void save(TemplateRecord template) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         if (template.getId() == null) {
             Integer id = ctx.insertInto(TEMPLATES_TABLE)
                     .set(NAME_FIELD, template.getName())
@@ -64,6 +73,8 @@ public class TemplatesRepositoryImpl implements TemplatesRepository {
 
     @Override
     public void delete(int id) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         ctx.deleteFrom(TEMPLATES_TABLE)
                 .where(ID_FIELD.eq(id))
                 .execute();

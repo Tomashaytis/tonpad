@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import org.example.tonpad.core.files.RecentVaultService;
+import org.example.tonpad.core.service.VaultInitializerService;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.springframework.stereotype.Component;
 
@@ -53,6 +54,8 @@ public class QuickStartDialogController extends AbstractController {
     private ListView<String> recentVaultsListView;
 
     private final RecentVaultService recentVaultService;
+
+    private final VaultInitializerService vaultManager;
 
     private final ObservableList<String> recentVaults = FXCollections.observableArrayList();
 
@@ -163,6 +166,7 @@ public class QuickStartDialogController extends AbstractController {
             }
 
             vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
+            vaultManager.initVault(selectedDirectory.toPath());
             createVaultHandler.accept(vaultPath.getVaultPath());
             recentVaultService.setFirstRecent(recentVaults, vaultPath.getVaultPath());
             hide();

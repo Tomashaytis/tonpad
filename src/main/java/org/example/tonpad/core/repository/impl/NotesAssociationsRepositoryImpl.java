@@ -3,6 +3,7 @@ package org.example.tonpad.core.repository.impl;
 import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.models.NotesAssociationsRecord;
 import org.example.tonpad.core.repository.NotesAssociationsRepository;
+import org.example.tonpad.core.service.db.ConnectionProviderService;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
@@ -22,10 +23,12 @@ public class NotesAssociationsRepositoryImpl implements NotesAssociationsReposit
     public static final Field<Integer> SRC_ID_FIELD = DSL.field("src_id", Integer.class);
     public static final Field<Integer> DST_ID_FIELD = DSL.field("dst_id", Integer.class);
 
-    private final DSLContext ctx;
+    private final ConnectionProviderService connectionProviderService;
 
     @Override
     public List<NotesAssociationsRecord> getAll() {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         return ctx.select()
                 .from(ASSOCIATIONS_TABLE)
                 .fetchInto(NotesAssociationsRecord.class);
@@ -33,6 +36,8 @@ public class NotesAssociationsRepositoryImpl implements NotesAssociationsReposit
 
     @Override
     public Optional<NotesAssociationsRecord> getById(int id) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         return ctx.select()
                 .from(ASSOCIATIONS_TABLE)
                 .where(ID_FIELD.eq(id))
@@ -41,6 +46,8 @@ public class NotesAssociationsRepositoryImpl implements NotesAssociationsReposit
 
     @Override
     public List<NotesAssociationsRecord> getBySrcId(int srcId) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         return ctx.select()
                 .from(ASSOCIATIONS_TABLE)
                 .where(SRC_ID_FIELD.eq(srcId))
@@ -49,6 +56,8 @@ public class NotesAssociationsRepositoryImpl implements NotesAssociationsReposit
 
     @Override
     public List<NotesAssociationsRecord> getByDstId(int dstId) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         return ctx.select()
                 .from(ASSOCIATIONS_TABLE)
                 .where(DST_ID_FIELD.eq(dstId))
@@ -57,6 +66,8 @@ public class NotesAssociationsRepositoryImpl implements NotesAssociationsReposit
 
     @Override
     public void save(NotesAssociationsRecord record) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         if (record.getId() == null) {
             Integer id = ctx.insertInto(ASSOCIATIONS_TABLE)
                     .set(SRC_ID_FIELD, record.getSrcId())
@@ -75,6 +86,8 @@ public class NotesAssociationsRepositoryImpl implements NotesAssociationsReposit
 
     @Override
     public void delete(int id) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         ctx.delete(ASSOCIATIONS_TABLE)
                 .where(ID_FIELD.eq(id))
                 .execute();
@@ -82,6 +95,8 @@ public class NotesAssociationsRepositoryImpl implements NotesAssociationsReposit
 
     @Override
     public void delete(int srcId, int dstId) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         ctx.delete(ASSOCIATIONS_TABLE)
                 .where(SRC_ID_FIELD.eq(srcId), DST_ID_FIELD.eq(dstId))
                 .execute();

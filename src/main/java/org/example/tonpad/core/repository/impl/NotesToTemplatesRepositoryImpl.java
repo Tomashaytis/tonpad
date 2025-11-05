@@ -3,6 +3,7 @@ package org.example.tonpad.core.repository.impl;
 import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.models.NotesToTemplatesRecord;
 import org.example.tonpad.core.repository.NotesToTemplatesRepository;
+import org.example.tonpad.core.service.db.ConnectionProviderService;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
@@ -22,10 +23,12 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
     public static final Field<Integer> NOTE_ID_FIELD = DSL.field("note_id", Integer.class);
     public static final Field<Integer> TEMPLATE_ID_FIELD = DSL.field("template_id", Integer.class);
 
-    private final DSLContext ctx;
+    private final ConnectionProviderService connectionProviderService;
 
     @Override
     public List<NotesToTemplatesRecord> getAll() {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         return ctx.select()
                 .from(NOTES_TO_TEMPLATES_TABLE)
                 .fetchInto(NotesToTemplatesRecord.class);
@@ -33,6 +36,8 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
 
     @Override
     public Optional<NotesToTemplatesRecord> getById(int id) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         return ctx.select()
                 .from(NOTES_TO_TEMPLATES_TABLE)
                 .where(ID_FIELD.eq(id))
@@ -41,6 +46,8 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
 
     @Override
     public List<NotesToTemplatesRecord> getByNoteId(int noteId) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         return ctx.select()
                 .from(NOTES_TO_TEMPLATES_TABLE)
                 .where(NOTE_ID_FIELD.eq(noteId))
@@ -49,6 +56,8 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
 
     @Override
     public List<NotesToTemplatesRecord> getByTemplateId(int templateId) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         return ctx.select()
                 .from(NOTES_TO_TEMPLATES_TABLE)
                 .where(TEMPLATE_ID_FIELD.eq(templateId))
@@ -57,6 +66,8 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
 
     @Override
     public void save(NotesToTemplatesRecord record) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         if (record.getId() == null) {
             Integer id = ctx.insertInto(NOTES_TO_TEMPLATES_TABLE)
                     .set(NOTE_ID_FIELD, record.getNoteId())
@@ -75,6 +86,8 @@ public class NotesToTemplatesRepositoryImpl implements NotesToTemplatesRepositor
 
     @Override
     public void delete(int id) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
         ctx.delete(NOTES_TO_TEMPLATES_TABLE)
                 .where(ID_FIELD.eq(id))
                 .execute();
