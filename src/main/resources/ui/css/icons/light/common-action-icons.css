@@ -24,6 +24,10 @@
     -fx-image: url(../icons/light/expand.png);
 }
 
+.change-vault-icon {
+    -fx-image: url(../icons/light/change-vault.png);
+}
+
 .collapse-icon {
     -fx-image: url(../icons/light/collapse.png);
 }

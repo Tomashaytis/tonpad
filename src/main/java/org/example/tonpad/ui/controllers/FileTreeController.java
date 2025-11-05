@@ -2,9 +2,7 @@ package org.example.tonpad.ui.controllers;
 
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -18,11 +16,8 @@ import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.MouseButton;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -37,15 +32,12 @@ import org.example.tonpad.core.models.SortKey;
 import org.example.tonpad.core.models.SortOptions;
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.ui.extentions.FileTreeItem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.example.tonpad.ui.extentions.VaultPath;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,7 +49,6 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class FileTreeController extends AbstractController {
 
-    private static final Logger log = LoggerFactory.getLogger(FileTreeController.class);
     @FXML
     private TreeView<String> fileTreeView;
 
@@ -86,6 +77,9 @@ public class FileTreeController extends AbstractController {
     private Button expandFilesButton;
 
     @FXML
+    private Button changeVaultButton;
+
+    @FXML
     private ContextMenu sortMenu;
     @FXML
     private ToggleGroup sortToggleGroup;
@@ -96,17 +90,19 @@ public class FileTreeController extends AbstractController {
     
     private SortKey sortKey = SortKey.NAME_ASC;
 
+    private final QuickStartDialogController quickStartDialogController;
+
     private final FileSystemService fileSystemService;
 
     private final Buffer buffer;
+
+    private final VaultPath vaultPath;
 
     private static final javafx.css.PseudoClass MATCHED = javafx.css.PseudoClass.getPseudoClass("matched");
 
     private TreeItem<String> rootItem;
 
     private TreeItem<String> selectedItem;
-
-    private String vaultPath;
 
     private boolean isCollapsed = true;
 
@@ -120,9 +116,7 @@ public class FileTreeController extends AbstractController {
 
     private final Map<String, Boolean> expandedState = new HashMap<>();
 
-    public void init(AnchorPane parent, String path) {
-        this.vaultPath = path;
-
+    public void init(AnchorPane parent) {
         parent.getChildren().add(fileTreeVBox);
         AnchorPane.setTopAnchor(fileTreeVBox, 0.0);
         AnchorPane.setBottomAnchor(fileTreeVBox, 0.0);
@@ -134,6 +128,8 @@ public class FileTreeController extends AbstractController {
     }
 
     private void setupEventHandlers() {
+        changeVaultButton.setOnAction(e -> quickStartDialogController.show());
+
         expandFilesButton.setOnAction(e -> {
             ImageView imageView = (ImageView) expandFilesButton.getGraphic();
 
@@ -222,7 +218,7 @@ public class FileTreeController extends AbstractController {
     }
 
     private void selectItem(String path) {
-        Path relativePath = Path.of(vaultPath).relativize(Path.of(path));
+        Path relativePath = Path.of(vaultPath.getVaultPath()).relativize(Path.of(path));
         TreeItem<String> item = findTreeItemByPath(rootItem, relativePath);
         if (item != null) {
             fileTreeView.getSelectionModel().select(item);
@@ -250,7 +246,7 @@ public class FileTreeController extends AbstractController {
     public void refreshTree() {
         saveAllExpandedStates();
         SortOptions opt = new SortOptions(sortKey, cbFoldersFirst.isSelected(), cbRelevantOnly.isSelected());
-        FileTree fileTree = fileSystemService.getFileTreeSorted(vaultPath, opt);
+        FileTree fileTree = fileSystemService.getFileTreeSorted(vaultPath.getVaultPath(), opt);
         TreeItem<String> newRoot = convertFileTreeToTreeItem(fileTree);
 
         fileTreeView.setRoot(newRoot);
@@ -309,7 +305,7 @@ public class FileTreeController extends AbstractController {
 
     private String getFullPath(TreeItem<String> item) {
         if (item == null) {
-            return vaultPath;
+            return vaultPath.getVaultPath();
         }
 
         List<String> pathSegments = new ArrayList<>();
@@ -320,7 +316,7 @@ public class FileTreeController extends AbstractController {
             current = current.getParent();
         }
 
-        return Path.of(vaultPath, pathSegments.toArray(new String[0])).toString();
+        return Path.of(vaultPath.getVaultPath(), pathSegments.toArray(new String[0])).toString();
     }
 
     private void expandAll() {
@@ -350,7 +346,7 @@ public class FileTreeController extends AbstractController {
     }
 
     private void setupFileTree() {
-        FileTree fileTree = fileSystemService.getFileTree(vaultPath);
+        FileTree fileTree = fileSystemService.getFileTree(vaultPath.getVaultPath());
 
         rootItem = convertFileTreeToTreeItem(fileTree);
 
@@ -470,7 +466,7 @@ public class FileTreeController extends AbstractController {
             Path targetDir = resolveTargetDirForPaste(target);
             if(target == null)
             {
-                targetDir = Path.of(vaultPath);
+                targetDir = Path.of(vaultPath.getVaultPath());
             }
             fileSystemService.pasteFile(targetDir);
             refreshTree();
@@ -486,9 +482,9 @@ public class FileTreeController extends AbstractController {
     }
 
     private Path resolveTargetDirForPaste(TreeItem<String> node) {
-        if (node == null) return Path.of(vaultPath);
+        if (node == null) return Path.of(vaultPath.getVaultPath());
         Path here = Path.of(getFullPath(node));
-        return Files.isDirectory(here) ? here : (here.getParent() != null ? here.getParent() : Path.of(vaultPath));
+        return Files.isDirectory(here) ? here : (here.getParent() != null ? here.getParent() : Path.of(vaultPath.getVaultPath()));
     }
 
     private void onCopyVaultPath() 
@@ -767,7 +763,7 @@ private void showError(String header, String msg) {
         Path targetPath;
 
         if (selectedItem == null) {
-            targetPath = Path.of(vaultPath);
+            targetPath = Path.of(vaultPath.getVaultPath());
         } else {
             String fullPath = getFullPath(selectedItem);
             Path selectedPath = Path.of(fullPath);
@@ -795,7 +791,7 @@ private void showError(String header, String msg) {
         Path targetPath;
 
         if (selectedItem == null) {
-            targetPath = Path.of(vaultPath);
+            targetPath = Path.of(vaultPath.getVaultPath());
         } else {
             String fullPath = getFullPath(selectedItem);
             Path selectedPath = Path.of(fullPath);

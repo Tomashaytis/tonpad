@@ -51,6 +51,10 @@ public class TabController {
         }
     }
 
+    public void clearAllTabs() {
+        tabPane.getTabs().forEach(this::tabClose);
+    }
+
     private void createInitialTab(String path) {
         try {
             Path filePath = Path.of(path);
