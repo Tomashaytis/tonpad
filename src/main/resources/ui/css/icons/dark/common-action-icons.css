@@ -1,49 +1,49 @@
 /* common-action-icons.css - иконки для общих операций, тёмная тема */
 
 .settings-icon {
-    -fx-image: url(../icons/dark/settings.png);
+    -fx-image: url(/ui/icons/dark/settings.png);
 }
 
 .more-options-icon {
-    -fx-image: url(../icons/dark/more-options.png);
+    -fx-image: url(/ui/icons/dark/more-options.png);
 }
 
 .version-history-icon {
-    -fx-image: url(../icons/dark/version-history.png);
+    -fx-image: url(/ui/icons/dark/version-history.png);
 }
 
 .sort-down-icon {
-    -fx-image: url(../icons/dark/sort-down.png);
+    -fx-image: url(/ui/icons/dark/sort-down.png);
 }
 
 .sort-up-icon {
-    -fx-image: url(../icons/dark/sort-up.png);
+    -fx-image: url(/ui/icons/dark/sort-up.png);
 }
 
 .expand-icon {
-    -fx-image: url(../icons/dark/expand.png);
+    -fx-image: url(/ui/icons/dark/expand.png);
 }
 
 .collapse-icon {
-    -fx-image: url(../icons/dark/collapse.png);
+    -fx-image: url(/ui/icons/dark/collapse.png);
 }
 
 .refresh-icon {
-    -fx-image: url(../icons/dark/refresh.png);
+    -fx-image: url(/ui/icons/dark/refresh.png);
 }
 
 .bookmark-icon {
-    -fx-image: url(../icons/dark/bookmark.png);
+    -fx-image: url(/ui/icons/dark/bookmark.png);
 }
 
 .merge-icon {
-    -fx-image: url(../icons/dark/merge.png);
+    -fx-image: url(/ui/icons/dark/merge.png);
 }
 
 .arrow-down-icon {
-    -fx-image: url(../icons/dark/arrow-down.png);
+    -fx-image: url(/ui/icons/dark/arrow-down.png);
 }
 
 .arrow-up-icon {
-    -fx-image: url(../icons/dark/arrow-up.png);
+    -fx-image: url(/ui/icons/dark/arrow-up.png);
 }

@@ -1,21 +1,21 @@
 /* file-action-icons.css - иконки для операций с файлами, тёмная тема */
 
 .remove-icon {
-    -fx-image: url(../icons/common/remove-red.png);
+    -fx-image: url(/ui/icons/common/remove-red.png);
 }
 
 .rename-icon {
-    -fx-image: url(../icons/dark/rename.png);
+    -fx-image: url(/ui/icons/dark/rename.png);
 }
 
 .copy-file-icon {
-    -fx-image: url(../icons/dark/copy-file.png);
+    -fx-image: url(/ui/icons/dark/copy-file.png);
 }
 
 .copy-path-icon {
-    -fx-image: url(../icons/dark/copy-path.png);
+    -fx-image: url(/ui/icons/dark/copy-path.png);
 }
 
 .move-file-icon {
-    -fx-image: url(../icons/dark/move-file.png);
+    -fx-image: url(/ui/icons/dark/move-file.png);
 }
