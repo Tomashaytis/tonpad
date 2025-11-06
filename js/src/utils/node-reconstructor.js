@@ -40,32 +40,32 @@ export class NodeReconstructor {
         this.markRules = [
             {
                 name: 'strong',
-                pattern: /\*\*(.*)\*\*/g,
+                pattern: /\*\*(.*?)\*\*/g,
                 handler: this.wrapWithMark.bind(this, 'strong')
             },
             {
                 name: 'em',
-                pattern:/(?<!\*)\*(.*?)\*(?!\*)/g,
+                pattern: /(?<!\*)\*(.*?)\*(?!\*)/g,
                 handler: this.wrapWithMark.bind(this, 'em')
             },
             {
                 name: 'code',
-                pattern: /`(.*)`/g,
+                pattern: /`(.*?)`/g,
                 handler: this.wrapWithMark.bind(this, 'code')
             },
             {
                 name: 'strike',
-                pattern: /~~(.*)~~/g,
+                pattern: /~~(.*?)~~/g,
                 handler: this.wrapWithMark.bind(this, 'strike')
             },
             {
                 name: 'highlight',
-                pattern: /==(.*)==/g,
+                pattern: /==(.*?)==/g,
                 handler: this.wrapWithMark.bind(this, 'highlight')
             },
             {
                 name: 'underline',
-                pattern: /__(.*)__/g,
+                pattern: /__(.*?)__/g,
                 handler: this.wrapWithMark.bind(this, 'underline')
             },
             {
@@ -219,14 +219,11 @@ export class NodeReconstructor {
             if (targetCursorIndex !== -1 && i < targetCursorIndex) {
                 const offset = targetCursorIndex - startPos;
                 if (reconstructed && reconstructed.type.name === 'notation_block' && reconstructed.attrs.layout === 'row') {
-                    if (offset > reconstructed.child(0).nodeSize - 2) {
+                    if (offset > reconstructed.child(0).nodeSize - 1) {
                         blocksBeforeCursor += 3;
                     } else {
                         blocksBeforeCursor += 1;
                     }
-                }
-                else {
-                    blocksBeforeCursor += 1;
                 }
             }
 

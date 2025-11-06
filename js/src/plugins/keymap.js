@@ -2,11 +2,12 @@ import { keymap } from "prosemirror-keymap";
 import { baseKeymap, toggleMark, chainCommands, newlineInCode, createParagraphNear, liftEmptyBlock, splitBlock, joinBackward, selectNodeBackward } from "prosemirror-commands";
 import { undo, redo } from "prosemirror-history";
 import { markdownSchema } from "../schema/markdown-schema.js";
+import { NodeMerger } from "../utils/node-merger.js";
+import { NodeSplitter } from "../utils/node-splitter.js";
 import { NodeInputter } from "../utils/node-inputter.js";
 import { NodeConverter } from "../utils/node-converter.js";
 import { NodeReconstructor } from "../utils/node-reconstructor.js";
 import { TextSelection } from "prosemirror-state";
-import { correctCursorPos } from "../utils/utils.js";
 
 export function keymapPlugin(editor) {
     return keymap({
@@ -40,10 +41,6 @@ export function keymapPlugin(editor) {
                 const cursorPos = containerPos + specNode.nodeSize;
 
                 let selection = TextSelection.create(tr.doc, cursorPos);
-                const newSelection = correctCursorPos(tr, cursorPos);
-                if (newSelection) {
-                    selection = newSelection;
-                }
 
                 dispatch(tr.setSelection(selection));
                 return true;
@@ -51,20 +48,88 @@ export function keymapPlugin(editor) {
 
             return NodeInputter.handleInputInNormalNode(view, from, to, '\t');
         },
-        "Enter": chainCommands(
-            newlineInCode,
-            createParagraphNear,
-            liftEmptyBlock,
-            splitBlock
-        ),
+        "Enter": (state, dispatch, view) => {
+            const event = new KeyboardEvent('keydown', { key: 'Enter' });
+            const splitterResult = NodeSplitter.handleEnter(view, event);
+
+            if (splitterResult !== undefined && splitterResult !== false) {
+                return splitterResult;
+            }
+
+            return chainCommands(
+                newlineInCode,
+                createParagraphNear,
+                liftEmptyBlock,
+                splitBlock
+            )(state, dispatch, view);
+        },
+        "Backspace": (state, dispatch, view) => {
+            const { $from, empty } = state.selection;
+
+            if (!empty) return false;
+
+            const isAtBlockStart = $from.parentOffset === 0;
+
+            if (isAtBlockStart) {
+                const tr = NodeMerger.mergeUp(state, state.selection);
+
+                if (tr) {
+                    dispatch(tr);
+                    return true;
+                }
+            } else {
+                const from = $from.pos - 1;
+                const to = $from.pos;
+                return NodeInputter.handleDeleteChar(view, from, to);
+            }
+
+            return false;
+        },
+        "Delete": (state, dispatch, view) => {
+            const { $from, empty } = state.selection;
+
+            if (!empty) return false;
+
+            const isAtBlockEnd = $from.parentOffset === $from.parent.textContent.length;
+
+            if (isAtBlockEnd) {
+                const tr = NodeMerger.mergeDown(state, state.selection);
+
+                if (tr) {
+                    dispatch(tr);
+                    return true;
+                }
+            } else {
+                const from = $from.pos - 1;
+                const to = $from.pos;
+                return NodeInputter.handleDeleteChar(view, from, to, false);
+            }
+
+            return false;
+        },
         "Mod-z": undo,
         "Mod-y": redo,
         "Mod-Shift-z": redo,
         "Mod-b": toggleMark(markdownSchema.marks.strong),
         "Mod-i": toggleMark(markdownSchema.marks.em),
         "Alt-1": () => {
+            const info = editor.getCursorInfo();
+
             console.log('=== CURSOR INFO ===');
-            console.log(editor.getCursorInfo());
+            console.log('$from.depth:', info.currentNode.depth);
+            console.log('$from.parent.type:', info.currentNode.type);
+
+            const parentDepth = info.currentNode.depth - 1;
+            console.log('parentDepth:', parentDepth);
+            console.log('currentIndex:', info.currentNode.indexInParent);
+
+            console.log('Current node:', info.currentNode.type, 'index:', info.currentNode.indexInParent);
+            console.log('Siblings:');
+            info.siblings.forEach(sibling => {
+                console.log(`  [${sibling.index}] ${sibling.type}${sibling.isCurrent ? ' <- CURRENT' : ''}`);
+            });
+
+            console.log(info);
         },
         "Alt-2": () => {
             console.log('=== DOCUMENT JSON ===');
@@ -115,7 +180,7 @@ export function keymapPlugin(editor) {
         },
         "Alt-5": () => {
             console.log('=== FRONT MATTER ===');
-            const frontMatter = editor.getFrontMatter();
+            const frontMatter = editor.getFrontMatterYAML();
             const lines = frontMatter.split('\n');
 
             lines.forEach((line, index) => {

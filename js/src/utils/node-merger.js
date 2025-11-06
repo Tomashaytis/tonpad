@@ -22,7 +22,7 @@ export class NodeMerger {
 
         const neighborInfo = this.findNeighbor(state, pos, depth, direction);
 
-        if (neighborInfo && neighborInfo.node.textContent.length !== 0) {
+        if (neighborInfo) {
             return this.performMerge(state, pos, neighborInfo, direction);
         }
 
@@ -128,6 +128,7 @@ export class NodeMerger {
         }
 
         let cursorPos = from + specContent.length + 1;
+
         const mergedText = specContent + nodeContent;
 
         const mergedParagraph = NodeConverter.constructParagraph(mergedText);
@@ -154,7 +155,7 @@ export class NodeMerger {
         const neighborPosAtDepth = neighborInfo.pos;
 
         let from = Math.min(neighborPosAtDepth, currentPosAtDepth);
-        const to = from + neighborInfo.node.nodeSize + currentNode.nodeSize;
+        const to = from + (neighborInfo.node.textContent.length != 0 ? neighborInfo.node.nodeSize : 1) + (currentNode.textContent.length != 0 ? currentNode.nodeSize : 1);
 
         const currentParagraphs = NodeConverter.destructNode(currentNode);
         const neighborParagraphs = NodeConverter.destructNode(neighborInfo.node);
@@ -189,7 +190,7 @@ export class NodeMerger {
                 mergedParagraphs = [...neighborParagraphs, ...currentParagraphs];
             }
         } else {
-            from -= 1;
+            from -= 1
             if (currentParagraphs.length > 0 && neighborParagraphs.length > 0) {
                 const lastCurrentPara = currentParagraphs[currentParagraphs.length - 1];
                 const firstNeighborPara = neighborParagraphs[0];
@@ -212,6 +213,8 @@ export class NodeMerger {
                     mergedParaPos += currentParagraphs[i].nodeSize;
                 }
                 cursorPos = mergedParaPos + lastCurrentPara.content.size + 1;
+
+                
             } else {
                 mergedParagraphs = [...currentParagraphs, ...neighborParagraphs];
             }
@@ -226,7 +229,6 @@ export class NodeMerger {
         const reconstructedData = this.applyReconstruction(tr, mergedParagraphs, from, to, cursorPos);
 
         reconstructedData.tr.setSelection(TextSelection.create(reconstructedData.tr.doc, reconstructedData.cursorPos));
-        //this.setCursorSelection(reconstructedData.tr, reconstructedData.cursorPos);
 
         return reconstructedData.tr;
     }

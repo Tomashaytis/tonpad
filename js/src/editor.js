@@ -8,11 +8,8 @@ import { NodeConverter } from "./utils/node-converter.js";
 import { NodeReconstructor } from "./utils/node-reconstructor.js";
 import { markdownSerializer } from "./serializer/markdown-serializer.js";
 import { blockNavigationPlugin } from "./plugins/block-navigation.js"
-import { enterPlugin } from "./plugins/enter.js";
 import { keymapPlugin } from "./plugins/keymap.js";
 import { inputRulesPlugin } from "./plugins/input-rules.js";
-import { backspacePlugin } from "./plugins/backspace.js";
-import { deletePlugin } from "./plugins/delete.js";
 import { inputPlugin } from "./plugins/input.js"
 import { disableInsertPlugin } from "./plugins/disable-insert.js"
 import { hideSpecPlugin } from "./plugins/hide-spec.js"
@@ -23,7 +20,7 @@ export class Editor {
     constructor(target, content = '') {
         if (!target) throw new Error('Target element required');
 
-        const docContent = this.parseDoc(content)
+        const docContent = this.parseDoc(content);
 
         this.frontMatter = docContent.frontMatter;
 
@@ -123,9 +120,6 @@ export class Editor {
     createPlugins() {
         return [
             history(),
-            backspacePlugin(),
-            deletePlugin(),
-            enterPlugin(),
             keymapPlugin(this),
             dropCursor(),
             gapCursor(),
@@ -249,20 +243,68 @@ export class Editor {
     updateFrontMatterKey(oldKey, newKey, row) {
         if (oldKey === newKey) return;
 
-        if (this.frontMatter[newKey]) {
-            alert('Поле с таким именем уже существует!');
+        // Используем ту же валидацию
+        const validateFieldName = (fieldName) => {
+            if (!fieldName.trim()) {
+                return 'Имя поля не может быть пустым';
+            }
+
+            if (this.frontMatter[fieldName]) {
+                return 'Поле с таким именем уже существует';
+            }
+
+            if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName)) {
+                return 'Имя поля может содержать только буквы, цифры и подчеркивания, и должно начинаться с буквы или подчеркивания';
+            }
+
+            return '';
+        };
+
+        const error = validateFieldName(newKey);
+        if (error) {
+            this.showErrorDialog('Ошибка', error);
             row.querySelector('input[type="text"]').value = oldKey;
             return;
         }
 
         const value = this.frontMatter[oldKey];
-
         delete this.frontMatter[oldKey];
         this.frontMatter[newKey] = value;
 
         this.updateDocumentWithFrontMatter();
     }
 
+    showErrorDialog(title, message) {
+        const modal = document.createElement('div');
+        modal.className = 'frontmatter-add-modal';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'frontmatter-add-dialog';
+
+        dialog.innerHTML = `
+        <h3 class="frontmatter-add-title">${title}</h3>
+        <div style="margin-bottom: 20px; color: #666;">${message}</div>
+        <div class="frontmatter-add-buttons">
+            <button class="frontmatter-add-btn primary">OK</button>
+        </div>
+    `;
+
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+
+        const okButton = dialog.querySelector('.frontmatter-add-btn.primary');
+
+        const closeModal = () => {
+            document.body.removeChild(modal);
+        };
+
+        okButton.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        setTimeout(() => okButton.focus(), 0);
+    }
     updateFrontMatterValue(key, newValue) {
         if (this.frontMatter[key] === newValue) return;
 
@@ -271,21 +313,205 @@ export class Editor {
     }
 
     deleteFrontMatterField(key) {
-        if (confirm(`Удалить поле "${key}"?`)) {
-            delete this.frontMatter[key];
+        this.showConfirmDialog(
+            `Удалить поле "${key}"?`,
+            () => {
+                delete this.frontMatter[key];
 
-            if (Object.keys(this.frontMatter).length === 0) {
-                this.frontMatter = {};
+                if (Object.keys(this.frontMatter).length === 0) {
+                    this.frontMatter = {};
+                }
+
+                this.updateDocumentWithFrontMatter();
             }
+        );
+    }
 
-            this.updateDocumentWithFrontMatter();
-        }
+    showConfirmDialog(message, onConfirm) {
+        const modal = document.createElement('div');
+        modal.className = 'frontmatter-confirm-modal';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'frontmatter-confirm-dialog';
+
+        dialog.innerHTML = `
+        <div class="frontmatter-confirm-message">${message}</div>
+        <div class="frontmatter-confirm-buttons">
+            <button class="frontmatter-confirm-btn cancel">Отмена</button>
+            <button class="frontmatter-confirm-btn delete">Удалить</button>
+        </div>
+    `;
+
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+
+        const cancelBtn = dialog.querySelector('.cancel');
+        const deleteBtn = dialog.querySelector('.delete');
+
+        const closeModal = () => {
+            document.body.removeChild(modal);
+        };
+
+        cancelBtn.addEventListener('click', closeModal);
+        deleteBtn.addEventListener('click', () => {
+            onConfirm();
+            closeModal();
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+        cancelBtn.focus();
     }
 
     addFrontMatterField() {
-        const newKey = `new_field_${Date.now()}`;
-        this.frontMatter[newKey] = '';
-        this.updateFrontMatterTable();
+        this.showAddFieldDialog();
+    }
+
+    showAddFieldDialog() {
+        const modal = document.createElement('div');
+        modal.className = 'frontmatter-add-modal';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'frontmatter-add-dialog';
+
+        dialog.innerHTML = `
+        <h3 class="frontmatter-add-title">Добавить новое поле</h3>
+        <div class="frontmatter-add-form">
+            <div class="frontmatter-add-field">
+                <label class="frontmatter-add-label">Имя поля:</label>
+                <input type="text" class="frontmatter-add-input" placeholder="Введите имя поля">
+                <div class="frontmatter-add-error"></div>
+            </div>
+            <div class="frontmatter-add-field">
+                <label class="frontmatter-add-label">Значение:</label>
+                <input type="text" class="frontmatter-add-input" placeholder="Введите значение">
+                <div class="frontmatter-add-error"></div>
+            </div>
+            <div class="frontmatter-add-buttons">
+                <button class="frontmatter-add-btn cancel">Отмена</button>
+                <button class="frontmatter-add-btn primary" disabled>Добавить</button>
+            </div>
+        </div>
+    `;
+
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+
+        const nameInput = dialog.querySelector('.frontmatter-add-input');
+        const valueInput = dialog.querySelectorAll('.frontmatter-add-input')[1];
+        const nameError = dialog.querySelector('.frontmatter-add-error');
+        const addButton = dialog.querySelector('.frontmatter-add-btn.primary');
+        const cancelButton = dialog.querySelector('.frontmatter-add-btn.cancel');
+
+        const validateFieldName = (fieldName) => {
+            if (!fieldName.trim()) {
+                return 'Имя поля не может быть пустым';
+            }
+
+            if (this.frontMatter[fieldName]) {
+                return 'Поле с таким именем уже существует';
+            }
+
+            const invalidChars = /[:{}\[\]]/;
+            if (invalidChars.test(fieldName)) {
+                return 'Имя поля не может содержать символы : { } [ ]';
+            }
+
+            if (fieldName !== fieldName.trim()) {
+                return 'Имя поля не должно начинаться или заканчиваться пробелами';
+            }
+
+            // Предупреждение для ключей, которые могут требовать кавычки в YAML
+            const mayNeedQuotes = /[#&*!|>'"%@`-]|\s/;
+            if (mayNeedQuotes.test(fieldName)) {
+                return 'Имя поля содержит символы, которые могут требовать кавычек в YAML. Это допустимо, но может усложнить чтение.';
+            }
+
+            return '';
+        };
+
+        const updateAddButtonState = () => {
+            const name = nameInput.value.trim();
+            const nameErrorText = validateFieldName(name);
+            const isValid = !nameErrorText && name.length > 0;
+
+            addButton.disabled = !isValid;
+
+            if (nameErrorText) {
+                nameInput.classList.add('error');
+            } else {
+                nameInput.classList.remove('error');
+            }
+        };
+
+        nameInput.addEventListener('input', updateAddButtonState);
+        nameInput.addEventListener('blur', () => {
+            const error = validateFieldName(nameInput.value.trim());
+            nameError.textContent = error;
+        });
+
+        const closeModal = () => {
+            document.body.removeChild(modal);
+            document.removeEventListener('keydown', escHandler);
+        };
+
+        const addField = () => {
+            const fieldName = nameInput.value.trim();
+            const fieldValue = valueInput.value.trim();
+
+            const error = validateFieldName(fieldName);
+            if (error) {
+                nameError.textContent = error;
+                nameInput.focus();
+                return;
+            }
+
+            this.frontMatter[fieldName] = fieldValue;
+            this.updateDocumentWithFrontMatter();
+            closeModal();
+        };
+
+        cancelButton.addEventListener('click', closeModal);
+        addButton.addEventListener('click', addField);
+
+        const handleKeyPress = (e) => {
+            if (e.key === 'Enter' && !addButton.disabled) {
+                addField();
+            }
+        };
+
+        nameInput.addEventListener('keypress', handleKeyPress);
+        valueInput.addEventListener('keypress', handleKeyPress);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+        setTimeout(() => {
+            nameInput.focus();
+            nameInput.select();
+        }, 0);
     }
 
     updateDocumentWithFrontMatter() {
@@ -294,12 +520,12 @@ export class Editor {
         const currentMarkdown = this.getMarkdown();
 
         const newContent = this.getNoteContent(currentMarkdown);
-        this.setMarkdown(newContent);
+        this.setNoteContent(newContent);
     }
 
-    setMarkdown(markdown) {
+    setNoteContent(content) {
         try {
-            const docContent = this.parseDoc(markdown);
+            const docContent = this.parseDoc(content);
             this.frontMatter = docContent.frontMatter;
             this.updateFrontMatterTable();
 
@@ -334,17 +560,42 @@ export class Editor {
         }
     }
 
-    getFrontMatter() {
+    getFrontMatterYAML() {
         if (this.frontMatter && Object.keys(this.frontMatter).length > 0) {
-            let frontMatterContent = "---\n";
-            Object.entries(this.frontMatter).forEach(([key, value]) => {
-                frontMatterContent += `${key}: ${value}\n`
-            });
-            frontMatterContent += "---\n\n"
-            return frontMatterContent;
+            try {
+                const yamlContent = jsYAML.dump(this.frontMatter, {
+                    indent: 2,
+                    lineWidth: -1,
+                    skipInvalid: true,
+                    noRefs: true,
+                    noCompatMode: true
+                });
+
+                return yamlContent;
+            } catch (error) {
+                console.error('Error formatting YAML front matter:', error);
+                let frontMatterContent = "";
+                Object.entries(this.frontMatter).forEach(([key, value]) => {
+                    frontMatterContent += `${key}: ${value}\n`
+                });
+                return frontMatterContent;
+            }
         } else {
             console.log('No front matter found');
             return "";
+        }
+    }
+
+    getFrontMatterJSON() {
+        try {
+            if (this.frontMatter && Object.keys(this.frontMatter).length > 0) {
+                return JSON.stringify(this.frontMatter);
+            } else {
+                return "{}";
+            }
+        } catch (error) {
+            console.error('Error serializing front matter:', error);
+            return "{}";
         }
     }
 
@@ -353,22 +604,16 @@ export class Editor {
     }
 
     getNoteContent() {
-        return this.getFrontMatter() + this.getMarkdown();
+        const frontMatter =  this.getFrontMatterYAML() !== "" ? "---\n" + this.getFrontMatterYAML() + "---\n\n" : "";
+        return frontMatter + this.getMarkdown();
     }
 
     getCursorInfo() {
         const { $from } = this.view.state.selection;
 
-        console.log('=== CURSOR INFO (CORRECTED) ===');
-        console.log('$from.depth:', $from.depth);
-        console.log('$from.parent.type:', $from.parent.type.name);
-
         const parentDepth = $from.depth - 1;
         const currentIndex = parentDepth >= 0 ? $from.index(parentDepth) : 0;
         const parent = parentDepth >= 0 ? $from.node(parentDepth) : null;
-
-        console.log('parentDepth:', parentDepth);
-        console.log('currentIndex (corrected):', currentIndex);
 
         const info = {
             currentNode: {
@@ -407,12 +652,6 @@ export class Editor {
             }
         }
 
-        console.log('CORRECT Current node:', info.currentNode.type, 'index:', currentIndex);
-        console.log('Siblings:');
-        info.siblings.forEach(sibling => {
-            console.log(`  [${sibling.index}] ${sibling.type}${sibling.isCurrent ? ' ← CURRENT' : ''}`);
-        });
-
         return info;
     }
 
@@ -424,469 +663,3 @@ export class Editor {
         this.view.destroy();
     }
 }
-
-/*
-rebuildTree() {
-        let tr = this.view.state.tr;
-        let hasChanges = false;
-
-        const changes = [];
-
-        this.view.state.doc.descendants((node, pos) => {
-            if (node.type.name === 'heading') {
-                changes.push({ type: 'heading', node, pos });
-            }
-            else if (node.isText && node.marks.length > 0) {
-                changes.push({ type: 'mark', node, pos, marks: [...node.marks] });
-            }
-        });
-
-        changes.sort((a, b) => b.pos - a.pos).forEach((change) => {
-            if (change.type === 'heading') {
-                const headingBlock = NodeConverter.constructHeading(change.node);
-                tr = tr.replaceWith(change.pos, change.pos + change.node.nodeSize, headingBlock);
-                hasChanges = true;
-            }
-            else if (change.type === 'mark') {
-                change.marks.forEach(mark => {
-                    const textNode = markdownSchema.text(change.node.text, change.node.marks);
-
-                    let markContainer;
-
-                    switch (mark.type.name) {
-                        case 'em':
-                            markContainer = NodeConverter.constructEm(textNode);
-                            break;
-                        case 'strong':
-                            markContainer = NodeConverter.constructStrong(textNode);
-                            break;
-                        case 'strike':
-                            markContainer = NodeConverter.constructStrike(textNode);
-                            break;
-                        case 'highlight':
-                            markContainer = NodeConverter.constructHighlight(textNode);
-                            break;
-                        case 'underline':
-                            markContainer = NodeConverter.constructUnderline(textNode);
-                            break;
-                        case 'code':
-                            markContainer = NodeConverter.constructCode(textNode);
-                            break;
-                        default:
-                            return;
-                    }
-
-                    tr = tr.replaceWith(change.pos, change.pos + change.node.nodeSize, markContainer);
-                    hasChanges = true;
-                });
-            }
-        });
-
-        if (hasChanges) {
-            const currentPos = this.view.state.selection.from;
-
-            this.view.dispatch(tr);
-
-            const newSelection = this.view.state.selection.constructor.near(
-                this.view.state.doc.resolve(currentPos)
-            );
-            this.view.dispatch(this.view.state.tr.setSelection(newSelection));
-        }
-    }
- */
-
-/*import { EditorState } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
-import { keymap } from "prosemirror-keymap";
-import { baseKeymap, toggleMark, chainCommands, newlineInCode, createParagraphNear, liftEmptyBlock, splitBlock } from "prosemirror-commands";
-import { dropCursor } from "prosemirror-dropcursor";
-import { gapCursor } from "prosemirror-gapcursor";
-import { history, redo, undo } from "prosemirror-history";
-import { inputRules, textblockTypeInputRule, wrappingInputRule, InputRule } from "prosemirror-inputrules";
-import { sinkListItem, splitListItem, liftListItem, wrapInList } from "prosemirror-schema-list";
-import { markdownSchema } from "./schema/markdown-schema.js";
-import { CustomMarkdownParser } from "./plugins/markdown-parser.js";
-import { markdownSerializer } from "./plugins/markdown-serializer.js";
-
-export class Editor {
-    constructor(target, content = '') {
-        if (!target) throw new Error('Target element required');
-
-        const parser = new CustomMarkdownParser();
-        const doc = parser.parse(content);
-
-        this.view = new EditorView(target, {
-            state: EditorState.create({
-                doc: doc,
-                schema: markdownSchema,
-                plugins: this.createPlugins()
-            }),
-            attributes: {
-                class: "markdown-editor",
-                style: `
-                    outline: none; 
-                    min-height: 300px; 
-                    padding: 15px;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                    font-size: 14px;
-                    line-height: 1.6;
-                    background: white;
-                    white-space: pre-wrap;
-                `
-            },
-            dispatchTransaction: (tr) => {
-                const newState = this.view.state.apply(tr);
-                this.view.updateState(newState);
-                
-                setTimeout(() => {
-                    this.updateFocusFromSelection();
-                }, 10);
-            }
-        });
-
-        this.setupFocusHandling();
-    }
-
-    setupFocusHandling() {
-        this.activeHeadingPos = null;
-        this.lastHeadingPos = null;
-        
-        this.view.dom.addEventListener('click', (e) => {
-            this.updateFocusFromSelection();
-        });
-
-        this.view.dom.addEventListener('keyup', (e) => {
-            this.updateFocusFromSelection();
-        });
-
-        this.view.dom.addEventListener('mousemove', (e) => {
-            this.updateFocusFromSelection();
-        });
-
-        this.view.dom.addEventListener('mouseleave', (e) => {
-            this.resetAllFocus();
-        });
-
-        window.addEventListener('resize', () => {
-            setTimeout(() => this.updateFocusFromSelection(), 100);
-        });
-    }
-
-    updateFocusFromSelection() {
-        const { selection } = this.view.state;
-        const pos = selection.$from.pos;
-        
-        try {
-            const $pos = this.view.state.doc.resolve(pos);
-            
-            let headingNode = null;
-            let headingPos = null;
-            
-            for (let depth = $pos.depth; depth > 0; depth--) {
-                const node = $pos.node(depth);
-                if (node && (node.type.name === 'heading' || node.type.name === 'heading_focus')) {
-                    headingNode = node;
-                    headingPos = $pos.before(depth);
-                    break;
-                }
-            }
-            
-            if (headingNode && headingNode.type.name === 'heading' && this.activeHeadingPos !== headingPos) {
-                if (this.activeHeadingPos !== null) {
-                    this.convertToNormal(this.activeHeadingPos);
-                }
-                this.convertToFocus(headingPos);
-                this.activeHeadingPos = headingPos;
-                this.lastHeadingPos = headingPos;
-            } else if (!headingNode && this.activeHeadingPos !== null) {
-                this.convertToNormal(this.activeHeadingPos);
-                this.activeHeadingPos = null;
-                this.lastHeadingPos = null;
-            } else if (headingNode && headingNode.type.name === 'heading_focus' && 
-                     this.activeHeadingPos === headingPos && 
-                     !this.isCursorInHeading($pos, headingPos)) {
-                this.convertToNormal(headingPos);
-                this.activeHeadingPos = null;
-                this.lastHeadingPos = null;
-            } else if (this.lastHeadingPos !== null && this.activeHeadingPos === null) {
-                const lastNode = this.view.state.doc.nodeAt(this.lastHeadingPos);
-                if (lastNode && lastNode.type.name === 'heading_focus' && 
-                    !this.isCursorInHeading($pos, this.lastHeadingPos)) {
-                    this.convertToNormal(this.lastHeadingPos);
-                    this.lastHeadingPos = null;
-                }
-            }
-        } catch (error) {
-            console.log(`Error: ${error}`);
-        }
-    }
-
-    isCursorInHeading($pos, headingPos) {
-        try {
-            const headingNode = this.view.state.doc.nodeAt(headingPos);
-            if (!headingNode) return false;
-            
-            const headingStart = headingPos + 1;
-            const headingEnd = headingStart + headingNode.nodeSize;
-            
-            return $pos.pos >= headingStart && $pos.pos <= headingEnd;
-        } catch (error) {
-            return false;
-        }
-    }
-
-    resetAllFocus() {
-        if (this.activeHeadingPos !== null) {
-            this.convertToNormal(this.activeHeadingPos);
-            this.activeHeadingPos = null;
-        }
-        
-        const focusHeadings = [];
-        this.view.state.doc.descendants((node, pos) => {
-            if (node.type.name === 'heading_focus') {
-                focusHeadings.push(pos);
-            }
-        });
-        
-        focusHeadings.forEach(pos => {
-            this.convertToNormal(pos);
-        });
-        
-        this.lastHeadingPos = null;
-    }
-
-    convertToFocus(headingPos) {
-        if (headingPos === null || headingPos === undefined) return;
-        
-        try {
-            const node = this.view.state.doc.nodeAt(headingPos);
-            if (node && node.type.name === 'heading') {
-                const tr = this.view.state.tr.setNodeMarkup(headingPos, markdownSchema.nodes.heading_focus, {
-                    level: node.attrs.level
-                });
-                this.view.dispatch(tr);
-            }
-        } catch (error) {
-            console.log(`Error: ${error}`);
-        }
-    }
-
-    convertToNormal(headingPos) {
-        if (headingPos === null || headingPos === undefined) return;
-        
-        try {
-            const node = this.view.state.doc.nodeAt(headingPos);
-            if (node && node.type.name === 'heading_focus') {
-                const tr = this.view.state.tr.setNodeMarkup(headingPos, markdownSchema.nodes.heading, {
-                    level: node.attrs.level
-                });
-                this.view.dispatch(tr);
-            }
-        } catch (error) {
-            console.log(`Error: ${error}`);
-        }
-    }
-
-    // НОВЫЙ МЕТОД: Уменьшение уровня заголовка или преобразование в параграф
-    decreaseHeadingLevel(headingPos) {
-        if (headingPos === null || headingPos === undefined) return false;
-        
-        try {
-            const node = this.view.state.doc.nodeAt(headingPos);
-            if (!node) return false;
-
-            let tr = this.view.state.tr;
-            
-            if (node.type.name === 'heading_focus') {
-                const currentLevel = node.attrs.level;
-                
-                if (currentLevel > 1) {
-                    // Уменьшаем уровень заголовка
-                    tr = tr.setNodeMarkup(headingPos, markdownSchema.nodes.heading_focus, {
-                        level: currentLevel - 1
-                    });
-                } else {
-                    // Преобразуем заголовок 1 уровня в параграф
-                    tr = tr.setNodeMarkup(headingPos, markdownSchema.nodes.paragraph);
-                }
-                
-                this.view.dispatch(tr);
-                return true;
-            }
-        } catch (error) {
-            console.log(`Error decreasing heading level: ${error}`);
-        }
-        
-        return false;
-    }
-
-    createPlugins() {
-        const enterCommand = chainCommands(
-            splitListItem(markdownSchema.nodes.list_item),
-            sinkListItem(markdownSchema.nodes.list_item),
-            newlineInCode,
-            createParagraphNear,
-            liftEmptyBlock,
-            splitBlock
-        );
-
-        // НОВАЯ КОМАНДА: Backspace в начале заголовка
-        const backspaceCommand = (state, dispatch) => {
-            const { selection } = state;
-            const { $from } = selection;
-            
-            // Проверяем, что курсор в начале узла и это заголовок в фокусе
-            if ($from.parentOffset === 0) {
-                for (let depth = $from.depth; depth > 0; depth--) {
-                    const node = $from.node(depth);
-                    if (node && node.type.name === 'heading_focus') {
-                        const headingPos = $from.before(depth);
-                        
-                        if (dispatch) {
-                            // Используем наш метод для уменьшения уровня
-                            setTimeout(() => {
-                                this.decreaseHeadingLevel(headingPos);
-                            }, 10);
-                        }
-                        return true;
-                    }
-                }
-            }
-            
-            return false;
-        };
-
-        return [
-            history(),
-            keymap({
-                ...baseKeymap,
-                "Enter": (state, dispatch) => {
-                    return enterCommand(state, dispatch);
-                },
-                "Backspace": chainCommands(
-                    backspaceCommand, // Сначала пробуем нашу команду
-                    baseKeymap.Backspace // Затем стандартное поведение
-                ),
-                "Mod-z": undo,
-                "Mod-y": redo,
-                "Mod-Shift-z": redo,
-                "Mod-b": toggleMark(markdownSchema.marks.strong),
-                "Mod-i": toggleMark(markdownSchema.marks.em)
-            }),
-            dropCursor(),
-            gapCursor(),
-            inputRules({
-                rules: [
-                    textblockTypeInputRule(
-                        /^(#{1,6})\s$/,
-                        markdownSchema.nodes.heading,
-                        match => ({ level: match[1].length })
-                    ),
-                    wrappingInputRule(
-                        /^\s*([-+*])\s$/,
-                        markdownSchema.nodes.bullet_list,
-                        null,
-                        () => true
-                    ),
-                    wrappingInputRule(
-                        /^\s*(\d+)\.\s$/,
-                        markdownSchema.nodes.ordered_list,
-                        match => ({ order: +match[1] }),
-                        () => true
-                    ),
-                    new InputRule(/\*\*([^\*]+)\*\*$/, (state, match, start, end) => {
-                        return state.tr.replaceWith(
-                            start,
-                            end,
-                            state.schema.text(match[1], [markdownSchema.marks.strong.create()])
-                        );
-                    }),
-                    new InputRule(/\*([^\*]+)\*$/, (state, match, start, end) => {
-                        return state.tr.replaceWith(
-                            start,
-                            end,
-                            state.schema.text(match[1], [markdownSchema.marks.em.create()])
-                        );
-                    }),
-                    new InputRule(/^```(\w*)\s$/, (state, match, start, end) => {
-                        const language = match[1] || "";
-                        return state.tr.replaceWith(
-                            start,
-                            end,
-                            markdownSchema.nodes.code_block.create(
-                                { params: language },
-                                language ? [] : [markdownSchema.text("")]
-                            )
-                        );
-                    })
-                ]
-            })
-        ];
-    }
-
-    getMarkdown() {
-        try {
-            let doc = this.view.state.doc;
-            const focusHeadings = [];
-            
-            doc.descendants((node, pos) => {
-                if (node.type.name === 'heading_focus') {
-                    focusHeadings.push({ pos, node });
-                }
-            });
-
-            if (focusHeadings.length > 0) {
-                let tr = this.view.state.tr;
-                focusHeadings.forEach(({ pos, node }) => {
-                    tr = tr.setNodeMarkup(pos, markdownSchema.nodes.heading, {
-                        level: node.attrs.level
-                    });
-                });
-                doc = tr.doc;
-            }
-
-            return markdownSerializer.serialize(doc);
-        } catch (error) {
-            console.log(`Error: ${error}`);
-            return "";
-        }
-    }
-
-    setMarkdown(markdown) {
-        try {
-            const parser = new CustomMarkdownParser();
-            const newDoc = parser.parse(markdown || "");
-            const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
-            this.view.dispatch(tr);
-            this.resetAllFocus();
-        } catch (error) {
-            console.log(`Error: ${error}`);
-        }
-    }
-
-    getHTML() {
-        try {
-            const fragment = this.view.dom.cloneNode(true);
-            const div = document.createElement("div");
-            div.appendChild(fragment);
-            return div.innerHTML;
-        } catch (error) {
-            console.log(`Error: ${error}`);
-            return "";
-        }
-    }
-
-    focus() {
-        this.view.focus();
-    }
-
-    destroy() {
-        this.view.destroy();
-    }
-
-    forceResetFocus() {
-        this.resetAllFocus();
-    }
-}*/

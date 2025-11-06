@@ -1,7 +1,5 @@
-(function (factory) {
-  typeof define === 'function' && define.amd ? define(factory) :
-  factory();
-})((function () { 'use strict';
+(function () {
+  'use strict';
 
   // ::- Persistent data structure representing an ordered mapping from
   // strings to values, with some convenient update methods.
@@ -14560,32 +14558,32 @@
           this.markRules = [
               {
                   name: 'strong',
-                  pattern: /\*\*(.*)\*\*/g,
+                  pattern: /\*\*(.*?)\*\*/g,
                   handler: this.wrapWithMark.bind(this, 'strong')
               },
               {
                   name: 'em',
-                  pattern:/(?<!\*)\*(.*?)\*(?!\*)/g,
+                  pattern: /(?<!\*)\*(.*?)\*(?!\*)/g,
                   handler: this.wrapWithMark.bind(this, 'em')
               },
               {
                   name: 'code',
-                  pattern: /`(.*)`/g,
+                  pattern: /`(.*?)`/g,
                   handler: this.wrapWithMark.bind(this, 'code')
               },
               {
                   name: 'strike',
-                  pattern: /~~(.*)~~/g,
+                  pattern: /~~(.*?)~~/g,
                   handler: this.wrapWithMark.bind(this, 'strike')
               },
               {
                   name: 'highlight',
-                  pattern: /==(.*)==/g,
+                  pattern: /==(.*?)==/g,
                   handler: this.wrapWithMark.bind(this, 'highlight')
               },
               {
                   name: 'underline',
-                  pattern: /__(.*)__/g,
+                  pattern: /__(.*?)__/g,
                   handler: this.wrapWithMark.bind(this, 'underline')
               },
               {
@@ -14739,14 +14737,11 @@
               if (targetCursorIndex !== -1 && i < targetCursorIndex) {
                   const offset = targetCursorIndex - startPos;
                   if (reconstructed && reconstructed.type.name === 'notation_block' && reconstructed.attrs.layout === 'row') {
-                      if (offset > reconstructed.child(0).nodeSize - 2) {
+                      if (offset > reconstructed.child(0).nodeSize - 1) {
                           blocksBeforeCursor += 3;
                       } else {
                           blocksBeforeCursor += 1;
                       }
-                  }
-                  else {
-                      blocksBeforeCursor += 1;
                   }
               }
 
@@ -24250,238 +24245,6 @@
       });
   }
 
-  class NodeSplitter {
-      static handleEnter(view, event) {
-          const { state, dispatch } = view;
-          const { selection } = state;
-          const { $from } = selection;
-
-          if ($from.parent.type.name === 'spec_block') {
-              return this.handleEnterInSpec(view, event);
-          }
-
-          const notationBlock = this.findParentNotationBlock($from);
-          if (notationBlock && notationBlock.attrs.layout === 'row') {
-              return this.handleEnterInNotationBlock(view, event, notationBlock);
-          }
-
-          return this.handleNormalEnter(view, event);
-      }
-
-      static findParentNotationBlock($pos) {
-          for (let depth = $pos.depth; depth >= 0; depth--) {
-              const node = $pos.node(depth);
-              if (node && node.type.name === 'notation_block') {
-                  return node;
-              }
-          }
-          return null;
-      }
-
-      static handleEnterInSpec(view, event) {
-          const { state, dispatch } = view;
-          const { selection } = state;
-          const { $from } = selection;
-
-          const notationBlock = this.findParentNotationBlock($from);
-          if (!notationBlock) return false;
-
-          event.preventDefault();
-
-          const paragraph = NodeConverter.destructNode(notationBlock)[0];
-          const fullText = paragraph.textContent;
-          const cursorOffset = $from.parentOffset;
-
-          const beforeText = fullText.slice(0, cursorOffset);
-          const afterText = fullText.slice(cursorOffset);
-
-          const blockPos = $from.before($from.depth - 1);
-          const blockSize = notationBlock.nodeSize;
-          let offset = 1;
-
-          let newNodes = [];
-
-          let upperNode;
-          let lowerNode;
-          if (notationBlock.attrs.type === 'blockquote' && notationBlock.child(1).textContent.length !== 0) {
-              upperNode = NodeConverter.constructParagraph(beforeText);
-              lowerNode = NodeConverter.constructBlockquote(afterText);
-              offset += lowerNode.child(0).nodeSize - 1;
-              newNodes.push(upperNode);
-          } else if (notationBlock.attrs.type === 'tab_list' && notationBlock.child(1).textContent.length !== 0) {
-              upperNode = NodeConverter.constructParagraph(beforeText);
-              lowerNode = NodeConverter.constructTabListItem(afterText, notationBlock.attrs.level);
-              offset += lowerNode.child(0).nodeSize - 1;
-              newNodes.push(upperNode);
-          } else if (notationBlock.attrs.type === 'bullet_list' && notationBlock.child(1).textContent.length !== 0) {
-              upperNode = NodeConverter.constructParagraph(beforeText);
-              lowerNode = NodeConverter.constructBulletListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.marker);
-              offset += lowerNode.child(0).nodeSize - 1;
-              newNodes.push(upperNode);
-          } else if (notationBlock.attrs.type === 'ordered_list' && notationBlock.child(1).textContent.length !== 0) {
-              upperNode = NodeConverter.constructParagraph(beforeText);
-              lowerNode = NodeConverter.constructOrderedListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.number + 1);
-              offset += lowerNode.child(0).nodeSize - 1;
-              newNodes.push(upperNode);
-          } else {
-              if (!['blockquote', 'tab_list', 'bullet_list', 'ordered_list'].includes(notationBlock.attrs.type)) {
-                  upperNode = NodeConverter.constructParagraph(beforeText);
-                  newNodes.push(upperNode);
-              }
-              lowerNode = NodeConverter.constructParagraph(afterText);
-          }
-          newNodes.push(lowerNode);
-
-          let tr = state.tr;
-          const reconstructedNodes = this.applyReconstruction(newNodes);
-          tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNodes);
-
-          if (reconstructedNodes.length > 1) {
-              const cursorPos = blockPos + reconstructedNodes[0].nodeSize + offset;
-              tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
-          } else if (reconstructedNodes.length === 1) {
-              const cursorPos = blockPos + reconstructedNodes[0].nodeSize - 1;
-              tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
-          }
-
-          dispatch(tr);
-          return true;
-      }
-
-      static handleNormalEnter(view, event) {
-          const { state, dispatch } = view;
-          const { selection } = state;
-          const { $from } = selection;
-
-          event.preventDefault();
-
-          const node = $from.parent;
-          const nodePos = $from.before();
-          const nodeSize = node.nodeSize;
-          const cursorOffset = $from.parentOffset;
-
-          const textContent = node.textContent;
-          const beforeText = textContent.slice(0, cursorOffset);
-          const afterText = textContent.slice(cursorOffset);
-
-          let newNodes = [];
-
-          let upperNode, lowerNode;
-
-          if (beforeText) {
-              upperNode = node.type.create(node.attrs, markdownSchema.text(beforeText));
-          } else {
-              upperNode = NodeConverter.constructParagraph();
-          }
-          newNodes.push(upperNode);
-
-          if (afterText) {
-              lowerNode = node.type.create(node.attrs, markdownSchema.text(afterText));
-          } else {
-              lowerNode = NodeConverter.constructParagraph();
-          }
-          newNodes.push(lowerNode);
-
-          let tr = state.tr;
-          const reconstructedNodes = this.applyReconstruction(newNodes);
-          tr = tr.replaceWith(nodePos, nodePos + nodeSize, reconstructedNodes);
-
-          if (reconstructedNodes.length > 1) {
-              const cursorPos = nodePos + reconstructedNodes[0].nodeSize + 1;
-              tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
-          }
-
-          dispatch(tr);
-          return true;
-      }
-
-      static handleEnterInNotationBlock(view, event, notationBlock) {
-          const { state, dispatch } = view;
-          const { selection } = state;
-          const { $from } = selection;
-
-          event.preventDefault();
-
-          const blockPos = $from.before($from.depth - 1);
-          const blockSize = notationBlock.nodeSize;
-          const cursorOffset = $from.parentOffset;
-
-          const nodeSpecContent = notationBlock.child(0).textContent;
-          const nodeContent = notationBlock.child(1).textContent;
-          const beforeText = nodeContent.slice(0, cursorOffset);
-          const afterText = nodeContent.slice(cursorOffset);
-          let offset = 1;
-
-          let newNodes = [];
-
-          const upperNode = NodeConverter.constructParagraph(nodeSpecContent + beforeText);
-
-          newNodes.push(upperNode);
-
-          let lowerNode;
-          if (notationBlock.attrs.type === 'blockquote') {
-              lowerNode = NodeConverter.constructBlockquote(afterText);
-              offset += lowerNode.child(0).nodeSize - 1;
-          } else if (notationBlock.attrs.type === 'tab_list') {
-              lowerNode = NodeConverter.constructTabListItem(afterText, notationBlock.attrs.level);
-              offset += lowerNode.child(0).nodeSize - 1;
-          } else if (notationBlock.attrs.type === 'bullet_list') {
-              lowerNode = NodeConverter.constructBulletListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.marker);
-              offset += lowerNode.child(0).nodeSize - 1;
-          } else if (notationBlock.attrs.type === 'ordered_list') {
-              lowerNode = NodeConverter.constructOrderedListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.number + 1);
-              offset += lowerNode.child(0).nodeSize - 1;
-          } else {
-              lowerNode = NodeConverter.constructParagraph(afterText);
-          }
-          newNodes.push(lowerNode);
-
-          let tr = state.tr;
-          const reconstructedNodes = this.applyReconstruction(newNodes);
-          tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNodes);
-
-          const cursorPos = blockPos + (beforeText ? reconstructedNodes[0].nodeSize : nodeSpecContent.length + 4) + offset;
-          tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
-
-          dispatch(tr);
-          return true;
-      }
-
-      static applyReconstruction(nodes) {
-          const reconstructor = new NodeReconstructor();
-          let reconstructedNodes = [];
-
-          for (let i = 0; i < nodes.length; i++) {
-              const node = nodes[i];
-
-              const blockResult = reconstructor.applyBlockRules([node], 0);
-              let reconstructedNode = blockResult.paragraphs[0];
-
-              const markReconstruction = reconstructor.reconstructMarksInNode(reconstructedNode);
-              if (markReconstruction) {
-                  reconstructedNode = markReconstruction;
-              }
-
-              reconstructedNodes.push(reconstructedNode);
-          }
-
-          return reconstructedNodes;
-      }
-  }
-
-  const enterPlugin = () => {
-      return new Plugin({
-          props: {
-              handleKeyDown(view, event) {
-                  if (event.key === "Enter") {
-                      return NodeSplitter.handleEnter(view, event);
-                  }
-                  return false;
-              }
-          }
-      });
-  };
-
   /**
   Delete the selection, if there is one.
   */
@@ -25051,6 +24814,492 @@
   */
   const baseKeymap = mac ? macBaseKeymap : pcBaseKeymap;
 
+  class NodeMerger {
+      static mergeUp(state, selection) {
+          return this.findAndMerge(state, selection, 'up');
+      }
+
+      static mergeDown(state, selection) {
+          return this.findAndMerge(state, selection, 'down');
+      }
+
+      static findAndMerge(state, selection, direction) {
+          const { $from } = selection;
+          return this.findNeighborRecursive(state, $from.pos, $from.depth, direction);
+      }
+
+      static findNeighborRecursive(state, pos, depth, direction) {
+          if (depth < 0) return null;
+
+          const neighborInfo = this.findNeighbor(state, pos, depth, direction);
+
+          if (neighborInfo) {
+              return this.performMerge(state, pos, neighborInfo, direction);
+          }
+
+          const $pos = state.doc.resolve(pos);
+          const parentDepth = depth - 1;
+
+          if (parentDepth >= 0) {
+              const parentPos = $pos.start(depth);
+              return this.findNeighborRecursive(state, parentPos, parentDepth, direction);
+          }
+
+          return null;
+      }
+
+      static findNeighbor(state, pos, depth, direction) {
+          const $pos = state.doc.resolve(pos);
+
+          if (depth < 0) return null;
+
+          const parent = $pos.node(depth);
+          const currentIndex = $pos.index(depth);
+
+          let neighborIndex;
+          if (direction === 'up') {
+              neighborIndex = currentIndex - 1;
+          } else {
+              neighborIndex = currentIndex + 1;
+          }
+
+          if (neighborIndex < 0 || neighborIndex >= parent.childCount) {
+              return null;
+          }
+
+          const neighborNode = parent.child(neighborIndex);
+
+          let neighborPos = $pos.start(depth);
+          for (let i = 0; i < neighborIndex; i++) {
+              neighborPos += parent.child(i).nodeSize;
+          }
+
+          return {
+              node: neighborNode,
+              pos: neighborPos,
+              depth: depth + 1,
+              index: neighborIndex,
+              parent: parent
+          };
+      }
+
+      static getOffsetToNode(parent, targetIndex) {
+          let offset = 0;
+          for (let i = 0; i < targetIndex; i++) {
+              offset += parent.child(i).nodeSize;
+          }
+          return offset;
+      }
+
+      static performMerge(state, currentPos, neighborInfo, direction) {
+          const $current = state.doc.resolve(currentPos);
+
+          let mergeParams;
+
+          mergeParams = this.handleSpecialCases($current, neighborInfo, direction);
+
+          if (!mergeParams) {
+              mergeParams = this.getNormalMergeParams($current, neighborInfo, direction);
+          }
+
+          if (!mergeParams) return null;
+
+          let { from, to, mergedParagraphs, cursorPos } = mergeParams;
+
+          const tr = this.executeMerge(state, from, to, mergedParagraphs, cursorPos);
+
+          return tr;
+      }
+
+      static handleSpecialCases($current, neighborInfo, direction) {
+          const currentParent = $current.node($current.depth - 1);
+          const neighborParent = neighborInfo.parent;
+
+          if (currentParent === neighborParent &&
+              currentParent.type.name === 'notation_block' &&
+              currentParent.attrs.layout === 'row') {
+
+              return this.handleNotationBlockRowMerge($current, currentParent, direction);
+          }
+
+          return null;
+      }
+
+      static handleNotationBlockRowMerge($current, currentParent, direction) {
+          const blockDepth = $current.depth - 1;
+          const from = $current.start(blockDepth) - 1;
+          const to = from + currentParent.nodeSize;
+
+          let { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(currentParent);
+
+          if (direction === 'up') {
+              specContent = specContent.slice(1);
+          } else {
+              nodeContent = nodeContent.slice(1);
+          }
+
+          let cursorPos = from + specContent.length + 1;
+
+          const mergedText = specContent + nodeContent;
+
+          const mergedParagraph = NodeConverter.constructParagraph(mergedText);
+
+          return {
+              from,
+              to,
+              mergedParagraphs: [mergedParagraph],
+              cursorPos
+          };
+      }
+
+      static getNormalMergeParams($current, neighborInfo, direction) {
+          const parentDepth = neighborInfo.depth - 1;
+          const parent = neighborInfo.parent;
+
+          const currentIndexAtDepth = $current.index(parentDepth + 1);
+          let currentPosAtDepth = $current.start(parentDepth + 1);
+          for (let i = 0; i < currentIndexAtDepth; i++) {
+              currentPosAtDepth += parent.child(i).nodeSize;
+          }
+
+          const currentNode = $current.parent;
+          const neighborPosAtDepth = neighborInfo.pos;
+
+          let from = Math.min(neighborPosAtDepth, currentPosAtDepth);
+          const to = from + (neighborInfo.node.textContent.length != 0 ? neighborInfo.node.nodeSize : 1) + (currentNode.textContent.length != 0 ? currentNode.nodeSize : 1);
+
+          const currentParagraphs = NodeConverter.destructNode(currentNode);
+          const neighborParagraphs = NodeConverter.destructNode(neighborInfo.node);
+
+          let mergedParagraphs;
+          let cursorPos = null;
+
+          if (direction === 'up') {
+              if (neighborParagraphs.length > 0 && currentParagraphs.length > 0) {
+                  const lastNeighborPara = neighborParagraphs[neighborParagraphs.length - 1];
+                  const firstCurrentPara = currentParagraphs[0];
+
+                  const mergedContent = lastNeighborPara.content.append(firstCurrentPara.content);
+                  const mergedParagraph = markdownSchema.nodes.paragraph.create(
+                      lastNeighborPara.attrs,
+                      mergedContent,
+                      lastNeighborPara.marks
+                  );
+
+                  mergedParagraphs = [
+                      ...neighborParagraphs.slice(0, -1),
+                      mergedParagraph,
+                      ...currentParagraphs.slice(1)
+                  ];
+
+                  let mergedParaPos = from;
+                  for (let i = 0; i < neighborParagraphs.length - 1; i++) {
+                      mergedParaPos += neighborParagraphs[i].nodeSize;
+                  }
+                  cursorPos = mergedParaPos + lastNeighborPara.content.size + 1;
+              } else {
+                  mergedParagraphs = [...neighborParagraphs, ...currentParagraphs];
+              }
+          } else {
+              from -= 1;
+              if (currentParagraphs.length > 0 && neighborParagraphs.length > 0) {
+                  const lastCurrentPara = currentParagraphs[currentParagraphs.length - 1];
+                  const firstNeighborPara = neighborParagraphs[0];
+
+                  const mergedContent = lastCurrentPara.content.append(firstNeighborPara.content);
+                  const mergedParagraph = markdownSchema.nodes.paragraph.create(
+                      lastCurrentPara.attrs,
+                      mergedContent,
+                      lastCurrentPara.marks
+                  );
+
+                  mergedParagraphs = [
+                      ...currentParagraphs.slice(0, -1),
+                      mergedParagraph,
+                      ...neighborParagraphs.slice(1)
+                  ];
+
+                  let mergedParaPos = from;
+                  for (let i = 0; i < currentParagraphs.length - 1; i++) {
+                      mergedParaPos += currentParagraphs[i].nodeSize;
+                  }
+                  cursorPos = mergedParaPos + lastCurrentPara.content.size + 1;
+
+                  
+              } else {
+                  mergedParagraphs = [...currentParagraphs, ...neighborParagraphs];
+              }
+          }
+
+          return { from, to, mergedParagraphs, cursorPos };
+      }
+
+      static executeMerge(state, from, to, mergedParagraphs, cursorPos) {
+          const tr = state.tr;
+
+          const reconstructedData = this.applyReconstruction(tr, mergedParagraphs, from, to, cursorPos);
+
+          reconstructedData.tr.setSelection(TextSelection.create(reconstructedData.tr.doc, reconstructedData.cursorPos));
+
+          return reconstructedData.tr;
+      }
+
+      static applyReconstruction(tr, mergedParagraphs, from, to, cursorPos) {
+          const reconstructor = new NodeReconstructor();
+
+          const blockResult = reconstructor.applyBlockRules(mergedParagraphs, from, cursorPos);
+          const blockReconstructed = blockResult.paragraphs;
+          const hasBlockChanges = blockReconstructed.some((para, index) => para !== mergedParagraphs[index]);
+
+          let finalParagraphs = mergedParagraphs;
+
+          if (hasBlockChanges) {
+              finalParagraphs = blockReconstructed;
+              cursorPos += blockResult.blocksBeforeCursor;
+          }
+
+          const reconstructedParagraphs = finalParagraphs.map(paragraph => {
+              const markReconstruction = reconstructor.reconstructMarksInNode(paragraph);
+              if (markReconstruction && markReconstruction !== paragraph) {
+                  return markReconstruction;
+              }
+              return paragraph;
+          });
+
+          tr.replaceWith(from, to, reconstructedParagraphs);
+
+          return { tr, cursorPos };
+      }
+
+      static setCursorSelection(tr, cursorPos) {
+          if (cursorPos !== null) {
+              const resolvedPos = tr.doc.resolve(cursorPos);
+              if (resolvedPos.pos >= 0 && resolvedPos.pos <= tr.doc.content.size) {
+                  tr.setSelection(TextSelection.create(tr.doc, resolvedPos.pos));
+              }
+          }
+      }
+  }
+
+  class NodeSplitter {
+      static handleEnter(view, event) {
+          const { state, dispatch } = view;
+          const { selection } = state;
+          const { $from } = selection;
+
+          if ($from.parent.type.name === 'spec_block') {
+              return this.handleEnterInSpec(view, event);
+          }
+
+          const notationBlock = this.findParentNotationBlock($from);
+          if (notationBlock && notationBlock.attrs.layout === 'row') {
+              return this.handleEnterInNotationBlock(view, event, notationBlock);
+          }
+
+          return this.handleNormalEnter(view, event);
+      }
+
+      static findParentNotationBlock($pos) {
+          for (let depth = $pos.depth; depth >= 0; depth--) {
+              const node = $pos.node(depth);
+              if (node && node.type.name === 'notation_block') {
+                  return node;
+              }
+          }
+          return null;
+      }
+
+      static handleEnterInSpec(view, event) {
+          const { state, dispatch } = view;
+          const { selection } = state;
+          const { $from } = selection;
+
+          const notationBlock = this.findParentNotationBlock($from);
+          if (!notationBlock) return false;
+
+          event.preventDefault();
+
+          const paragraph = NodeConverter.destructNode(notationBlock)[0];
+          const fullText = paragraph.textContent;
+          const cursorOffset = $from.parentOffset;
+
+          const beforeText = fullText.slice(0, cursorOffset);
+          const afterText = fullText.slice(cursorOffset);
+
+          const blockPos = $from.before($from.depth - 1);
+          const blockSize = notationBlock.nodeSize;
+          let offset = 1;
+
+          let newNodes = [];
+
+          let upperNode;
+          let lowerNode;
+          if (notationBlock.attrs.type === 'blockquote' && notationBlock.child(1).textContent.length !== 0) {
+              upperNode = NodeConverter.constructParagraph(beforeText);
+              lowerNode = NodeConverter.constructBlockquote(afterText);
+              offset += lowerNode.child(0).nodeSize - 1;
+              newNodes.push(upperNode);
+          } else if (notationBlock.attrs.type === 'tab_list' && notationBlock.child(1).textContent.length !== 0) {
+              upperNode = NodeConverter.constructParagraph(beforeText);
+              lowerNode = NodeConverter.constructTabListItem(afterText, notationBlock.attrs.level);
+              offset += lowerNode.child(0).nodeSize - 1;
+              newNodes.push(upperNode);
+          } else if (notationBlock.attrs.type === 'bullet_list' && notationBlock.child(1).textContent.length !== 0) {
+              upperNode = NodeConverter.constructParagraph(beforeText);
+              lowerNode = NodeConverter.constructBulletListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.marker);
+              offset += lowerNode.child(0).nodeSize - 1;
+              newNodes.push(upperNode);
+          } else if (notationBlock.attrs.type === 'ordered_list' && notationBlock.child(1).textContent.length !== 0) {
+              upperNode = NodeConverter.constructParagraph(beforeText);
+              lowerNode = NodeConverter.constructOrderedListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.number + 1);
+              offset += lowerNode.child(0).nodeSize - 1;
+              newNodes.push(upperNode);
+          } else {
+              if (!['blockquote', 'tab_list', 'bullet_list', 'ordered_list'].includes(notationBlock.attrs.type)) {
+                  upperNode = NodeConverter.constructParagraph(beforeText);
+                  newNodes.push(upperNode);
+              }
+              lowerNode = NodeConverter.constructParagraph(afterText);
+          }
+          newNodes.push(lowerNode);
+
+          let tr = state.tr;
+          const reconstructedNodes = this.applyReconstruction(newNodes);
+          tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNodes);
+
+          if (reconstructedNodes.length > 1) {
+              const cursorPos = blockPos + reconstructedNodes[0].nodeSize + offset;
+              tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
+          } else if (reconstructedNodes.length === 1) {
+              const cursorPos = blockPos + reconstructedNodes[0].nodeSize - 1;
+              tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
+          }
+
+          dispatch(tr);
+          return true;
+      }
+
+      static handleNormalEnter(view, event) {
+          const { state, dispatch } = view;
+          const { selection } = state;
+          const { $from } = selection;
+
+          event.preventDefault();
+
+          const node = $from.parent;
+          const nodePos = $from.before();
+          const nodeSize = node.nodeSize;
+          const cursorOffset = $from.parentOffset;
+
+          const textContent = node.textContent;
+          const beforeText = textContent.slice(0, cursorOffset);
+          const afterText = textContent.slice(cursorOffset);
+
+          let newNodes = [];
+
+          let upperNode, lowerNode;
+
+          if (beforeText) {
+              upperNode = node.type.create(node.attrs, markdownSchema.text(beforeText));
+          } else {
+              upperNode = NodeConverter.constructParagraph();
+          }
+          newNodes.push(upperNode);
+
+          if (afterText) {
+              lowerNode = node.type.create(node.attrs, markdownSchema.text(afterText));
+          } else {
+              lowerNode = NodeConverter.constructParagraph();
+          }
+          newNodes.push(lowerNode);
+
+          let tr = state.tr;
+          const reconstructedNodes = this.applyReconstruction(newNodes);
+          tr = tr.replaceWith(nodePos, nodePos + nodeSize, reconstructedNodes);
+
+          if (reconstructedNodes.length > 1) {
+              const cursorPos = nodePos + reconstructedNodes[0].nodeSize + 1;
+              tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
+          }
+
+          dispatch(tr);
+          return true;
+      }
+
+      static handleEnterInNotationBlock(view, event, notationBlock) {
+          const { state, dispatch } = view;
+          const { selection } = state;
+          const { $from } = selection;
+
+          event.preventDefault();
+
+          const blockPos = $from.before($from.depth - 1);
+          const blockSize = notationBlock.nodeSize;
+          const cursorOffset = $from.parentOffset;
+
+          const nodeSpecContent = notationBlock.child(0).textContent;
+          const nodeContent = notationBlock.child(1).textContent;
+          const beforeText = nodeContent.slice(0, cursorOffset);
+          const afterText = nodeContent.slice(cursorOffset);
+          let offset = 1;
+
+          let newNodes = [];
+
+          const upperNode = NodeConverter.constructParagraph(nodeSpecContent + beforeText);
+
+          newNodes.push(upperNode);
+
+          let lowerNode;
+          if (notationBlock.attrs.type === 'blockquote') {
+              lowerNode = NodeConverter.constructBlockquote(afterText);
+              offset += lowerNode.child(0).nodeSize - 1;
+          } else if (notationBlock.attrs.type === 'tab_list') {
+              lowerNode = NodeConverter.constructTabListItem(afterText, notationBlock.attrs.level);
+              offset += lowerNode.child(0).nodeSize - 1;
+          } else if (notationBlock.attrs.type === 'bullet_list') {
+              lowerNode = NodeConverter.constructBulletListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.marker);
+              offset += lowerNode.child(0).nodeSize - 1;
+          } else if (notationBlock.attrs.type === 'ordered_list') {
+              lowerNode = NodeConverter.constructOrderedListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.number + 1);
+              offset += lowerNode.child(0).nodeSize - 1;
+          } else {
+              lowerNode = NodeConverter.constructParagraph(afterText);
+          }
+          newNodes.push(lowerNode);
+
+          let tr = state.tr;
+          const reconstructedNodes = this.applyReconstruction(newNodes);
+          tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNodes);
+
+          const cursorPos = blockPos + (beforeText ? reconstructedNodes[0].nodeSize : nodeSpecContent.length + 4) + offset;
+          tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
+
+          dispatch(tr);
+          return true;
+      }
+
+      static applyReconstruction(nodes) {
+          const reconstructor = new NodeReconstructor();
+          let reconstructedNodes = [];
+
+          for (let i = 0; i < nodes.length; i++) {
+              const node = nodes[i];
+
+              const blockResult = reconstructor.applyBlockRules([node], 0);
+              let reconstructedNode = blockResult.paragraphs[0];
+
+              const markReconstruction = reconstructor.reconstructMarksInNode(reconstructedNode);
+              if (markReconstruction) {
+                  reconstructedNode = markReconstruction;
+              }
+
+              reconstructedNodes.push(reconstructedNode);
+          }
+
+          return reconstructedNodes;
+      }
+  }
+
   class NodeInputter {
       static handleInputInSpec(view, from, to, text) {
           const { state, dispatch } = view;
@@ -25070,7 +25319,9 @@
 
           if (cursorOffset === notationBlock.child(0).nodeSize - 2) {
               marksCheck = this.checkMarks(text, $from);
-              marksCheck.offset += 1;
+              if (marksCheck.text !== '') {
+                  marksCheck.offset += 3;
+              }
           }
 
           const newSpecContent =
@@ -25095,12 +25346,22 @@
 
           let tr = state.tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
 
-          if (cursorOffset === notationBlock.child(0).nodeSize - 2) {
-              cursorOffset += 1;
-          }
-
           if (reconstructedNode.type.name == 'notation_block') {
-              cursorOffset += 1;
+              if (['tab_list', 'bullet_list', 'ordered_list'].includes(reconstructedNode.attrs.type) && text === '\t') {
+                  if (notationBlock.child(0).nodeSize - cursorOffset === 2) {
+                      cursorOffset -= 2;
+                  } else {
+                      cursorOffset += 1;
+                  }
+              } else {
+                  if (reconstructedNode.child(0).nodeSize === notationBlock.child(0).nodeSize) {
+                      cursorOffset += 0;
+                  } else if (reconstructedNode.child(0).nodeSize < notationBlock.child(0).nodeSize) {
+                      cursorOffset += 3;
+                  } else {
+                      cursorOffset += 1;
+                  }
+              }
           }
 
           const cursorPos = blockPos + cursorOffset + marksCheck.offset + 2;
@@ -25156,7 +25417,7 @@
           return false;
       }
 
-      static handleDeleteChar(view, from, to, forward = true) {
+      static handleDeleteChar(view, from, to, backward = true) {
           const { state, dispatch } = view;
           const { selection } = state;
           const { $from } = selection;
@@ -25165,16 +25426,16 @@
           const textContent = node.textContent;
           let cursorOffset = $from.parentOffset;
 
-          if (cursorOffset === 0 && forward || cursorOffset === node.nodeSize - 2 && !forward) {
+          if (cursorOffset === 0 && backward || cursorOffset === node.nodeSize - 2 && !backward) {
               return false;
           }
 
           if (node.type.name === 'spec_block') {
-              return this.handleDeleteInSpec(view, from, to, forward);
+              return this.handleDeleteInSpec(view, from, to, backward);
           }
 
           let newText;
-          if (forward) {
+          if (backward) {
               newText = textContent.slice(0, cursorOffset - 1) + textContent.slice(cursorOffset);
           } else {
               newText = textContent.slice(0, cursorOffset) + textContent.slice(cursorOffset + 1);
@@ -25199,7 +25460,7 @@
               newNode = blockResult.paragraphs[0];
           }
 
-          if (forward && cursorOffset === 1) {
+          if (backward && cursorOffset === 1) {
               const parent = $from.node($from.depth - 1);
               if (parent && parent.type.name === 'notation_block') {
                   const childIndex = $from.indexAfter();
@@ -25230,7 +25491,7 @@
           return true;
       }
 
-      static handleDeleteInSpec(view, from, to, forward = true) {
+      static handleDeleteInSpec(view, from, to, backward = true) {
           const { state, dispatch } = view;
           const { selection } = state;
           const { $from } = selection;
@@ -25243,12 +25504,12 @@
 
           let cursorOffset = $from.parentOffset;
 
-          if (cursorOffset === 0 && forward || cursorOffset === notationBlock.child(0).nodeSize - 2 && !forward) {
+          if (cursorOffset === 0 && backward || cursorOffset === notationBlock.child(0).nodeSize - 2 && !backward) {
               return false;
           }
 
           let newSpecContent;
-          if (forward) {
+          if (backward) {
               newSpecContent = specContent.slice(0, cursorOffset - 1) + specContent.slice(cursorOffset);
           } else {
               newSpecContent = specContent.slice(0, cursorOffset) + specContent.slice(cursorOffset + 1);
@@ -25272,12 +25533,16 @@
 
           tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
 
-          if (cursorOffset === notationBlock.child(0).nodeSize - 2 && forward && ['bullet_list', 'ordered_list'].includes(notationBlock.attrs.type)) {
-              cursorOffset += 2;
-          }
-
           if (reconstructedNode.type.name == 'notation_block') {
-              cursorOffset += blockResult.blocksBeforeCursor + 1;
+              if (notationBlock.child(0).nodeSize - cursorOffset === 2 && backward) {
+                  if (notationBlock.attrs.type == 'tab_list') {
+                      cursorOffset += 1;
+                  } else {
+                      cursorOffset += 3;
+                  }
+              } else {
+                  cursorOffset += 1;
+              }
           }
 
           const cursorPos = blockPos + cursorOffset;
@@ -25380,10 +25645,6 @@
                   const cursorPos = containerPos + specNode.nodeSize;
 
                   let selection = TextSelection.create(tr.doc, cursorPos);
-                  const newSelection = correctCursorPos(tr, cursorPos);
-                  if (newSelection) {
-                      selection = newSelection;
-                  }
 
                   dispatch(tr.setSelection(selection));
                   return true;
@@ -25391,20 +25652,88 @@
 
               return NodeInputter.handleInputInNormalNode(view, from, to, '\t');
           },
-          "Enter": chainCommands(
-              newlineInCode,
-              createParagraphNear,
-              liftEmptyBlock,
-              splitBlock
-          ),
+          "Enter": (state, dispatch, view) => {
+              const event = new KeyboardEvent('keydown', { key: 'Enter' });
+              const splitterResult = NodeSplitter.handleEnter(view, event);
+
+              if (splitterResult !== undefined && splitterResult !== false) {
+                  return splitterResult;
+              }
+
+              return chainCommands(
+                  newlineInCode,
+                  createParagraphNear,
+                  liftEmptyBlock,
+                  splitBlock
+              )(state, dispatch, view);
+          },
+          "Backspace": (state, dispatch, view) => {
+              const { $from, empty } = state.selection;
+
+              if (!empty) return false;
+
+              const isAtBlockStart = $from.parentOffset === 0;
+
+              if (isAtBlockStart) {
+                  const tr = NodeMerger.mergeUp(state, state.selection);
+
+                  if (tr) {
+                      dispatch(tr);
+                      return true;
+                  }
+              } else {
+                  const from = $from.pos - 1;
+                  const to = $from.pos;
+                  return NodeInputter.handleDeleteChar(view, from, to);
+              }
+
+              return false;
+          },
+          "Delete": (state, dispatch, view) => {
+              const { $from, empty } = state.selection;
+
+              if (!empty) return false;
+
+              const isAtBlockEnd = $from.parentOffset === $from.parent.textContent.length;
+
+              if (isAtBlockEnd) {
+                  const tr = NodeMerger.mergeDown(state, state.selection);
+
+                  if (tr) {
+                      dispatch(tr);
+                      return true;
+                  }
+              } else {
+                  const from = $from.pos - 1;
+                  const to = $from.pos;
+                  return NodeInputter.handleDeleteChar(view, from, to, false);
+              }
+
+              return false;
+          },
           "Mod-z": undo,
           "Mod-y": redo,
           "Mod-Shift-z": redo,
           "Mod-b": toggleMark(markdownSchema.marks.strong),
           "Mod-i": toggleMark(markdownSchema.marks.em),
           "Alt-1": () => {
+              const info = editor.getCursorInfo();
+
               console.log('=== CURSOR INFO ===');
-              console.log(editor.getCursorInfo());
+              console.log('$from.depth:', info.currentNode.depth);
+              console.log('$from.parent.type:', info.currentNode.type);
+
+              const parentDepth = info.currentNode.depth - 1;
+              console.log('parentDepth:', parentDepth);
+              console.log('currentIndex:', info.currentNode.indexInParent);
+
+              console.log('Current node:', info.currentNode.type, 'index:', info.currentNode.indexInParent);
+              console.log('Siblings:');
+              info.siblings.forEach(sibling => {
+                  console.log(`  [${sibling.index}] ${sibling.type}${sibling.isCurrent ? ' <- CURRENT' : ''}`);
+              });
+
+              console.log(info);
           },
           "Alt-2": () => {
               console.log('=== DOCUMENT JSON ===');
@@ -25455,7 +25784,7 @@
           },
           "Alt-5": () => {
               console.log('=== FRONT MATTER ===');
-              const frontMatter = editor.getFrontMatter();
+              const frontMatter = editor.getFrontMatterYAML();
               const lines = frontMatter.split('\n');
 
               lines.forEach((line, index) => {
@@ -26077,337 +26406,6 @@
                   );
               })
           ]
-      });
-  }
-
-  class NodeMerger {
-      static mergeUp(state, selection) {
-          return this.findAndMerge(state, selection, 'up');
-      }
-
-      static mergeDown(state, selection) {
-          return this.findAndMerge(state, selection, 'down');
-      }
-
-      static findAndMerge(state, selection, direction) {
-          const { $from } = selection;
-          return this.findNeighborRecursive(state, $from.pos, $from.depth, direction);
-      }
-
-      static findNeighborRecursive(state, pos, depth, direction) {
-          if (depth < 0) return null;
-
-          const neighborInfo = this.findNeighbor(state, pos, depth, direction);
-
-          if (neighborInfo && neighborInfo.node.textContent.length !== 0) {
-              return this.performMerge(state, pos, neighborInfo, direction);
-          }
-
-          const $pos = state.doc.resolve(pos);
-          const parentDepth = depth - 1;
-
-          if (parentDepth >= 0) {
-              const parentPos = $pos.start(depth);
-              return this.findNeighborRecursive(state, parentPos, parentDepth, direction);
-          }
-
-          return null;
-      }
-
-      static findNeighbor(state, pos, depth, direction) {
-          const $pos = state.doc.resolve(pos);
-
-          if (depth < 0) return null;
-
-          const parent = $pos.node(depth);
-          const currentIndex = $pos.index(depth);
-
-          let neighborIndex;
-          if (direction === 'up') {
-              neighborIndex = currentIndex - 1;
-          } else {
-              neighborIndex = currentIndex + 1;
-          }
-
-          if (neighborIndex < 0 || neighborIndex >= parent.childCount) {
-              return null;
-          }
-
-          const neighborNode = parent.child(neighborIndex);
-
-          let neighborPos = $pos.start(depth);
-          for (let i = 0; i < neighborIndex; i++) {
-              neighborPos += parent.child(i).nodeSize;
-          }
-
-          return {
-              node: neighborNode,
-              pos: neighborPos,
-              depth: depth + 1,
-              index: neighborIndex,
-              parent: parent
-          };
-      }
-
-      static getOffsetToNode(parent, targetIndex) {
-          let offset = 0;
-          for (let i = 0; i < targetIndex; i++) {
-              offset += parent.child(i).nodeSize;
-          }
-          return offset;
-      }
-
-      static performMerge(state, currentPos, neighborInfo, direction) {
-          const $current = state.doc.resolve(currentPos);
-
-          let mergeParams;
-
-          mergeParams = this.handleSpecialCases($current, neighborInfo, direction);
-
-          if (!mergeParams) {
-              mergeParams = this.getNormalMergeParams($current, neighborInfo, direction);
-          }
-
-          if (!mergeParams) return null;
-
-          let { from, to, mergedParagraphs, cursorPos } = mergeParams;
-
-          const tr = this.executeMerge(state, from, to, mergedParagraphs, cursorPos);
-
-          return tr;
-      }
-
-      static handleSpecialCases($current, neighborInfo, direction) {
-          const currentParent = $current.node($current.depth - 1);
-          const neighborParent = neighborInfo.parent;
-
-          if (currentParent === neighborParent &&
-              currentParent.type.name === 'notation_block' &&
-              currentParent.attrs.layout === 'row') {
-
-              return this.handleNotationBlockRowMerge($current, currentParent, direction);
-          }
-
-          return null;
-      }
-
-      static handleNotationBlockRowMerge($current, currentParent, direction) {
-          const blockDepth = $current.depth - 1;
-          const from = $current.start(blockDepth) - 1;
-          const to = from + currentParent.nodeSize;
-
-          let { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(currentParent);
-
-          if (direction === 'up') {
-              specContent = specContent.slice(1);
-          } else {
-              nodeContent = nodeContent.slice(1);
-          }
-
-          let cursorPos = from + specContent.length + 1;
-          const mergedText = specContent + nodeContent;
-
-          const mergedParagraph = NodeConverter.constructParagraph(mergedText);
-
-          return {
-              from,
-              to,
-              mergedParagraphs: [mergedParagraph],
-              cursorPos
-          };
-      }
-
-      static getNormalMergeParams($current, neighborInfo, direction) {
-          const parentDepth = neighborInfo.depth - 1;
-          const parent = neighborInfo.parent;
-
-          const currentIndexAtDepth = $current.index(parentDepth + 1);
-          let currentPosAtDepth = $current.start(parentDepth + 1);
-          for (let i = 0; i < currentIndexAtDepth; i++) {
-              currentPosAtDepth += parent.child(i).nodeSize;
-          }
-
-          const currentNode = $current.parent;
-          const neighborPosAtDepth = neighborInfo.pos;
-
-          let from = Math.min(neighborPosAtDepth, currentPosAtDepth);
-          const to = from + neighborInfo.node.nodeSize + currentNode.nodeSize;
-
-          const currentParagraphs = NodeConverter.destructNode(currentNode);
-          const neighborParagraphs = NodeConverter.destructNode(neighborInfo.node);
-
-          let mergedParagraphs;
-          let cursorPos = null;
-
-          if (direction === 'up') {
-              if (neighborParagraphs.length > 0 && currentParagraphs.length > 0) {
-                  const lastNeighborPara = neighborParagraphs[neighborParagraphs.length - 1];
-                  const firstCurrentPara = currentParagraphs[0];
-
-                  const mergedContent = lastNeighborPara.content.append(firstCurrentPara.content);
-                  const mergedParagraph = markdownSchema.nodes.paragraph.create(
-                      lastNeighborPara.attrs,
-                      mergedContent,
-                      lastNeighborPara.marks
-                  );
-
-                  mergedParagraphs = [
-                      ...neighborParagraphs.slice(0, -1),
-                      mergedParagraph,
-                      ...currentParagraphs.slice(1)
-                  ];
-
-                  let mergedParaPos = from;
-                  for (let i = 0; i < neighborParagraphs.length - 1; i++) {
-                      mergedParaPos += neighborParagraphs[i].nodeSize;
-                  }
-                  cursorPos = mergedParaPos + lastNeighborPara.content.size + 1;
-              } else {
-                  mergedParagraphs = [...neighborParagraphs, ...currentParagraphs];
-              }
-          } else {
-              from -= 1;
-              if (currentParagraphs.length > 0 && neighborParagraphs.length > 0) {
-                  const lastCurrentPara = currentParagraphs[currentParagraphs.length - 1];
-                  const firstNeighborPara = neighborParagraphs[0];
-
-                  const mergedContent = lastCurrentPara.content.append(firstNeighborPara.content);
-                  const mergedParagraph = markdownSchema.nodes.paragraph.create(
-                      lastCurrentPara.attrs,
-                      mergedContent,
-                      lastCurrentPara.marks
-                  );
-
-                  mergedParagraphs = [
-                      ...currentParagraphs.slice(0, -1),
-                      mergedParagraph,
-                      ...neighborParagraphs.slice(1)
-                  ];
-
-                  let mergedParaPos = from;
-                  for (let i = 0; i < currentParagraphs.length - 1; i++) {
-                      mergedParaPos += currentParagraphs[i].nodeSize;
-                  }
-                  cursorPos = mergedParaPos + lastCurrentPara.content.size + 1;
-              } else {
-                  mergedParagraphs = [...currentParagraphs, ...neighborParagraphs];
-              }
-          }
-
-          return { from, to, mergedParagraphs, cursorPos };
-      }
-
-      static executeMerge(state, from, to, mergedParagraphs, cursorPos) {
-          const tr = state.tr;
-
-          const reconstructedData = this.applyReconstruction(tr, mergedParagraphs, from, to, cursorPos);
-
-          reconstructedData.tr.setSelection(TextSelection.create(reconstructedData.tr.doc, reconstructedData.cursorPos));
-          //this.setCursorSelection(reconstructedData.tr, reconstructedData.cursorPos);
-
-          return reconstructedData.tr;
-      }
-
-      static applyReconstruction(tr, mergedParagraphs, from, to, cursorPos) {
-          const reconstructor = new NodeReconstructor();
-
-          const blockResult = reconstructor.applyBlockRules(mergedParagraphs, from, cursorPos);
-          const blockReconstructed = blockResult.paragraphs;
-          const hasBlockChanges = blockReconstructed.some((para, index) => para !== mergedParagraphs[index]);
-
-          let finalParagraphs = mergedParagraphs;
-
-          if (hasBlockChanges) {
-              finalParagraphs = blockReconstructed;
-              cursorPos += blockResult.blocksBeforeCursor;
-          }
-
-          const reconstructedParagraphs = finalParagraphs.map(paragraph => {
-              const markReconstruction = reconstructor.reconstructMarksInNode(paragraph);
-              if (markReconstruction && markReconstruction !== paragraph) {
-                  return markReconstruction;
-              }
-              return paragraph;
-          });
-
-          tr.replaceWith(from, to, reconstructedParagraphs);
-
-          return { tr, cursorPos };
-      }
-
-      static setCursorSelection(tr, cursorPos) {
-          if (cursorPos !== null) {
-              const resolvedPos = tr.doc.resolve(cursorPos);
-              if (resolvedPos.pos >= 0 && resolvedPos.pos <= tr.doc.content.size) {
-                  tr.setSelection(TextSelection.create(tr.doc, resolvedPos.pos));
-              }
-          }
-      }
-  }
-
-  function backspacePlugin() {
-      return new Plugin({
-          props: {
-              handleKeyDown(view, event) {
-                  if (event.key === "Backspace") {
-                      const { state, dispatch } = view;
-                      const { $from, empty } = state.selection;
-
-                      if (!empty) return false;
-
-                      const isAtBlockStart = $from.parentOffset === 0;
-
-                      if (isAtBlockStart) {
-                          const tr = NodeMerger.mergeUp(state, state.selection);
-                          
-                          if (tr) {
-                              event.preventDefault();
-                              dispatch(tr);
-                              return true;
-                          }
-                      } else {
-                          const from = $from.pos - 1;
-                          const to = $from.pos;
-                          return NodeInputter.handleDeleteChar(view, from, to);
-                      }
-                  }
-                  return false;
-              }
-          }
-      });
-  }
-
-  function deletePlugin() {
-      return new Plugin({
-          props: {
-              handleKeyDown(view, event) {
-                  if (event.key === "Delete") {
-                      const { state, dispatch } = view;
-                      const { $from, empty } = state.selection;
-
-                      if (!empty) return false;
-
-                      const isAtBlockEnd = $from.parentOffset === $from.parent.textContent.length;
-
-                      if (isAtBlockEnd) {
-                          const tr = NodeMerger.mergeDown(state, state.selection);
-                          
-                          if (tr) {
-                              event.preventDefault();
-                              dispatch(tr);
-                              return true;
-                          }
-                      } else {
-                          const from = $from.pos - 1;
-                          const to = $from.pos;
-                          return NodeInputter.handleDeleteChar(view, from, to, false);
-                      }
-                      
-                      return false;
-                  }
-                  return false;
-              }
-          }
       });
   }
 
@@ -30426,9 +30424,6 @@
       createPlugins() {
           return [
               history(),
-              backspacePlugin(),
-              deletePlugin(),
-              enterPlugin(),
               keymapPlugin(this),
               dropCursor(),
               gapCursor(),
@@ -30552,20 +30547,68 @@
       updateFrontMatterKey(oldKey, newKey, row) {
           if (oldKey === newKey) return;
 
-          if (this.frontMatter[newKey]) {
-              alert('Поле с таким именем уже существует!');
+          // Используем ту же валидацию
+          const validateFieldName = (fieldName) => {
+              if (!fieldName.trim()) {
+                  return 'Имя поля не может быть пустым';
+              }
+
+              if (this.frontMatter[fieldName]) {
+                  return 'Поле с таким именем уже существует';
+              }
+
+              if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName)) {
+                  return 'Имя поля может содержать только буквы, цифры и подчеркивания, и должно начинаться с буквы или подчеркивания';
+              }
+
+              return '';
+          };
+
+          const error = validateFieldName(newKey);
+          if (error) {
+              this.showErrorDialog('Ошибка', error);
               row.querySelector('input[type="text"]').value = oldKey;
               return;
           }
 
           const value = this.frontMatter[oldKey];
-
           delete this.frontMatter[oldKey];
           this.frontMatter[newKey] = value;
 
           this.updateDocumentWithFrontMatter();
       }
 
+      showErrorDialog(title, message) {
+          const modal = document.createElement('div');
+          modal.className = 'frontmatter-add-modal';
+
+          const dialog = document.createElement('div');
+          dialog.className = 'frontmatter-add-dialog';
+
+          dialog.innerHTML = `
+        <h3 class="frontmatter-add-title">${title}</h3>
+        <div style="margin-bottom: 20px; color: #666;">${message}</div>
+        <div class="frontmatter-add-buttons">
+            <button class="frontmatter-add-btn primary">OK</button>
+        </div>
+    `;
+
+          modal.appendChild(dialog);
+          document.body.appendChild(modal);
+
+          const okButton = dialog.querySelector('.frontmatter-add-btn.primary');
+
+          const closeModal = () => {
+              document.body.removeChild(modal);
+          };
+
+          okButton.addEventListener('click', closeModal);
+          modal.addEventListener('click', (e) => {
+              if (e.target === modal) closeModal();
+          });
+
+          setTimeout(() => okButton.focus(), 0);
+      }
       updateFrontMatterValue(key, newValue) {
           if (this.frontMatter[key] === newValue) return;
 
@@ -30574,21 +30617,205 @@
       }
 
       deleteFrontMatterField(key) {
-          if (confirm(`Удалить поле "${key}"?`)) {
-              delete this.frontMatter[key];
+          this.showConfirmDialog(
+              `Удалить поле "${key}"?`,
+              () => {
+                  delete this.frontMatter[key];
 
-              if (Object.keys(this.frontMatter).length === 0) {
-                  this.frontMatter = {};
+                  if (Object.keys(this.frontMatter).length === 0) {
+                      this.frontMatter = {};
+                  }
+
+                  this.updateDocumentWithFrontMatter();
               }
+          );
+      }
 
-              this.updateDocumentWithFrontMatter();
-          }
+      showConfirmDialog(message, onConfirm) {
+          const modal = document.createElement('div');
+          modal.className = 'frontmatter-confirm-modal';
+
+          const dialog = document.createElement('div');
+          dialog.className = 'frontmatter-confirm-dialog';
+
+          dialog.innerHTML = `
+        <div class="frontmatter-confirm-message">${message}</div>
+        <div class="frontmatter-confirm-buttons">
+            <button class="frontmatter-confirm-btn cancel">Отмена</button>
+            <button class="frontmatter-confirm-btn delete">Удалить</button>
+        </div>
+    `;
+
+          modal.appendChild(dialog);
+          document.body.appendChild(modal);
+
+          const cancelBtn = dialog.querySelector('.cancel');
+          const deleteBtn = dialog.querySelector('.delete');
+
+          const closeModal = () => {
+              document.body.removeChild(modal);
+          };
+
+          cancelBtn.addEventListener('click', closeModal);
+          deleteBtn.addEventListener('click', () => {
+              onConfirm();
+              closeModal();
+          });
+
+          modal.addEventListener('click', (e) => {
+              if (e.target === modal) {
+                  closeModal();
+              }
+          });
+
+          const escHandler = (e) => {
+              if (e.key === 'Escape') {
+                  closeModal();
+                  document.removeEventListener('keydown', escHandler);
+              }
+          };
+          document.addEventListener('keydown', escHandler);
+
+          cancelBtn.focus();
       }
 
       addFrontMatterField() {
-          const newKey = `new_field_${Date.now()}`;
-          this.frontMatter[newKey] = '';
-          this.updateFrontMatterTable();
+          this.showAddFieldDialog();
+      }
+
+      showAddFieldDialog() {
+          const modal = document.createElement('div');
+          modal.className = 'frontmatter-add-modal';
+
+          const dialog = document.createElement('div');
+          dialog.className = 'frontmatter-add-dialog';
+
+          dialog.innerHTML = `
+        <h3 class="frontmatter-add-title">Добавить новое поле</h3>
+        <div class="frontmatter-add-form">
+            <div class="frontmatter-add-field">
+                <label class="frontmatter-add-label">Имя поля:</label>
+                <input type="text" class="frontmatter-add-input" placeholder="Введите имя поля">
+                <div class="frontmatter-add-error"></div>
+            </div>
+            <div class="frontmatter-add-field">
+                <label class="frontmatter-add-label">Значение:</label>
+                <input type="text" class="frontmatter-add-input" placeholder="Введите значение">
+                <div class="frontmatter-add-error"></div>
+            </div>
+            <div class="frontmatter-add-buttons">
+                <button class="frontmatter-add-btn cancel">Отмена</button>
+                <button class="frontmatter-add-btn primary" disabled>Добавить</button>
+            </div>
+        </div>
+    `;
+
+          modal.appendChild(dialog);
+          document.body.appendChild(modal);
+
+          const nameInput = dialog.querySelector('.frontmatter-add-input');
+          const valueInput = dialog.querySelectorAll('.frontmatter-add-input')[1];
+          const nameError = dialog.querySelector('.frontmatter-add-error');
+          const addButton = dialog.querySelector('.frontmatter-add-btn.primary');
+          const cancelButton = dialog.querySelector('.frontmatter-add-btn.cancel');
+
+          const validateFieldName = (fieldName) => {
+              if (!fieldName.trim()) {
+                  return 'Имя поля не может быть пустым';
+              }
+
+              if (this.frontMatter[fieldName]) {
+                  return 'Поле с таким именем уже существует';
+              }
+
+              const invalidChars = /[:{}\[\]]/;
+              if (invalidChars.test(fieldName)) {
+                  return 'Имя поля не может содержать символы : { } [ ]';
+              }
+
+              if (fieldName !== fieldName.trim()) {
+                  return 'Имя поля не должно начинаться или заканчиваться пробелами';
+              }
+
+              // Предупреждение для ключей, которые могут требовать кавычки в YAML
+              const mayNeedQuotes = /[#&*!|>'"%@`-]|\s/;
+              if (mayNeedQuotes.test(fieldName)) {
+                  return 'Имя поля содержит символы, которые могут требовать кавычек в YAML. Это допустимо, но может усложнить чтение.';
+              }
+
+              return '';
+          };
+
+          const updateAddButtonState = () => {
+              const name = nameInput.value.trim();
+              const nameErrorText = validateFieldName(name);
+              const isValid = !nameErrorText && name.length > 0;
+
+              addButton.disabled = !isValid;
+
+              if (nameErrorText) {
+                  nameInput.classList.add('error');
+              } else {
+                  nameInput.classList.remove('error');
+              }
+          };
+
+          nameInput.addEventListener('input', updateAddButtonState);
+          nameInput.addEventListener('blur', () => {
+              const error = validateFieldName(nameInput.value.trim());
+              nameError.textContent = error;
+          });
+
+          const closeModal = () => {
+              document.body.removeChild(modal);
+              document.removeEventListener('keydown', escHandler);
+          };
+
+          const addField = () => {
+              const fieldName = nameInput.value.trim();
+              const fieldValue = valueInput.value.trim();
+
+              const error = validateFieldName(fieldName);
+              if (error) {
+                  nameError.textContent = error;
+                  nameInput.focus();
+                  return;
+              }
+
+              this.frontMatter[fieldName] = fieldValue;
+              this.updateDocumentWithFrontMatter();
+              closeModal();
+          };
+
+          cancelButton.addEventListener('click', closeModal);
+          addButton.addEventListener('click', addField);
+
+          const handleKeyPress = (e) => {
+              if (e.key === 'Enter' && !addButton.disabled) {
+                  addField();
+              }
+          };
+
+          nameInput.addEventListener('keypress', handleKeyPress);
+          valueInput.addEventListener('keypress', handleKeyPress);
+
+          modal.addEventListener('click', (e) => {
+              if (e.target === modal) {
+                  closeModal();
+              }
+          });
+
+          const escHandler = (e) => {
+              if (e.key === 'Escape') {
+                  closeModal();
+              }
+          };
+          document.addEventListener('keydown', escHandler);
+
+          setTimeout(() => {
+              nameInput.focus();
+              nameInput.select();
+          }, 0);
       }
 
       updateDocumentWithFrontMatter() {
@@ -30597,12 +30824,12 @@
           const currentMarkdown = this.getMarkdown();
 
           const newContent = this.getNoteContent(currentMarkdown);
-          this.setMarkdown(newContent);
+          this.setNoteContent(newContent);
       }
 
-      setMarkdown(markdown) {
+      setNoteContent(content) {
           try {
-              const docContent = this.parseDoc(markdown);
+              const docContent = this.parseDoc(content);
               this.frontMatter = docContent.frontMatter;
               this.updateFrontMatterTable();
 
@@ -30637,17 +30864,42 @@
           }
       }
 
-      getFrontMatter() {
+      getFrontMatterYAML() {
           if (this.frontMatter && Object.keys(this.frontMatter).length > 0) {
-              let frontMatterContent = "---\n";
-              Object.entries(this.frontMatter).forEach(([key, value]) => {
-                  frontMatterContent += `${key}: ${value}\n`;
-              });
-              frontMatterContent += "---\n\n";
-              return frontMatterContent;
+              try {
+                  const yamlContent = jsYaml.dump(this.frontMatter, {
+                      indent: 2,
+                      lineWidth: -1,
+                      skipInvalid: true,
+                      noRefs: true,
+                      noCompatMode: true
+                  });
+
+                  return yamlContent;
+              } catch (error) {
+                  console.error('Error formatting YAML front matter:', error);
+                  let frontMatterContent = "";
+                  Object.entries(this.frontMatter).forEach(([key, value]) => {
+                      frontMatterContent += `${key}: ${value}\n`;
+                  });
+                  return frontMatterContent;
+              }
           } else {
               console.log('No front matter found');
               return "";
+          }
+      }
+
+      getFrontMatterJSON() {
+          try {
+              if (this.frontMatter && Object.keys(this.frontMatter).length > 0) {
+                  return JSON.stringify(this.frontMatter);
+              } else {
+                  return "{}";
+              }
+          } catch (error) {
+              console.error('Error serializing front matter:', error);
+              return "{}";
           }
       }
 
@@ -30656,22 +30908,16 @@
       }
 
       getNoteContent() {
-          return this.getFrontMatter() + this.getMarkdown();
+          const frontMatter =  this.getFrontMatterYAML() !== "" ? "---\n" + this.getFrontMatterYAML() + "---\n\n" : "";
+          return frontMatter + this.getMarkdown();
       }
 
       getCursorInfo() {
           const { $from } = this.view.state.selection;
 
-          console.log('=== CURSOR INFO (CORRECTED) ===');
-          console.log('$from.depth:', $from.depth);
-          console.log('$from.parent.type:', $from.parent.type.name);
-
           const parentDepth = $from.depth - 1;
           const currentIndex = parentDepth >= 0 ? $from.index(parentDepth) : 0;
           const parent = parentDepth >= 0 ? $from.node(parentDepth) : null;
-
-          console.log('parentDepth:', parentDepth);
-          console.log('currentIndex (corrected):', currentIndex);
 
           const info = {
               currentNode: {
@@ -30710,12 +30956,6 @@
               }
           }
 
-          console.log('CORRECT Current node:', info.currentNode.type, 'index:', currentIndex);
-          console.log('Siblings:');
-          info.siblings.forEach(sibling => {
-              console.log(`  [${sibling.index}] ${sibling.type}${sibling.isCurrent ? ' ← CURRENT' : ''}`);
-          });
-
           return info;
       }
 
@@ -30728,527 +30968,216 @@
       }
   }
 
-  /*
-  rebuildTree() {
-          let tr = this.view.state.tr;
-          let hasChanges = false;
+  (function () {
 
-          const changes = [];
+      window.debugAlerts = {
+          enabled: false,
 
-          this.view.state.doc.descendants((node, pos) => {
-              if (node.type.name === 'heading') {
-                  changes.push({ type: 'heading', node, pos });
-              }
-              else if (node.isText && node.marks.length > 0) {
-                  changes.push({ type: 'mark', node, pos, marks: [...node.marks] });
-              }
-          });
+          enable: function () {
+              if (this.enabled) return;
+              this.enabled = true;
 
-          changes.sort((a, b) => b.pos - a.pos).forEach((change) => {
-              if (change.type === 'heading') {
-                  const headingBlock = NodeConverter.constructHeading(change.node);
-                  tr = tr.replaceWith(change.pos, change.pos + change.node.nodeSize, headingBlock);
-                  hasChanges = true;
-              }
-              else if (change.type === 'mark') {
-                  change.marks.forEach(mark => {
-                      const textNode = markdownSchema.text(change.node.text, change.node.marks);
+              const originalConsole = window.console;
 
-                      let markContainer;
+              function formatErrorWithStack(error) {
+                  if (!error) return 'No error object';
 
-                      switch (mark.type.name) {
-                          case 'em':
-                              markContainer = NodeConverter.constructEm(textNode);
-                              break;
-                          case 'strong':
-                              markContainer = NodeConverter.constructStrong(textNode);
-                              break;
-                          case 'strike':
-                              markContainer = NodeConverter.constructStrike(textNode);
-                              break;
-                          case 'highlight':
-                              markContainer = NodeConverter.constructHighlight(textNode);
-                              break;
-                          case 'underline':
-                              markContainer = NodeConverter.constructUnderline(textNode);
-                              break;
-                          case 'code':
-                              markContainer = NodeConverter.constructCode(textNode);
-                              break;
-                          default:
-                              return;
-                      }
+                  let message = error.message || String(error);
+                  let stack = error.stack || '';
 
-                      tr = tr.replaceWith(change.pos, change.pos + change.node.nodeSize, markContainer);
-                      hasChanges = true;
-                  });
-              }
-          });
-
-          if (hasChanges) {
-              const currentPos = this.view.state.selection.from;
-
-              this.view.dispatch(tr);
-
-              const newSelection = this.view.state.selection.constructor.near(
-                  this.view.state.doc.resolve(currentPos)
-              );
-              this.view.dispatch(this.view.state.tr.setSelection(newSelection));
-          }
-      }
-   */
-
-  /*import { EditorState } from "prosemirror-state";
-  import { EditorView } from "prosemirror-view";
-  import { keymap } from "prosemirror-keymap";
-  import { baseKeymap, toggleMark, chainCommands, newlineInCode, createParagraphNear, liftEmptyBlock, splitBlock } from "prosemirror-commands";
-  import { dropCursor } from "prosemirror-dropcursor";
-  import { gapCursor } from "prosemirror-gapcursor";
-  import { history, redo, undo } from "prosemirror-history";
-  import { inputRules, textblockTypeInputRule, wrappingInputRule, InputRule } from "prosemirror-inputrules";
-  import { sinkListItem, splitListItem, liftListItem, wrapInList } from "prosemirror-schema-list";
-  import { markdownSchema } from "./schema/markdown-schema.js";
-  import { CustomMarkdownParser } from "./plugins/markdown-parser.js";
-  import { markdownSerializer } from "./plugins/markdown-serializer.js";
-
-  export class Editor {
-      constructor(target, content = '') {
-          if (!target) throw new Error('Target element required');
-
-          const parser = new CustomMarkdownParser();
-          const doc = parser.parse(content);
-
-          this.view = new EditorView(target, {
-              state: EditorState.create({
-                  doc: doc,
-                  schema: markdownSchema,
-                  plugins: this.createPlugins()
-              }),
-              attributes: {
-                  class: "markdown-editor",
-                  style: `
-                      outline: none; 
-                      min-height: 300px; 
-                      padding: 15px;
-                      border: 1px solid #ddd;
-                      border-radius: 4px;
-                      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                      font-size: 14px;
-                      line-height: 1.6;
-                      background: white;
-                      white-space: pre-wrap;
-                  `
-              },
-              dispatchTransaction: (tr) => {
-                  const newState = this.view.state.apply(tr);
-                  this.view.updateState(newState);
-                  
-                  setTimeout(() => {
-                      this.updateFocusFromSelection();
-                  }, 10);
-              }
-          });
-
-          this.setupFocusHandling();
-      }
-
-      setupFocusHandling() {
-          this.activeHeadingPos = null;
-          this.lastHeadingPos = null;
-          
-          this.view.dom.addEventListener('click', (e) => {
-              this.updateFocusFromSelection();
-          });
-
-          this.view.dom.addEventListener('keyup', (e) => {
-              this.updateFocusFromSelection();
-          });
-
-          this.view.dom.addEventListener('mousemove', (e) => {
-              this.updateFocusFromSelection();
-          });
-
-          this.view.dom.addEventListener('mouseleave', (e) => {
-              this.resetAllFocus();
-          });
-
-          window.addEventListener('resize', () => {
-              setTimeout(() => this.updateFocusFromSelection(), 100);
-          });
-      }
-
-      updateFocusFromSelection() {
-          const { selection } = this.view.state;
-          const pos = selection.$from.pos;
-          
-          try {
-              const $pos = this.view.state.doc.resolve(pos);
-              
-              let headingNode = null;
-              let headingPos = null;
-              
-              for (let depth = $pos.depth; depth > 0; depth--) {
-                  const node = $pos.node(depth);
-                  if (node && (node.type.name === 'heading' || node.type.name === 'heading_focus')) {
-                      headingNode = node;
-                      headingPos = $pos.before(depth);
-                      break;
+                  if (stack.includes(message)) {
+                      return stack;
                   }
+
+                  return `${message}\n${stack}`;
               }
-              
-              if (headingNode && headingNode.type.name === 'heading' && this.activeHeadingPos !== headingPos) {
-                  if (this.activeHeadingPos !== null) {
-                      this.convertToNormal(this.activeHeadingPos);
-                  }
-                  this.convertToFocus(headingPos);
-                  this.activeHeadingPos = headingPos;
-                  this.lastHeadingPos = headingPos;
-              } else if (!headingNode && this.activeHeadingPos !== null) {
-                  this.convertToNormal(this.activeHeadingPos);
-                  this.activeHeadingPos = null;
-                  this.lastHeadingPos = null;
-              } else if (headingNode && headingNode.type.name === 'heading_focus' && 
-                       this.activeHeadingPos === headingPos && 
-                       !this.isCursorInHeading($pos, headingPos)) {
-                  this.convertToNormal(headingPos);
-                  this.activeHeadingPos = null;
-                  this.lastHeadingPos = null;
-              } else if (this.lastHeadingPos !== null && this.activeHeadingPos === null) {
-                  const lastNode = this.view.state.doc.nodeAt(this.lastHeadingPos);
-                  if (lastNode && lastNode.type.name === 'heading_focus' && 
-                      !this.isCursorInHeading($pos, this.lastHeadingPos)) {
-                      this.convertToNormal(this.lastHeadingPos);
-                      this.lastHeadingPos = null;
-                  }
-              }
-          } catch (error) {
-              console.log(`Error: ${error}`);
-          }
-      }
 
-      isCursorInHeading($pos, headingPos) {
-          try {
-              const headingNode = this.view.state.doc.nodeAt(headingPos);
-              if (!headingNode) return false;
-              
-              const headingStart = headingPos + 1;
-              const headingEnd = headingStart + headingNode.nodeSize;
-              
-              return $pos.pos >= headingStart && $pos.pos <= headingEnd;
-          } catch (error) {
-              return false;
-          }
-      }
-
-      resetAllFocus() {
-          if (this.activeHeadingPos !== null) {
-              this.convertToNormal(this.activeHeadingPos);
-              this.activeHeadingPos = null;
-          }
-          
-          const focusHeadings = [];
-          this.view.state.doc.descendants((node, pos) => {
-              if (node.type.name === 'heading_focus') {
-                  focusHeadings.push(pos);
-              }
-          });
-          
-          focusHeadings.forEach(pos => {
-              this.convertToNormal(pos);
-          });
-          
-          this.lastHeadingPos = null;
-      }
-
-      convertToFocus(headingPos) {
-          if (headingPos === null || headingPos === undefined) return;
-          
-          try {
-              const node = this.view.state.doc.nodeAt(headingPos);
-              if (node && node.type.name === 'heading') {
-                  const tr = this.view.state.tr.setNodeMarkup(headingPos, markdownSchema.nodes.heading_focus, {
-                      level: node.attrs.level
-                  });
-                  this.view.dispatch(tr);
-              }
-          } catch (error) {
-              console.log(`Error: ${error}`);
-          }
-      }
-
-      convertToNormal(headingPos) {
-          if (headingPos === null || headingPos === undefined) return;
-          
-          try {
-              const node = this.view.state.doc.nodeAt(headingPos);
-              if (node && node.type.name === 'heading_focus') {
-                  const tr = this.view.state.tr.setNodeMarkup(headingPos, markdownSchema.nodes.heading, {
-                      level: node.attrs.level
-                  });
-                  this.view.dispatch(tr);
-              }
-          } catch (error) {
-              console.log(`Error: ${error}`);
-          }
-      }
-
-      // НОВЫЙ МЕТОД: Уменьшение уровня заголовка или преобразование в параграф
-      decreaseHeadingLevel(headingPos) {
-          if (headingPos === null || headingPos === undefined) return false;
-          
-          try {
-              const node = this.view.state.doc.nodeAt(headingPos);
-              if (!node) return false;
-
-              let tr = this.view.state.tr;
-              
-              if (node.type.name === 'heading_focus') {
-                  const currentLevel = node.attrs.level;
-                  
-                  if (currentLevel > 1) {
-                      // Уменьшаем уровень заголовка
-                      tr = tr.setNodeMarkup(headingPos, markdownSchema.nodes.heading_focus, {
-                          level: currentLevel - 1
-                      });
-                  } else {
-                      // Преобразуем заголовок 1 уровня в параграф
-                      tr = tr.setNodeMarkup(headingPos, markdownSchema.nodes.paragraph);
-                  }
-                  
-                  this.view.dispatch(tr);
-                  return true;
-              }
-          } catch (error) {
-              console.log(`Error decreasing heading level: ${error}`);
-          }
-          
-          return false;
-      }
-
-      createPlugins() {
-          const enterCommand = chainCommands(
-              splitListItem(markdownSchema.nodes.list_item),
-              sinkListItem(markdownSchema.nodes.list_item),
-              newlineInCode,
-              createParagraphNear,
-              liftEmptyBlock,
-              splitBlock
-          );
-
-          // НОВАЯ КОМАНДА: Backspace в начале заголовка
-          const backspaceCommand = (state, dispatch) => {
-              const { selection } = state;
-              const { $from } = selection;
-              
-              // Проверяем, что курсор в начале узла и это заголовок в фокусе
-              if ($from.parentOffset === 0) {
-                  for (let depth = $from.depth; depth > 0; depth--) {
-                      const node = $from.node(depth);
-                      if (node && node.type.name === 'heading_focus') {
-                          const headingPos = $from.before(depth);
-                          
-                          if (dispatch) {
-                              // Используем наш метод для уменьшения уровня
-                              setTimeout(() => {
-                                  this.decreaseHeadingLevel(headingPos);
-                              }, 10);
-                          }
-                          return true;
-                      }
-                  }
-              }
-              
-              return false;
-          };
-
-          return [
-              history(),
-              keymap({
-                  ...baseKeymap,
-                  "Enter": (state, dispatch) => {
-                      return enterCommand(state, dispatch);
+              window.console = {
+                  log: function (...args) {
+                      originalConsole.log.apply(originalConsole, args);
+                      try {
+                          const message = args.map(arg =>
+                              typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                          ).join(' ');
+                          alert('LOG: ' + message);
+                      } catch (e) { }
                   },
-                  "Backspace": chainCommands(
-                      backspaceCommand, // Сначала пробуем нашу команду
-                      baseKeymap.Backspace // Затем стандартное поведение
-                  ),
-                  "Mod-z": undo,
-                  "Mod-y": redo,
-                  "Mod-Shift-z": redo,
-                  "Mod-b": toggleMark(markdownSchema.marks.strong),
-                  "Mod-i": toggleMark(markdownSchema.marks.em)
-              }),
-              dropCursor(),
-              gapCursor(),
-              inputRules({
-                  rules: [
-                      textblockTypeInputRule(
-                          /^(#{1,6})\s$/,
-                          markdownSchema.nodes.heading,
-                          match => ({ level: match[1].length })
-                      ),
-                      wrappingInputRule(
-                          /^\s*([-+*])\s$/,
-                          markdownSchema.nodes.bullet_list,
-                          null,
-                          () => true
-                      ),
-                      wrappingInputRule(
-                          /^\s*(\d+)\.\s$/,
-                          markdownSchema.nodes.ordered_list,
-                          match => ({ order: +match[1] }),
-                          () => true
-                      ),
-                      new InputRule(/\*\*([^\*]+)\*\*$/, (state, match, start, end) => {
-                          return state.tr.replaceWith(
-                              start,
-                              end,
-                              state.schema.text(match[1], [markdownSchema.marks.strong.create()])
-                          );
-                      }),
-                      new InputRule(/\*([^\*]+)\*$/, (state, match, start, end) => {
-                          return state.tr.replaceWith(
-                              start,
-                              end,
-                              state.schema.text(match[1], [markdownSchema.marks.em.create()])
-                          );
-                      }),
-                      new InputRule(/^```(\w*)\s$/, (state, match, start, end) => {
-                          const language = match[1] || "";
-                          return state.tr.replaceWith(
-                              start,
-                              end,
-                              markdownSchema.nodes.code_block.create(
-                                  { params: language },
-                                  language ? [] : [markdownSchema.text("")]
-                              )
-                          );
-                      })
-                  ]
-              })
-          ];
-      }
 
-      getMarkdown() {
-          try {
-              let doc = this.view.state.doc;
-              const focusHeadings = [];
-              
-              doc.descendants((node, pos) => {
-                  if (node.type.name === 'heading_focus') {
-                      focusHeadings.push({ pos, node });
-                  }
+                  error: function (...args) {
+                      originalConsole.error.apply(originalConsole, args);
+                      try {
+                          const formattedArgs = args.map(arg => {
+                              if (arg instanceof Error) {
+                                  return formatErrorWithStack(arg);
+                              }
+                              return typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg);
+                          });
+                          alert('ERROR: ' + formattedArgs.join('\n'));
+                      } catch (e) { }
+                  },
+
+                  warn: function (...args) {
+                      originalConsole.warn.apply(originalConsole, args);
+                      try {
+                          const formattedArgs = args.map(arg => {
+                              if (arg instanceof Error) {
+                                  return formatErrorWithStack(arg);
+                              }
+                              return String(arg);
+                          });
+                          alert('WARN: ' + formattedArgs.join('\n'));
+                      } catch (e) { }
+                  },
+
+                  info: function (...args) {
+                      originalConsole.info.apply(originalConsole, args);
+                      try {
+                          alert('INFO: ' + args.join(' '));
+                      } catch (e) { }
+                  },
+
+                  debug: originalConsole.debug,
+                  table: originalConsole.table,
+                  time: originalConsole.time,
+                  timeEnd: originalConsole.timeEnd,
+                  clear: originalConsole.clear,
+                  trace: originalConsole.trace
+              };
+
+              window.onerror = function (msg, url, lineNo, columnNo, error) {
+                  const errorDetails = `
+Message: ${msg}
+URL: ${url}
+Line: ${lineNo}
+Column: ${columnNo}
+${error ? formatErrorWithStack(error) : 'No stack trace available'}
+                `.trim();
+
+                  originalConsole.error('Global Error:', errorDetails);
+                  alert('ERROR: ' + errorDetails);
+
+                  return false;
+              };
+
+              window.addEventListener('unhandledrejection', function (event) {
+                  const error = event.reason;
+                  const errorDetails = error instanceof Error ?
+                      formatErrorWithStack(error) :
+                      String(error);
+
+                  originalConsole.error('Unhandled Promise Rejection:', error);
+                  alert('ERROR: ' + errorDetails);
+
+                  event.preventDefault();
               });
 
-              if (focusHeadings.length > 0) {
-                  let tr = this.view.state.tr;
-                  focusHeadings.forEach(({ pos, node }) => {
-                      tr = tr.setNodeMarkup(pos, markdownSchema.nodes.heading, {
-                          level: node.attrs.level
-                      });
-                  });
-                  doc = tr.doc;
+              const originalTrace = originalConsole.trace;
+              originalConsole.trace = function (...args) {
+                  const stack = new Error().stack;
+                  const traceMessage = `${args.join(' ')}\n${stack}`;
+                  alert('ERROR: ' + traceMessage);
+                  originalTrace.apply(originalConsole, args);
+              };
+
+              const originalSetTimeout = window.setTimeout;
+              const originalSetInterval = window.setInterval;
+
+              window.setTimeout = function (callback, delay, ...args) {
+                  return originalSetTimeout(function () {
+                      try {
+                          callback.apply(this, args);
+                      } catch (error) {
+                          const errorDetails = formatErrorWithStack(error);
+                          alert('ERROR: ' + errorDetails);
+                          throw error;
+                      }
+                  }, delay);
+              };
+
+              window.setInterval = function (callback, delay, ...args) {
+                  return originalSetInterval(function () {
+                      try {
+                          callback.apply(this, args);
+                      } catch (error) {
+                          const errorDetails = formatErrorWithStack(error);
+                          alert('ERROR: ' + errorDetails);
+                          throw error;
+                      }
+                  }, delay);
+              };
+
+              const originalAddEventListener = EventTarget.prototype.addEventListener;
+              EventTarget.prototype.addEventListener = function (type, listener, options) {
+                  const wrappedListener = function (...args) {
+                      try {
+                          return listener.apply(this, args);
+                      } catch (error) {
+                          const errorDetails = formatErrorWithStack(error);
+                          alert('ERROR: ' + errorDetails);
+                          throw error;
+                      }
+                  };
+
+                  return originalAddEventListener.call(this, type, wrappedListener, options);
+              };
+
+              alert('INFO: Debug alerts enabled');
+          },
+
+          disable: function () {
+              if (!this.enabled) return;
+              this.enabled = false;
+
+              console.log('Debug alerts disabled');
+          },
+
+          toggle: function () {
+              if (this.enabled) {
+                  this.disable();
+              } else {
+                  this.enable();
               }
-
-              return markdownSerializer.serialize(doc);
-          } catch (error) {
-              console.log(`Error: ${error}`);
-              return "";
+              return this.enabled;
           }
-      }
+      };
 
-      setMarkdown(markdown) {
-          try {
-              const parser = new CustomMarkdownParser();
-              const newDoc = parser.parse(markdown || "");
-              const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
-              this.view.dispatch(tr);
-              this.resetAllFocus();
-          } catch (error) {
-              console.log(`Error: ${error}`);
-          }
-      }
-
-      getHTML() {
-          try {
-              const fragment = this.view.dom.cloneNode(true);
-              const div = document.createElement("div");
-              div.appendChild(fragment);
-              return div.innerHTML;
-          } catch (error) {
-              console.log(`Error: ${error}`);
-              return "";
-          }
-      }
-
-      focus() {
-          this.view.focus();
-      }
-
-      destroy() {
-          this.view.destroy();
-      }
-
-      forceResetFocus() {
-          this.resetAllFocus();
-      }
-  }*/
-
-  window.CustomEditor = Editor;
+  })();
 
   document.addEventListener('DOMContentLoaded', () => {
       const container = document.getElementById('editor');
       if (container) {
-          window.editor = new Editor(container, 
-`---
-author: pavel
-time: 12:15
-message: Hi
----
-
-# Heading 1
-## Heading 2
-
-Quotes:
-> "It's easy!"
-> ProseMirror
-
-Lists:
-    1
-        2
-- item 1
-- item 2
-    - item 3
-    - item 4
-1. one
-2. two
-3. thee
-
-Marks: *em* **strong** ~~strike~~ ==highlight== __underline__ \`code\`
-
-Links: [note] [link](https://example.com) https://example.com my_email@mail.ru #tag`
-          );
+          window.editor = new Editor(container);
       }
   });
 
   /*
-  sss
-  sss
-      ss
-          sjjjs
-  sss
-  # Heading 1dd
-  Marks: **em**
-  sss
-  [sss](sss)
-  sss
+  window.editor.setNoteContent(`---
+  author: pavel
+  time: 12:15
+  message: Hi
+  ---
 
-  Marks: *em* **strong** ~~strike~~ __underline__ ==highlight== \`code\`
+  # Heading 1
+  ## Heading 2
 
-  \`\`\`javascript
-  console.log("Hello, world!");
-  \`\`\`
-  Paragraph text
+  Quotes:
+  > "It's easy!"
+  > ProseMirror
+
+  Lists:
+      1
+          2
+  - item 1
+  - item 2
+      - item 3
+      - item 4
+  1. one
+  2. two
+  3. thee
+
+  Marks: *em* **strong** ~~strike~~ ==highlight== __underline__ \`code\`
+
+  Links: [note] [link](https://example.com) https://example.com my_email@mail.ru #tag`);
    */
 
-}));
+})();
