@@ -604,7 +604,8 @@ export class Editor {
     }
 
     getNoteContent() {
-        return "---\n" + this.getFrontMatterYAML() + "---\n\n" + this.getMarkdown();
+        const frontMatter =  this.getFrontMatterYAML() !== "" ? "---\n" + this.getFrontMatterYAML() + "---\n\n" : "";
+        return frontMatter + this.getMarkdown();
     }
 
     getCursorInfo() {

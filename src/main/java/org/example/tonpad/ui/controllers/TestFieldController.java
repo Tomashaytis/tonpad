@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Time;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 
@@ -62,8 +63,19 @@ public class TestFieldController extends AbstractController {
 
         editor = new EditorImpl(webView.getEngine(), true);
         if (!markdown.isEmpty()) {
-            editor.setContent(markdown);
+            editor.setNoteContent(markdown);
         }
+        new Thread(() -> {
+            try {
+                String note = editor.getNoteContent().get(3, TimeUnit.SECONDS);
+                System.out.println("Содержимое: " + note);
+            } catch (TimeoutException e) {
+                System.out.println("Таймаут получения содержимого");
+            } catch (Exception e) {
+                System.out.println("Ошибка: " + e.getMessage());
+            }
+        }).start();
+
 
         AnchorPane.setTopAnchor(webView, 0.0);
         AnchorPane.setBottomAnchor(webView, 0.0);

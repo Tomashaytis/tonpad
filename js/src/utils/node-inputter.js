@@ -50,7 +50,6 @@ export class NodeInputter {
         let tr = state.tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
 
         if (reconstructedNode.type.name == 'notation_block') {
-            console.log(cursorOffset, reconstructedNode.child(0).nodeSize, notationBlock.child(0).nodeSize)
             if (['tab_list', 'bullet_list', 'ordered_list'].includes(reconstructedNode.attrs.type) && text === '\t') {
                 if (notationBlock.child(0).nodeSize - cursorOffset === 2) {
                     cursorOffset -= 2;

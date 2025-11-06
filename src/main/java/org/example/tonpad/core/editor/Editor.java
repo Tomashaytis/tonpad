@@ -1,23 +1,24 @@
 package org.example.tonpad.core.editor;
 
 import java.net.URL;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Сервис для работы с Markdown редактором в JavaFX
  * Инкапсулирует все вызовы JavaScript API
  */
 public interface Editor {
-    void setContent(String noteContent);
+    void setNoteContent(String noteContent);
 
-    void getContent(JsCallback callback);
+    CompletableFuture<String> getNoteContent();
 
-    void getFrontMatter(JsCallback callback, boolean jsonFormat);
+    CompletableFuture<String> getFrontMatter(boolean jsonFormat);
 
-    void getDoc(JsCallback callback);
+    CompletableFuture<String> getDoc();
 
-    void getHtml(JsCallback callback);
+    CompletableFuture<String> getHtml();
 
-    void getMarkdown(JsCallback callback);
+    CompletableFuture<String> getMarkdown();
 
     void focus();
 

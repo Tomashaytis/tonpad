@@ -253,6 +253,7 @@
 /* Базовые стили редактора */
 .markdown-editor {
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    height: 100%;
     line-height: 1.6;
     font-size: 16px;
     tab-size: 5;

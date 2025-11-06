@@ -19,6 +19,9 @@ import lombok.RequiredArgsConstructor;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.springframework.stereotype.Component;
 
+import java.net.URISyntaxException;
+import java.util.Objects;
+
 @Component
 @RequiredArgsConstructor
 public class MainController extends AbstractController {
@@ -98,7 +101,12 @@ public class MainController extends AbstractController {
         fileTreeController.init(fileTreePane);
 
         tabController.setTabPane(tabPane);
-        tabController.init("/test.md");
+        try {
+            tabController.init(Objects.requireNonNull(getClass().getResource("/Welcome.md")).toURI());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
 
         searchInTextController.setTabPane(tabPane);
         searchInTextController.init(searchInTextPane);

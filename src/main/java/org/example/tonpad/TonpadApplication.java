@@ -49,8 +49,8 @@ public class TonpadApplication extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        testFieldController.init(primaryStage);
-        /*quickStartDialogController.init();
+        //testFieldController.init(primaryStage);
+        quickStartDialogController.init();
         quickStartDialogController.setCreateVaultHandler(selectedPath -> {
             quickStartDialogController.hide();
 
@@ -64,7 +64,7 @@ public class TonpadApplication extends Application {
             }
 
             fileTreeController.refreshTree();
-        });*/
+        });
     }
 
     public static void main(String[] args) {

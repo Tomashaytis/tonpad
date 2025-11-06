@@ -1,6 +1,5 @@
 package org.example.tonpad.ui.controllers;
 
-import com.vladsch.flexmark.util.ast.Document;
 import javafx.animation.PauseTransition;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
@@ -11,13 +10,18 @@ import javafx.scene.web.WebView;
 import javafx.util.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
-import org.example.tonpad.core.service.MarkdownService;
+import org.example.tonpad.core.editor.Editor;
 import org.springframework.stereotype.Component;
 
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 
 @Component
@@ -27,27 +31,28 @@ public class TabController {
     @Setter
     private TabPane tabPane;
 
-    private final MarkdownService markdownService;
+    private final Map<Tab, Editor> editorMap = new ConcurrentHashMap<Tab, Editor>();
+
+    private final Map<Tab, Path> pathMap = new ConcurrentHashMap<Tab, Path>();
 
     private final RegularFileService fileService;
 
-    public void init(String path) {
+    public void init(URI fileUri) {
         addNewTabButton();
-        createInitialTab(path);
+        createInitialTab(fileUri);
     }
 
     public void openFileInCurrentTab(String path) {
         try {
             Path filePath = Path.of(path);
 
-            String fileContent = Files.readString(filePath);
-            Document markdownFile = markdownService.parseMarkdownFile(fileContent);
-            String html = markdownService.renderMarkdownFileToHtmlPage(markdownFile);
+            String noteContent = Files.readString(filePath);
 
             Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-            replaceTabContent(currentTab, getTabName(filePath), html);
+            pathMap.put(currentTab, filePath);
+            replaceTabContent(currentTab, getTabName(filePath), noteContent);
         } catch (Exception e) {
-            createTemporaryTab("New Tab", "<h1>Error loading content</h1>" + Arrays.toString(e.getStackTrace()));
+            createTemporaryTab("<h1>Error loading content</h1>" + Arrays.toString(e.getStackTrace()));
         }
     }
 
@@ -55,15 +60,13 @@ public class TabController {
         tabPane.getTabs().forEach(this::tabClose);
     }
 
-    private void createInitialTab(String path) {
+    private void createInitialTab(URI fileUri) {
         try {
-            Path filePath = Path.of(path);
-            String fileContent = Files.readString(filePath);
-            Document markdownFile = markdownService.parseMarkdownFile(fileContent);
-            String html = markdownService.renderMarkdownFileToHtmlPage(markdownFile);
-            createTabWithContent(getTabName(filePath), html, filePath);
+            Path filePath = Path.of(fileUri);
+            String noteContent = Files.readString(filePath);
+            createTabWithContent(getTabName(filePath), noteContent, filePath);
         } catch (Exception e) {
-            createTemporaryTab("New Tab", "<h1>Error loading content</h1>");
+            createTemporaryTab("<h1>Error loading content</h1>");
         }
     }
 
@@ -92,48 +95,45 @@ public class TabController {
 //        createTabWithContent("New Tab " + (tabPane.getTabs().size()), "<h1>New Tab Content</h1>");
 //    }
 
-    private void createTemporaryTab(String title, String htmlContent) {
-        Tab newTab = new Tab(title);
+    private void createTemporaryTab(String noteContent) {
+        Tab newTab = new Tab("New Tab");
 
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
 
-        initTab(newTab, htmlContent, content, webView);
+        initTab(newTab, noteContent, content, webView);
 
-        newTab.setOnCloseRequest(event -> {
-            tabClose(newTab);
-        });
+        newTab.setOnCloseRequest(event -> tabClose(newTab));
     }
 
-    private void createTabWithContent(String title, String htmlContent, Path path) {
+    private void createTabWithContent(String title, String noteContent, Path path) {
         Tab newTab = new Tab(title);
 
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
-        initTab(newTab, htmlContent, content, webView);
+        pathMap.put(newTab, path);
+        initTab(newTab, noteContent, content, webView);
 
         PauseTransition debounce = new PauseTransition(Duration.millis(1500));
-        debounce.setOnFinished(event -> {
-            saveToFile(path, (String) webView.getEngine().executeScript("document.documentElement.outerHTML"));
-        });
+        debounce.setOnFinished(event -> saveToFile());
 
         newTab.setOnCloseRequest(event -> {
-            saveToFile(path, (String) webView.getEngine().executeScript("document.documentElement.outerHTML"));
+            saveToFile();
             tabClose(newTab);
         });
-        content.addEventFilter(KeyEvent.KEY_TYPED, event -> {
-            debounce.playFromStart();
-        });
+        content.addEventFilter(KeyEvent.KEY_TYPED, event -> debounce.playFromStart());
     }
 
-    private void initTab(Tab tab, String htmlContent, AnchorPane content, WebView webView) {
+    private void initTab(Tab tab, String noteContent, AnchorPane content, WebView webView) {
         AnchorPane.setTopAnchor(webView, 0.0);
         AnchorPane.setBottomAnchor(webView, 0.0);
         AnchorPane.setLeftAnchor(webView, 0.0);
         AnchorPane.setRightAnchor(webView, 0.0);
         content.getChildren().add(webView);
 
-        webView.getEngine().loadContent(htmlContent);
+        editorMap.put(tab, new EditorImpl(webView.getEngine(), false));
+        editorMap.get(tab).setNoteContent(noteContent);
+
         tab.setContent(content);
         tab.setUserData(webView);
 
@@ -141,14 +141,13 @@ public class TabController {
         tabPane.getSelectionModel().select(tab);
     }
 
-    private void replaceTabContent(Tab tab, String title, String htmlContent) {
+    private void replaceTabContent(Tab tab, String title, String noteContent) {
         tab.setText(title);
 
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
-        webView.getEngine().loadContent(htmlContent);
-
-        initTab(tab, htmlContent, content, webView);
+        
+        initTab(tab, noteContent, content, webView);
     }
 
     private String getTabName(Path filePath) {
@@ -160,7 +159,16 @@ public class TabController {
     private void tabClose(Tab tab) {
     }
 
-    private void saveToFile(Path path, String htmlContent) {
-        fileService.writeFile(path, markdownService.convertHtmlToMarkdown(htmlContent));
+    private void saveToFile() {
+        new Thread(() -> {
+            try {
+                Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+                Path path = pathMap.get(currentTab);
+                String noteContent = editorMap.get(currentTab).getNoteContent().get(3, TimeUnit.SECONDS);
+                fileService.writeFile(path, noteContent);
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+        }).start();
     }
 }

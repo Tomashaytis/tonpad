@@ -15,9 +15,16 @@ import java.util.concurrent.CompletableFuture;
 public class EditorImpl implements Editor {
 
     private final WebEngine webEngine;
+    private volatile boolean isLoaded = false;
 
     public EditorImpl(WebEngine webEngine, boolean enableDebugAlerts) {
         this.webEngine = webEngine;
+
+        this.webEngine.getLoadWorker().stateProperty().addListener((obs, old, newState) -> {
+            if (newState == Worker.State.SUCCEEDED) {
+                isLoaded = true;
+            }
+        });
 
         if (enableDebugAlerts) {
             this.webEngine.setOnAlert(e -> {
@@ -35,15 +42,11 @@ public class EditorImpl implements Editor {
             this.webEngine.setOnError(e -> System.err.println("\u001B[31mJS ERROR: " + e.getMessage() + "\u001B[0m"));
         }
 
-        if (enableDebugAlerts) {
-            executeJs("debugAlerts.enable();");
-        }
-
         this.webEngine.load(getEditorHtmlSource().toExternalForm());
     }
 
     @Override
-    public void setContent(String noteContent) {
+    public void setNoteContent(String noteContent) {
         String jsCode = String.format("editor.setNoteContent(%s);",
                 toJsString(noteContent));
 
@@ -51,54 +54,29 @@ public class EditorImpl implements Editor {
     }
 
     @Override
-    public void getContent(JsCallback callback) {
-        executeJs("editor.getNoteContent();")
-                .thenAccept(callback::onResult)
-                .exceptionally(throwable -> {
-                    callback.onResult(null);
-                    return null;
-                });
+    public CompletableFuture<String> getNoteContent() {
+        return executeJs("editor.getNoteContent();");
     }
 
     @Override
-    public void getFrontMatter(JsCallback callback, boolean jsonFormat) {
+    public CompletableFuture<String> getFrontMatter(boolean jsonFormat) {
         String jsCode = jsonFormat ? "editor.getFrontMatterJSON();" : "editor.getFrontMatterYAML();";
-        executeJs(jsCode)
-                .thenAccept(callback::onResult)
-                .exceptionally(throwable -> {
-                    callback.onResult(null);
-                    return null;
-                });
+        return executeJs(jsCode);
     }
 
     @Override
-    public void getDoc(JsCallback callback) {
-        executeJs("editor.getDoc();")
-                .thenAccept(callback::onResult)
-                .exceptionally(throwable -> {
-                    callback.onResult(null);
-                    return null;
-                });
+    public CompletableFuture<String> getDoc() {
+        return executeJs("editor.getDoc();");
     }
 
     @Override
-    public void getHtml(JsCallback callback) {
-        executeJs("editor.getHTML();")
-                .thenAccept(callback::onResult)
-                .exceptionally(throwable -> {
-                    callback.onResult(null);
-                    return null;
-                });
+    public CompletableFuture<String> getHtml() {
+        return executeJs("editor.getHTML();");
     }
 
     @Override
-    public void getMarkdown(JsCallback callback) {
-        executeJs("editor.getMarkdown();")
-                .thenAccept(callback::onResult)
-                .exceptionally(throwable -> {
-                    callback.onResult(null);
-                    return null;
-                });
+    public CompletableFuture<String> getMarkdown() {
+        return executeJs("editor.getMarkdown();");
     }
 
     @Override
@@ -134,19 +112,35 @@ public class EditorImpl implements Editor {
     private CompletableFuture<String> executeJs(String jsCode) {
         CompletableFuture<String> future = new CompletableFuture<>();
 
-        webEngine.getLoadWorker().stateProperty().addListener((obs, old, newState) -> {
-            if (newState == Worker.State.SUCCEEDED) {
-                Platform.runLater(() -> {
-                    try {
-                        Object result = webEngine.executeScript(jsCode);
-                        future.complete(result != null ? result.toString() : null);
-                    } catch (Exception e) {
-                        future.completeExceptionally(e);
-                    }
-                });
+        Platform.runLater(() -> {
+            try {
+                if (!isLoaded) {
+                    webEngine.getLoadWorker().stateProperty().addListener((obs, old, newState) -> {
+                        if (newState == Worker.State.SUCCEEDED) {
+                            executeJavaScriptSafely(jsCode, future);
+                        } else if (newState == Worker.State.FAILED || newState == Worker.State.CANCELLED) {
+                            future.completeExceptionally(new RuntimeException("Page failed to load"));
+                        }
+                    });
+                } else {
+                    executeJavaScriptSafely(jsCode, future);
+                }
+            } catch (Exception e) {
+                future.completeExceptionally(e);
             }
         });
 
         return future;
+    }
+
+    private void executeJavaScriptSafely(String jsCode, CompletableFuture<String> future) {
+        Platform.runLater(() -> {
+            try {
+                Object result = webEngine.executeScript(jsCode);
+                future.complete(result != null ? result.toString() : null);
+            } catch (Exception e) {
+                future.completeExceptionally(e);
+            }
+        });
     }
 }

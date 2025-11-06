@@ -25347,7 +25347,6 @@
           let tr = state.tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
 
           if (reconstructedNode.type.name == 'notation_block') {
-              console.log(cursorOffset, reconstructedNode.child(0).nodeSize, notationBlock.child(0).nodeSize);
               if (['tab_list', 'bullet_list', 'ordered_list'].includes(reconstructedNode.attrs.type) && text === '\t') {
                   if (notationBlock.child(0).nodeSize - cursorOffset === 2) {
                       cursorOffset -= 2;
@@ -30909,7 +30908,8 @@
       }
 
       getNoteContent() {
-          return "---\n" + this.getFrontMatterYAML() + "---\n\n" + this.getMarkdown();
+          const frontMatter =  this.getFrontMatterYAML() !== "" ? "---\n" + this.getFrontMatterYAML() + "---\n\n" : "";
+          return frontMatter + this.getMarkdown();
       }
 
       getCursorInfo() {
@@ -31147,33 +31147,6 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
       const container = document.getElementById('editor');
       if (container) {
           window.editor = new Editor(container);
-          window.editor.setNoteContent(`---
-author: pavel
-time: 12:15
-message: Hi
----
-
-# Heading 1
-## Heading 2
-
-Quotes:
-> "It's easy!"
-> ProseMirror
-
-Lists:
-    1
-        2
-- item 1
-- item 2
-    - item 3
-    - item 4
-1. one
-2. two
-3. thee
-
-Marks: *em* **strong** ~~strike~~ ==highlight== __underline__ \`code\`
-
-Links: [note] [link](https://example.com) https://example.com my_email@mail.ru #tag`);
       }
   });
 
