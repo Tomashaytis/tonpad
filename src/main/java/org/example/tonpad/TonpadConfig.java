@@ -9,7 +9,8 @@ public record TonpadConfig(
         String dataPath,
         ReservedDirNames reservedNames,
         Path jsFunctionsDirectory,
-        String changelogPath
+        String changelogPath,
+        String validateDbSchemaPath
 ) {
 
     public record ReservedDirNames(String templatesDir, String notesDir) {}
