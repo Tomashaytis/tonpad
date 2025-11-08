@@ -22,13 +22,10 @@
 
 .expand-icon {
     -fx-image: url(/ui/icons/dark/expand.png);
-<<<<<<< HEAD
 }
 
 .change-vault-icon {
-    -fx-image: url(../icons/dark/change-vault.png);
-=======
->>>>>>> e527870f66efb4bc8a5c65f6eb89bcf897f199f7
+    -fx-image: url(/ui/icons/dark/change-vault.png);
 }
 
 .collapse-icon {
