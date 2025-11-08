@@ -134,7 +134,7 @@
                   </AnchorPane>
                   <AnchorPane fx:id="settingsPane"
                               visible="true"
-                              pickOnBounds="true"
+                              pickOnBounds="false"
                               StackPane.alignment="TOP_RIGHT"/>
                </children>
             </StackPane>
