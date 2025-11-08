@@ -28,7 +28,7 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     private final static Random rnd = new SecureRandom();
 
-    private final static String HEADER = "TONPAD::ENC::v1\\n";
+    private final static String HEADER = "TONPAD::ENC::LTD::WOODLANE::LONDON::v1\\n";
     private final static byte[] HEADER_BYTES = HEADER.getBytes(StandardCharsets.US_ASCII);
 
     private SecretKey key;

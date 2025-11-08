@@ -2,6 +2,10 @@ package org.example.tonpad.ui.controllers;
 
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+import java.util.function.Consumer;
+
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 
 import javafx.fxml.FXML;
@@ -29,10 +33,12 @@ public class VaultAuthController extends AbstractController {
     private Button okButton;
     @FXML
     private Button cancelButton;
+    @FXML
+    private Button enterWithoutButton;
 
     private Stage stage;
 
-    public void showModal(Stage owner) {
+    public void showModal(Stage owner, Consumer<char[]> onPassword, Runnable onWithoutPwd, Runnable onCancel) {
         stage = new Stage(StageStyle.UTILITY);
         stage.initOwner(owner);
         stage.initModality(Modality.WINDOW_MODAL);
@@ -46,13 +52,33 @@ public class VaultAuthController extends AbstractController {
         });
         
         okButton.setOnAction(e -> {
-            // сюда написать хрень
-
-            // проверь на create vault (тут мб другую (set password), и open folder as vault что выдает плашку, 
+            final String text = passwordField.getText();
+            if(text == null || text.isEmpty()) stage.close();
+            char[] pwd = text.toCharArray();
+            try {
+                if(onPassword != null) onPassword.accept(pwd);
+            }
+            finally {
+                Arrays.fill(pwd, '\0');
+                passwordField.clear();
+            }
+            stage.close();
+        });
+        enterWithoutButton.setOnAction(e -> {
+            if(onWithoutPwd != null) onWithoutPwd.run();
             stage.close();
         });
         cancelButton.setOnAction(e -> {
+            if(onCancel != null) onCancel.run();
             stage.close();
+        });
+
+        scene.setOnKeyPressed(k -> {
+            switch ((k.getCode())) {
+                case ENTER -> okButton.fire();
+                case ESCAPE -> cancelButton.fire();
+                default -> {}
+            }
         });
 
         stage.showAndWait();

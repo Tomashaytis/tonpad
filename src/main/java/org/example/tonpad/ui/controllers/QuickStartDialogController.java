@@ -16,17 +16,22 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import org.example.tonpad.core.files.RecentVaultService;
 import org.example.tonpad.core.service.VaultService;
+import org.example.tonpad.core.service.crypto.exception.DerivationException;
+import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class QuickStartDialogController extends AbstractController {
@@ -65,6 +70,8 @@ public class QuickStartDialogController extends AbstractController {
     private final ObservableList<String> recentVaults = FXCollections.observableArrayList();
 
     private final VaultPath vaultPath;
+
+    private final VaultSession vaultSession;
 
     private Stage stage;
 
@@ -132,13 +139,32 @@ public class QuickStartDialogController extends AbstractController {
         vaultPath.setVaultPath(path);
         recentVaultService.setFirstRecent(recentVaults, path);
 
+        AtomicBoolean confirm = new AtomicBoolean(false);
+
         VaultAuthController dlg = vaultAuthProvider.getObject();
-        dlg.showModal(stage);
-        // if(createVaultHandler != null) {  ==============================================================
-        //     recentVaultService.setFirstRecent(recentVaults, path);
-        //     createVaultHandler.accept(path);
-        //     hide();
-        // }
+        dlg.showModal(stage,
+            pwd -> {
+                try {
+                    vaultSession.unlock(pwd);
+                    confirm.set(true);
+                }
+                catch(DerivationException e) {
+                    vaultSession.lock();
+                    log.info(e.getMessage());
+                    confirm.set(false);
+                }
+            },
+            () -> {
+                vaultSession.openWithoutPassword();
+                confirm.set(true);
+            },
+            () -> {});
+        if(!confirm.get()) return;
+        if(createVaultHandler != null) {
+            recentVaultService.setFirstRecent(recentVaults, path);
+            createVaultHandler.accept(path);
+            hide();
+        }
     }
 
     private void setupEventHandlers() {
@@ -171,19 +197,38 @@ public class QuickStartDialogController extends AbstractController {
 
         if (!isEmptyDirectory(selectedDirectory) && !showNonEmptyDirectoryWarning(selectedDirectory)) return;
 
+        AtomicBoolean confirm = new AtomicBoolean(false);
+
         VaultSetPasswordController dlg = vaultSetPasswordProvider.getObject();
         dlg.showModal(stage, 
         pwd -> {
-            vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
-            vaultService.initVault(selectedDirectory.toPath());
+            try {
+                vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
+                vaultService.initVault(selectedDirectory.toPath());
+                vaultSession.unlock(pwd);    
+                confirm.set(true);
+            }
+            catch(DerivationException e) {
+                vaultSession.lock();
+                log.info(e.getMessage());
+                confirm.set(false);
+            }
         }, 
-        () -> {            
-            vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
-            vaultService.initVault(selectedDirectory.toPath());
+        () -> {
+            try {
+                vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
+                vaultService.initVault(selectedDirectory.toPath());
+                vaultSession.openWithoutPassword();
+                confirm.set(true);
+            }
+            catch(Exception e) {
+                vaultSession.lock();
+                log.info(e.getMessage());
+                confirm.set(false);
+            }
         });
-// падает при cancel
-
-        createVaultHandler.accept(vaultPath.getVaultPath());  //==============================================================
+        if(!confirm.get()) return;
+        createVaultHandler.accept(vaultPath.getVaultPath());
         recentVaultService.setFirstRecent(recentVaults, vaultPath.getVaultPath());
         hide();
     }
@@ -224,13 +269,31 @@ public class QuickStartDialogController extends AbstractController {
         vaultPath.setVaultPath(path);
         recentVaultService.setFirstRecent(recentVaults, path);
 
+        AtomicBoolean confirm = new AtomicBoolean(false);
+
         VaultAuthController dlg = vaultAuthProvider.getObject();
-        dlg.showModal(stage);
-        // if(createVaultHandler != null) { ==============================================================
-        //     System.out.println(vaultPath.getVaultPath());
-        //     createVaultHandler.accept(vaultPath.getVaultPath());
-        //     hide();
-        // }
+        dlg.showModal(stage,
+            pwd -> {
+                try {
+                    vaultSession.unlock(pwd);
+                    confirm.set(true);
+                }
+                catch(DerivationException e) {
+                    vaultSession.lock();
+                    log.info(e.getMessage());
+                    confirm.set(false);
+                }
+            },
+            () -> {
+                vaultSession.openWithoutPassword();
+                confirm.set(true);
+            },
+            () -> {});
+        if(createVaultHandler != null) {
+            System.out.println(vaultPath.getVaultPath());
+            createVaultHandler.accept(vaultPath.getVaultPath());
+            hide();
+        }
 //        String vaultPath = selectedDirectory.getAbsolutePath();
     }
 
