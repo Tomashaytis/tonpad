@@ -20,6 +20,7 @@ import lombok.Setter;
 import org.example.tonpad.core.files.RecentVaultService;
 import org.example.tonpad.core.service.VaultService;
 import org.example.tonpad.ui.extentions.VaultPath;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -57,6 +58,9 @@ public class QuickStartDialogController extends AbstractController {
     private final RecentVaultService recentVaultService;
 
     private final VaultService vaultService;
+
+    private final ObjectProvider<VaultAuthController> vaultAuthProvider;
+    private final ObjectProvider<VaultSetPasswordController> vaultSetPasswordProvider;
 
     private final ObservableList<String> recentVaults = FXCollections.observableArrayList();
 
@@ -115,7 +119,7 @@ public class QuickStartDialogController extends AbstractController {
         });
     }
 
-    private void openRecentSelected() {
+    private void openRecentSelected() { // недавние волты
         String path = recentVaultsListView.getSelectionModel().getSelectedItem();
         if(path == null || path.isBlank()) return; 
         File dir = new File(path);
@@ -126,12 +130,15 @@ public class QuickStartDialogController extends AbstractController {
 
         vaultService.checkVaultInitialization(Path.of(path));
         vaultPath.setVaultPath(path);
+        recentVaultService.setFirstRecent(recentVaults, path);
 
-        if(createVaultHandler != null) {
-            recentVaultService.setFirstRecent(recentVaults, path);
-            createVaultHandler.accept(path);
-            hide();
-        }
+        VaultAuthController dlg = vaultAuthProvider.getObject();
+        dlg.showModal(stage);
+        // if(createVaultHandler != null) {  ==============================================================
+        //     recentVaultService.setFirstRecent(recentVaults, path);
+        //     createVaultHandler.accept(path);
+        //     hide();
+        // }
     }
 
     private void setupEventHandlers() {
@@ -155,26 +162,30 @@ public class QuickStartDialogController extends AbstractController {
         });
     }
 
-    private void selectEmptyFolder() {
+    private void selectEmptyFolder() { // создание нового волта
         DirectoryChooser directoryChooser = new DirectoryChooser();
         directoryChooser.setTitle("Select Empty Directory for New Vault");
 
         File selectedDirectory = directoryChooser.showDialog(stage);
+        if(selectedDirectory == null) return;
 
-        if (selectedDirectory != null) {
-            if (!isEmptyDirectory(selectedDirectory)) {
-                boolean proceed = showNonEmptyDirectoryWarning(selectedDirectory);
-                if (!proceed) {
-                    return;
-                }
-            }
+        if (!isEmptyDirectory(selectedDirectory) && !showNonEmptyDirectoryWarning(selectedDirectory)) return;
 
+        VaultSetPasswordController dlg = vaultSetPasswordProvider.getObject();
+        dlg.showModal(stage, 
+        pwd -> {
             vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
             vaultService.initVault(selectedDirectory.toPath());
-            createVaultHandler.accept(vaultPath.getVaultPath());
-            recentVaultService.setFirstRecent(recentVaults, vaultPath.getVaultPath());
-            hide();
-        }
+        }, 
+        () -> {            
+            vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
+            vaultService.initVault(selectedDirectory.toPath());
+        });
+// падает при cancel
+
+        createVaultHandler.accept(vaultPath.getVaultPath());  //==============================================================
+        recentVaultService.setFirstRecent(recentVaults, vaultPath.getVaultPath());
+        hide();
     }
 
     private boolean isEmptyDirectory(File directory) {
@@ -198,7 +209,7 @@ public class QuickStartDialogController extends AbstractController {
         return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
     }
 
-    private void selectFolder() {
+    private void selectFolder() { // открыть папку как волт
         DirectoryChooser directoryChooser = new DirectoryChooser();
         directoryChooser.setTitle("Select Vault Directory");
 
@@ -212,11 +223,14 @@ public class QuickStartDialogController extends AbstractController {
 
         vaultPath.setVaultPath(path);
         recentVaultService.setFirstRecent(recentVaults, path);
-        if(createVaultHandler != null) {
-            System.out.println(vaultPath.getVaultPath());
-            createVaultHandler.accept(vaultPath.getVaultPath());
-            hide();
-        }
+
+        VaultAuthController dlg = vaultAuthProvider.getObject();
+        dlg.showModal(stage);
+        // if(createVaultHandler != null) { ==============================================================
+        //     System.out.println(vaultPath.getVaultPath());
+        //     createVaultHandler.accept(vaultPath.getVaultPath());
+        //     hide();
+        // }
 //        String vaultPath = selectedDirectory.getAbsolutePath();
     }
 
