@@ -13,6 +13,7 @@ import { inputRulesPlugin } from "./plugins/input-rules.js";
 import { inputPlugin } from "./plugins/input.js"
 import { disableInsertPlugin } from "./plugins/disable-insert.js"
 import { hideSpecPlugin } from "./plugins/hide-spec.js"
+import { searchPlugin, searchCommands } from "./plugins/search.js"
 import { copyPlugin } from "./plugins/copy.js"
 import jsYAML from 'js-yaml';
 
@@ -117,6 +118,7 @@ export class Editor {
             this.view.dispatch(this.view.state.tr.setSelection(newSelection));
         }
     }
+
     createPlugins() {
         return [
             history(),
@@ -128,6 +130,7 @@ export class Editor {
             inputPlugin(),
             disableInsertPlugin(),
             //hideSpecPlugin(),
+            searchPlugin(),
             copyPlugin(),
         ];
     }
@@ -243,7 +246,6 @@ export class Editor {
     updateFrontMatterKey(oldKey, newKey, row) {
         if (oldKey === newKey) return;
 
-        // Используем ту же валидацию
         const validateFieldName = (fieldName) => {
             if (!fieldName.trim()) {
                 return 'Имя поля не может быть пустым';
@@ -433,7 +435,6 @@ export class Editor {
                 return 'Имя поля не должно начинаться или заканчиваться пробелами';
             }
 
-            // Предупреждение для ключей, которые могут требовать кавычки в YAML
             const mayNeedQuotes = /[#&*!|>'"%@`-]|\s/;
             if (mayNeedQuotes.test(fieldName)) {
                 return 'Имя поля содержит символы, которые могут требовать кавычек в YAML. Это допустимо, но может усложнить чтение.';
@@ -521,6 +522,39 @@ export class Editor {
 
         const newContent = this.getNoteContent(currentMarkdown);
         this.setNoteContent(newContent);
+    }
+
+    find(query, caseSensitive = false) {
+        const command = searchCommands.find(query, caseSensitive);
+        const executed = command(this.view.state, this.view.dispatch);
+        
+        if (executed) {
+            return this.getSearchInfo();
+        }
+        return null;
+    }
+
+    findNext() {
+        const command = searchCommands.findNext();
+        const executed = command(this.view.state, this.view.dispatch);
+        return executed ? this.getSearchInfo() : null;
+    }
+
+    findPrevious() {
+        const command = searchCommands.findPrevious();
+        const executed = command(this.view.state, this.view.dispatch);
+        return executed ? this.getSearchInfo() : null;
+    }
+
+    clearSearch() {
+        const command = searchCommands.clearSearch();
+        const executed = command(this.view.state, this.view.dispatch);
+        return executed ? this.getSearchInfo() : null;
+    }
+
+    getSearchInfo() {
+        const command = searchCommands.getSearchInfo();
+        return command(this.view.state);
     }
 
     setNoteContent(content) {

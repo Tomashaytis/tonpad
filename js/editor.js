@@ -26442,6 +26442,220 @@
       });
   }
 
+  const searchPluginKey = new PluginKey('search');
+
+  class SearchState {
+      constructor(decorations = DecorationSet.empty, query = null, results = [], currentIndex = -1) {
+          this.decorations = decorations;
+          this.query = query;
+          this.results = results;
+          this.currentIndex = currentIndex;
+          this.isActive = !!query;
+          this.total = results.length;
+      }
+
+      static init() {
+          return new SearchState();
+      }
+
+      updateResults(results, query, doc) {
+          const decorations = this.createDecorations(results, 0, doc);
+          return new SearchState(
+              decorations,
+              query,
+              results,
+              results.length > 0 ? 0 : -1
+          );
+      }
+
+      clear() {
+          return SearchState.init();
+      }
+
+      next(doc) {
+          if (this.results.length === 0) return this;
+          const nextIndex = (this.currentIndex + 1) % this.results.length;
+          const decorations = this.createDecorations(this.results, nextIndex, doc);
+          return new SearchState(
+              decorations,
+              this.query,
+              this.results,
+              nextIndex
+          );
+      }
+
+      previous(doc) {
+          if (this.results.length === 0) return this;
+          const prevIndex = this.currentIndex > 0
+              ? this.currentIndex - 1
+              : this.results.length - 1;
+          const decorations = this.createDecorations(this.results, prevIndex, doc);
+          return new SearchState(
+              decorations,
+              this.query,
+              this.results,
+              prevIndex
+          );
+      }
+
+      createDecorations(results, currentIndex, doc) {
+          const decorations = results.map((result, index) => {
+              const isCurrent = index === currentIndex;
+              return Decoration.inline(result.from, result.to, {
+                  class: isCurrent ? 'search-match current-match' : 'search-match'
+              });
+          });
+          
+          return DecorationSet.create(doc, decorations);
+      }
+
+      getCurrentResult() {
+          return this.results[this.currentIndex];
+      }
+
+      getInfo() {
+          return {
+              isActive: this.isActive,
+              query: this.query,
+              current: this.currentIndex + 1,
+              total: this.total,
+              hasResults: this.total > 0
+          };
+      }
+  }
+
+  function searchPlugin() {
+      return new Plugin({
+          key: searchPluginKey,
+          state: {
+              init: SearchState.init,
+              apply(tr, prev) {
+                  const action = tr.getMeta(searchPluginKey);
+
+                  if (action?.type === 'FIND') {
+                      return prev.updateResults(action.results, action.query, tr.doc);
+                  }
+
+                  if (action?.type === 'CLEAR') {
+                      return prev.clear();
+                  }
+
+                  if (action?.type === 'NEXT') {
+                      return prev.next(tr.doc);
+                  }
+
+                  if (action?.type === 'PREVIOUS') {
+                      return prev.previous(tr.doc);
+                  }
+
+                  return prev;
+              }
+          },
+          props: {
+              decorations(state) {
+                  const searchState = searchPluginKey.getState(state);
+                  return searchState ? searchState.decorations : DecorationSet.empty;
+              }
+          }
+      });
+  }
+
+  const searchCommands = {
+      find(query, caseSensitive = false) {
+          return (state, dispatch) => {
+              if (!query || query.trim() === '') {
+                  return this.clearSearch()(state, dispatch);
+              }
+
+              const results = findInDocument(state.doc, query, caseSensitive);
+
+              if (dispatch) {
+                  dispatch(state.tr.setMeta(searchPluginKey, {
+                      type: 'FIND',
+                      results,
+                      query
+                  }));
+              }
+
+              return true;
+          };
+      },
+
+      findNext() {
+          return (state, dispatch) => {
+              const searchState = searchPluginKey.getState(state);
+              if (!searchState?.isActive || searchState.results.length === 0) {
+                  return false;
+              }
+
+              if (dispatch) {
+                  dispatch(state.tr.setMeta(searchPluginKey, { type: 'NEXT' }));
+              }
+
+              return true;
+          };
+      },
+
+      findPrevious() {
+          return (state, dispatch) => {
+              const searchState = searchPluginKey.getState(state);
+              if (!searchState?.isActive || searchState.results.length === 0) {
+                  return false;
+              }
+
+              if (dispatch) {
+                  dispatch(state.tr.setMeta(searchPluginKey, { type: 'PREVIOUS' }));
+              }
+
+              return true;
+          };
+      },
+
+      clearSearch() {
+          return (state, dispatch) => {
+              if (dispatch) {
+                  dispatch(state.tr.setMeta(searchPluginKey, { type: 'CLEAR' }));
+              }
+              return true;
+          };
+      },
+
+      getSearchInfo() {
+          return (state) => {
+              const searchState = searchPluginKey.getState(state);
+              return searchState ? searchState.getInfo() : {
+                  isActive: false,
+                  query: null,
+                  current: 0,
+                  total: 0,
+                  hasResults: false
+              };
+          };
+      }
+  };
+
+  function findInDocument(doc, query, caseSensitive = false) {
+      const results = [];
+      const searchText = caseSensitive ? query : query.toLowerCase();
+
+      doc.descendants((node, pos) => {
+          if (node.isText) {
+              const nodeText = caseSensitive ? node.text : node.text.toLowerCase();
+              let index = -1;
+
+              while ((index = nodeText.indexOf(searchText, index + 1)) !== -1) {
+                  results.push({
+                      from: pos + index,
+                      to: pos + index + query.length,
+                      text: node.text.substring(index, index + query.length)
+                  });
+              }
+          }
+      });
+
+      return results;
+  }
+
   function copyPlugin() {
       return new Plugin({
           props: {
@@ -30421,6 +30635,7 @@
               this.view.dispatch(this.view.state.tr.setSelection(newSelection));
           }
       }
+
       createPlugins() {
           return [
               history(),
@@ -30432,6 +30647,7 @@
               inputPlugin(),
               disableInsertPlugin(),
               //hideSpecPlugin(),
+              searchPlugin(),
               copyPlugin(),
           ];
       }
@@ -30547,7 +30763,6 @@
       updateFrontMatterKey(oldKey, newKey, row) {
           if (oldKey === newKey) return;
 
-          // Используем ту же валидацию
           const validateFieldName = (fieldName) => {
               if (!fieldName.trim()) {
                   return 'Имя поля не может быть пустым';
@@ -30737,7 +30952,6 @@
                   return 'Имя поля не должно начинаться или заканчиваться пробелами';
               }
 
-              // Предупреждение для ключей, которые могут требовать кавычки в YAML
               const mayNeedQuotes = /[#&*!|>'"%@`-]|\s/;
               if (mayNeedQuotes.test(fieldName)) {
                   return 'Имя поля содержит символы, которые могут требовать кавычек в YAML. Это допустимо, но может усложнить чтение.';
@@ -30825,6 +31039,39 @@
 
           const newContent = this.getNoteContent(currentMarkdown);
           this.setNoteContent(newContent);
+      }
+
+      find(query, caseSensitive = false) {
+          const command = searchCommands.find(query, caseSensitive);
+          const executed = command(this.view.state, this.view.dispatch);
+          
+          if (executed) {
+              return this.getSearchInfo();
+          }
+          return null;
+      }
+
+      findNext() {
+          const command = searchCommands.findNext();
+          const executed = command(this.view.state, this.view.dispatch);
+          return executed ? this.getSearchInfo() : null;
+      }
+
+      findPrevious() {
+          const command = searchCommands.findPrevious();
+          const executed = command(this.view.state, this.view.dispatch);
+          return executed ? this.getSearchInfo() : null;
+      }
+
+      clearSearch() {
+          const command = searchCommands.clearSearch();
+          const executed = command(this.view.state, this.view.dispatch);
+          return executed ? this.getSearchInfo() : null;
+      }
+
+      getSearchInfo() {
+          const command = searchCommands.getSearchInfo();
+          return command(this.view.state);
       }
 
       setNoteContent(content) {
@@ -31147,6 +31394,33 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
       const container = document.getElementById('editor');
       if (container) {
           window.editor = new Editor(container);
+          window.editor.setNoteContent(`---
+author: pavel
+time: 12:15
+message: Hi
+---
+
+# Heading 1
+## Heading 2
+
+Quotes:
+> "It's easy!"
+> ProseMirror
+
+Lists:
+    1
+        2
+- item 1
+- item 2
+    - item 3
+    - item 4
+1. one
+2. two
+3. thee
+
+Marks: *em* **strong** ~~strike~~ ==highlight== __underline__ \`code\`
+
+Links: [note] [link](https://example.com) https://example.com my_email@mail.ru #tag`);
       }
   });
 
