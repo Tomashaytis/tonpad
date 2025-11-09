@@ -75,7 +75,7 @@ public class SettingsController extends AbstractController {
     private void onChangePassword() {
         Stage stage = findOwnerStage();
         ResetPasswordController dlg = resetPasswordProvider.getObject();
-        dlg.showModal(stage, 
+        dlg.showModal(stage,
         pwd -> { // смена пароля. char[] pwd
             // все .enc перешифрует. Либо все файлы зашифрует в файлы .enc
             try {
@@ -107,7 +107,7 @@ public class SettingsController extends AbstractController {
             catch (Exception e) {
                 log.info("[SET-PWD] unexpected error: {}", e.toString());
             }
-        }, 
+        },
         () -> { // сброс пароля. Все расшифровать. Все файлы с .enc перейдут в .dec
             try {
                 final boolean wasNoPwd = vaultSession.isOpendWithNoPassword();
