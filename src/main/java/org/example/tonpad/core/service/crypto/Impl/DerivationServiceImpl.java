@@ -44,6 +44,11 @@ public class DerivationServiceImpl implements DerivationService {
     }
 
     @Override
+    public byte[] deriveAuthHash(char[] password) throws DerivationException {
+        return deriveAuthHash(password, getSalt(), defaultIterations());
+    }
+
+    @Override
     public byte[] getSalt() {
         char[] chars = salt.toCharArray();
         byte[] result = new byte[chars.length]; 

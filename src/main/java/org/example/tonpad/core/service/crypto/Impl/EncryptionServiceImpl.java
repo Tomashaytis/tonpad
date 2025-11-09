@@ -22,7 +22,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     private static final String KEY_LENGTH_ERROR = "key must be only 16/24/32 bytes length";
     
     private final static String ALGORYTHM = "AES";
-    private final static String TRANSFORMATION = "AES/GSM/NoPadding";
+    private final static String TRANSFORMATION = "AES/GCM/NoPadding";
     private final static int NONCE_LEN = 12;
     private final static int TAG_LEN_BITS  = 128;
 
@@ -34,7 +34,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     private SecretKey key;
     
     public EncryptionServiceImpl(@NonNull byte[] key) {
-        if(key.length != 16 || key.length != 24 || key.length != 32) throw new IllegalArgumentException(KEY_LENGTH_ERROR);
+        if(key.length != 16 && key.length != 24 && key.length != 32) throw new IllegalArgumentException(KEY_LENGTH_ERROR);
         this.key = new SecretKeySpec(key, ALGORYTHM);
     }
 

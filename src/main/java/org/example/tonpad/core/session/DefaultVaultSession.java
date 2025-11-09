@@ -74,6 +74,11 @@ public class DefaultVaultSession implements VaultSession {
     }
 
     @Override
+    public boolean isOpendWithNoPassword() {
+        return mode == Mode.UNLOCKED_NO_KEY;
+    }
+
+    @Override
     public Optional<SecretKey> getMasterKeyIfPresent() {
         return isProtectionEnabled() ? Optional.of(masterKeyRef.get()) : Optional.empty();
     }

@@ -12,6 +12,7 @@ public interface VaultSession {
     void lock();
     boolean isUnlocked();
     boolean isProtectionEnabled();
+    boolean isOpendWithNoPassword();
     SecretKey requiredMasterKey();
     Optional<SecretKey> getMasterKeyIfPresent();
 }
