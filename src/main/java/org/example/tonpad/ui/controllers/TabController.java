@@ -10,8 +10,14 @@ import javafx.scene.web.WebView;
 import javafx.util.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
 import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
+import org.example.tonpad.core.service.crypto.EncryptionService;
+import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
+import org.example.tonpad.core.service.crypto.exception.DecryptionException;
+import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.editor.Editor;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +28,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
 
 @Component
 @RequiredArgsConstructor
@@ -36,6 +41,8 @@ public class TabController {
     private final Map<Tab, Path> pathMap = new ConcurrentHashMap<Tab, Path>();
 
     private final RegularFileService fileService;
+
+    private final VaultSession vaultSession;
 
     public void init(URI fileUri) {
         addNewTabButton();
@@ -131,8 +138,17 @@ public class TabController {
         AnchorPane.setRightAnchor(webView, 0.0);
         content.getChildren().add(webView);
 
+        byte[] key = vaultSession.getMasterKeyIfPresent()
+                .map(k -> k.getEncoded())
+                .orElse(null);
+        EncryptionService encoder = new EncryptionServiceImpl(key);
+
         editorMap.put(tab, new EditorImpl(webView.getEngine(), false));
-        editorMap.get(tab).setNoteContent(noteContent);
+        try {
+            editorMap.get(tab).setNoteContent(encoder.decrypt(noteContent, null));
+        } catch (DecryptionException e) {
+            e.printStackTrace();
+        }
 
         tab.setContent(content);
         tab.setUserData(webView);
@@ -167,13 +183,20 @@ public class TabController {
     private void tabClose(Tab tab) {
     }
 
-    private void saveToFile() {
+    private void saveToFile() {        
+        byte[] key = vaultSession.getMasterKeyIfPresent()
+                        .map(k -> k.getEncoded())
+                        .orElse(null);
+        EncryptionService encoder = new EncryptionServiceImpl(key);
         new Thread(() -> {
             try {
                 Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
                 Path path = pathMap.get(currentTab);
                 String noteContent = editorMap.get(currentTab).getNoteContent().get(3, TimeUnit.SECONDS);
-                fileService.writeFile(path, noteContent);
+                if (vaultSession.isOpendWithNoPassword())
+                    fileService.writeFile(path, noteContent);
+                else
+                    fileService.writeFile(path, encoder.encrypt(noteContent, null));
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
