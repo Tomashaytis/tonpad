@@ -148,6 +148,14 @@ public class TabController {
         WebView webView = new WebView();
         
         initTab(tab, noteContent, content, webView);
+        PauseTransition debounce = new PauseTransition(Duration.millis(1500));
+        debounce.setOnFinished(event -> saveToFile());
+
+        tab.setOnCloseRequest(event -> {
+            saveToFile();
+            tabClose(tab);
+        });
+        content.addEventFilter(KeyEvent.KEY_TYPED, event -> debounce.playFromStart());
     }
 
     private String getTabName(Path filePath) {
