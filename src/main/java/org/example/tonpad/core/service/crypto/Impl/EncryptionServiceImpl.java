@@ -16,25 +16,26 @@ import org.example.tonpad.core.service.crypto.exception.DecryptionException;
 import org.example.tonpad.core.service.crypto.exception.EncryptionException;
 
 import lombok.NonNull;
+
 //Пароль пользователя прогони через эту хрень PBKDF2 (salt, iterations) -> AESключ 256 бит
 public class EncryptionServiceImpl implements EncryptionService {
 
     private static final String KEY_LENGTH_ERROR = "key must be only 16/24/32 bytes length";
-    
-    private final static String ALGORYTHM = "AES";
-    private final static String TRANSFORMATION = "AES/GCM/NoPadding";
-    private final static int NONCE_LEN = 12;
-    private final static int TAG_LEN_BITS  = 128;
 
-    private final static Random rnd = new SecureRandom();
+    private static final String ALGORYTHM = "AES";
+    private static final String TRANSFORMATION = "AES/GCM/NoPadding";
+    private static final int NONCE_LEN = 12;
+    private static final int TAG_LEN_BITS  = 128;
 
-    public final static String HEADER = "TOP::LARSENS::INC::LTD::WOODLANE::LONDON::ASTON::VANQUISH::V12\\n";
-    private final static byte[] HEADER_BYTES = HEADER.getBytes(StandardCharsets.US_ASCII);
+    private static final Random rnd = new SecureRandom();
 
-    private SecretKey key;
-    
+    public static final String HEADER = "TOP::LARSENS::INC::LTD::WOODLANE::LONDON::ASTON::VANQUISH::V12\\n";
+    private static final byte[] HEADER_BYTES = HEADER.getBytes(StandardCharsets.US_ASCII);
+
+    private final SecretKey key;
+
     public EncryptionServiceImpl(@NonNull byte[] key) {
-        if(key.length != 16 && key.length != 24 && key.length != 32) throw new IllegalArgumentException(KEY_LENGTH_ERROR);
+        if (key.length != 16 && key.length != 24 && key.length != 32) throw new IllegalArgumentException(KEY_LENGTH_ERROR);
         this.key = new SecretKeySpec(key, ALGORYTHM);
     }
 
@@ -48,10 +49,10 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     @Override
     public byte[] encrypt(byte[] text, byte[] aad) throws EncryptionException {
-        try{
+        try {
             byte[] nonce = new byte[NONCE_LEN];
             rnd.nextBytes(nonce);
-    
+
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(TAG_LEN_BITS, nonce));
             if (aad != null && aad.length > 0) cipher.updateAAD(aad);
@@ -64,8 +65,7 @@ public class EncryptionServiceImpl implements EncryptionService {
             String base64 = Base64.getEncoder().encodeToString(output);
             String wrapped = HEADER + base64;
             return wrapped.getBytes(StandardCharsets.UTF_8);
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             throw new EncryptionException(e);
         }
     }
@@ -80,26 +80,24 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     @Override
     public byte[] decrypt(byte[] text, byte[] aad) throws DecryptionException {
-        if(!startWith(text, HEADER_BYTES)) return text;
+        if (!startWith(text, HEADER_BYTES)) return text;
         try {
             String whole = new String(text, StandardCharsets.UTF_8);
-            if(!whole.startsWith(HEADER)) return text; // не наш формат
+            if (!whole.startsWith(HEADER)) return text; // не наш формат
             String base64 = whole.substring(HEADER.length()).trim();
             byte[] packed = Base64.getDecoder().decode(base64);
 
-            if(packed.length < NONCE_LEN + 1) throw new DecryptionException("Invalid payload length");
-
+            if (packed.length < NONCE_LEN + 1) throw new DecryptionException("Invalid payload length");
 
             byte[] nonce = Arrays.copyOfRange(packed, 0, NONCE_LEN);
             byte[] cipherText = Arrays.copyOfRange(packed, NONCE_LEN, packed.length);
-    
+
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_LEN_BITS, nonce));
-            if(aad != null && aad.length > 0) cipher.updateAAD(aad);
-    
+            if (aad != null && aad.length > 0) cipher.updateAAD(aad);
+
             return cipher.doFinal(cipherText);
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             throw new DecryptionException(e);
         }
     }
