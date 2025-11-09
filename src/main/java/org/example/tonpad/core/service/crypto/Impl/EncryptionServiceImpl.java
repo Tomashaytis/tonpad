@@ -28,7 +28,7 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     private final static Random rnd = new SecureRandom();
 
-    private final static String HEADER = "TONPAD::ENC::LTD::WOODLANE::LONDON::v1\\n";
+    public final static String HEADER = "TOP::LARSENS::INC::LTD::WOODLANE::LONDON::ASTON::VANQUISH::V12\\n";
     private final static byte[] HEADER_BYTES = HEADER.getBytes(StandardCharsets.US_ASCII);
 
     private SecretKey key;
@@ -83,7 +83,8 @@ public class EncryptionServiceImpl implements EncryptionService {
         if(!startWith(text, HEADER_BYTES)) return text;
         try {
             String whole = new String(text, StandardCharsets.UTF_8);
-            String base64 = whole.substring(HEADER.length());
+            if(!whole.startsWith(HEADER)) return text; // не наш формат
+            String base64 = whole.substring(HEADER.length()).trim();
             byte[] packed = Base64.getDecoder().decode(base64);
 
             if(packed.length < NONCE_LEN + 1) throw new DecryptionException("Invalid payload length");

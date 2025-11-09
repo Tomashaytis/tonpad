@@ -53,7 +53,12 @@ public class VaultAuthController extends AbstractController {
         
         okButton.setOnAction(e -> {
             final String text = passwordField.getText();
-            if(text == null || text.isEmpty()) stage.close();
+            if(text == null || text.isEmpty()) 
+            {
+                if(onCancel != null) onCancel.run();
+                stage.close();
+                return;
+            }
             char[] pwd = text.toCharArray();
             try {
                 if(onPassword != null) onPassword.accept(pwd);

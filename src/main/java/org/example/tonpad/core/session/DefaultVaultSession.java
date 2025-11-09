@@ -1,20 +1,18 @@
 package org.example.tonpad.core.session;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
 import org.example.tonpad.core.service.crypto.DerivationService;
-import org.example.tonpad.core.service.crypto.exception.DerivationException;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
-
-import java.lang.reflect.Field;
-
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
 @Component
 @Lazy
@@ -22,50 +20,78 @@ import javax.crypto.spec.SecretKeySpec;
 public class DefaultVaultSession implements VaultSession {
     private final DerivationService derivationService;
 
-    private enum Mode {LOCKED, UNLOCKED_NO_KEY, UNLOCKED_WITH_KEY};
+    private enum Mode { LOCKED, UNLOCKED_NO_KEY, UNLOCKED_WITH_KEY }
 
     private final AtomicReference<SecretKey> masterKeyRef = new AtomicReference<>();
-
     private volatile Mode mode = Mode.LOCKED;
 
     @Override
-    public void unlock(char[] password) throws DerivationException {
+    public void unlock(char[] password) {
+        if (password == null || password.length == 0) throw new IllegalArgumentException("empty password");
         try {
-            if(mode != Mode.LOCKED) throw new IllegalStateException("vault is already opened");
             byte[] keyBytes = derivationService.deriveAuthHash(password, null, derivationService.defaultIterations());
             Arrays.fill(password, '\0');
 
-            SecretKey key = new SecretKeySpec(keyBytes, "AES");
-            Arrays.fill(keyBytes, (byte)0);
-            if(!masterKeyRef.compareAndSet(null, key)) {
-                zeroKey(key);
-                throw new IllegalStateException("Vault already unlocked");
+            SecretKey newKey = new SecretKeySpec(keyBytes, "AES");
+            Arrays.fill(keyBytes, (byte) 0);
+
+            switch (mode) {
+                case LOCKED -> {
+                    if (!masterKeyRef.compareAndSet(null, newKey)) {
+                        zeroKey(newKey);
+                        throw new IllegalStateException("vault already unlocked");
+                    }
+                    mode = Mode.UNLOCKED_WITH_KEY;
+                }
+                case UNLOCKED_NO_KEY -> {
+                    SecretKey prev = masterKeyRef.getAndSet(newKey);
+                    if (prev != null) zeroKey(prev);
+                    mode = Mode.UNLOCKED_WITH_KEY;
+                }
+                case UNLOCKED_WITH_KEY -> {
+                    SecretKey cur = masterKeyRef.get();
+                    if (cur == null) {
+                        if (!masterKeyRef.compareAndSet(null, newKey)) {
+                            zeroKey(newKey);
+                            throw new IllegalStateException("vault already unlocked");
+                        }
+                        mode = Mode.UNLOCKED_WITH_KEY;
+                    } else {
+                        if (!keysEqualConstantTime(cur, newKey)) {
+                            zeroKey(newKey);
+                            throw new IllegalStateException("vault is already opened with another key");
+                        }
+                        zeroKey(newKey);
+                    }
+                }
             }
-            mode = Mode.UNLOCKED_WITH_KEY;
-        }
-        catch(DerivationException e) {
+        } catch (RuntimeException e) {
             throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
         }
     }
 
     @Override
     public void openWithoutPassword() {
-        if(mode != Mode.LOCKED) throw new IllegalStateException("vault is already opened");
+        if (mode == Mode.UNLOCKED_WITH_KEY) {
+            return;
+        }
         SecretKey prev = masterKeyRef.getAndSet(null);
-        if(prev != null) zeroKey(prev);
+        if (prev != null) zeroKey(prev);
         mode = Mode.UNLOCKED_NO_KEY;
     }
 
     @Override
     public void lock() {
         SecretKey key = masterKeyRef.getAndSet(null);
-        if(key != null) zeroKey(key);
+        if (key != null) zeroKey(key);
         mode = Mode.LOCKED;
     }
 
     @Override
     public boolean isUnlocked() {
-        return masterKeyRef.get() != null;
+        return mode != Mode.LOCKED;
     }
 
     @Override
@@ -80,25 +106,36 @@ public class DefaultVaultSession implements VaultSession {
 
     @Override
     public Optional<SecretKey> getMasterKeyIfPresent() {
-        return isProtectionEnabled() ? Optional.of(masterKeyRef.get()) : Optional.empty();
+        return isProtectionEnabled() ? Optional.ofNullable(masterKeyRef.get()) : Optional.empty();
     }
 
     @Override
     public SecretKey requiredMasterKey() {
-        if(!isProtectionEnabled()) throw new IllegalStateException("vault is not protected with password (or locked)");
-        SecretKey key = masterKeyRef.get();
-        return key;
+        if (!isProtectionEnabled()) throw new IllegalStateException("vault is not protected with password (or locked)");
+        return masterKeyRef.get();
     }
 
     private void zeroKey(SecretKey key) {
-        if(key instanceof SecretKeySpec) {
+        if (key instanceof SecretKeySpec) {
             try {
-                Field field = SecretKeySpec.class.getDeclaredField("key");
-                field.setAccessible(true);
-                byte[] array = (byte[]) field.get(key);
-                if(array != null) Arrays.fill(array, (byte)0);
-            }
-            catch (Throwable e) {}
+                Field f = SecretKeySpec.class.getDeclaredField("key");
+                f.setAccessible(true);
+                byte[] arr = (byte[]) f.get(key);
+                if (arr != null) Arrays.fill(arr, (byte) 0);
+            } catch (Throwable ignore) {}
         }
+    }
+
+    private boolean keysEqualConstantTime(SecretKey a, SecretKey b) {
+        if (a == b) return true;
+        if (a == null || b == null) return false;
+        byte[] ka = a.getEncoded();
+        byte[] kb = b.getEncoded();
+        if (ka == null || kb == null || ka.length != kb.length) return false;
+        int r = 0;
+        for (int i = 0; i < ka.length; i++) r |= (ka[i] ^ kb[i]);
+        Arrays.fill(ka, (byte) 0);
+        Arrays.fill(kb, (byte) 0);
+        return r == 0;
     }
 }

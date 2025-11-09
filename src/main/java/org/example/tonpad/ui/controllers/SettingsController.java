@@ -58,7 +58,7 @@ public class SettingsController extends AbstractController {
     private boolean isShowing = false;
 
     public void init(AnchorPane hostPane) {
-        this.host = hostPane;
+            this.host = hostPane;
         ensureLoaded();
 
         settingsPanel.setManaged(false);
@@ -79,29 +79,59 @@ public class SettingsController extends AbstractController {
         pwd -> { // смена пароля. char[] pwd
             // все .enc перешифрует. Либо все файлы зашифрует в файлы .enc
             try {
-                byte[] oldKey = vaultSession.getMasterKeyIfPresent().get().getEncoded();
-                byte[] newKey = derivationService.deriveAuthHash(pwd);
+                final boolean wasNoPwd = vaultSession.isOpendWithNoPassword();
+                final boolean wasWithKey = vaultSession.isProtectionEnabled();
 
-                cryptoFileService.reEncryptFiles(oldKey, newKey, Path.of(vaultPath.getVaultPath()));
+                log.info("[SET-PWD] session state before: unlocked={}, withKey={}, noPwd={}",
+                        vaultSession.isUnlocked(), wasWithKey, wasNoPwd);
+
+                byte[] oldKeyOrNull = vaultSession.getMasterKeyIfPresent()
+                        .map(k -> k.getEncoded())
+                        .orElse(null);
+
+                byte[] newKey = derivationService.deriveAuthHash(pwd);
+                log.info("[SET-PWD] derive newKey ok, oldKeyPresent={}, root='{}'",
+                        oldKeyOrNull != null, vaultPath.getVaultPath());
+
+                cryptoFileService.reEncryptFiles(oldKeyOrNull, newKey, Path.of(vaultPath.getVaultPath()));
+
+                // Переводим сессию в режим с паролем:
                 vaultSession.lock();
                 vaultSession.unlock(pwd);
+                log.info("[SET-PWD] session state after: unlocked={}, withKey={}, noPwd={}",
+                        vaultSession.isUnlocked(), vaultSession.isProtectionEnabled(), vaultSession.isOpendWithNoPassword());
             }
             catch (DerivationException e) {
-
+                log.info("[SET-PWD] derivation failed: {}", e.toString());
             }
-            catch(Exception e) {
-                log.info(e.getMessage());
+            catch (Exception e) {
+                log.info("[SET-PWD] unexpected error: {}", e.toString());
             }
         }, 
         () -> { // сброс пароля. Все расшифровать. Все файлы с .enc перейдут в .dec
             try {
-                byte[] oldKey = vaultSession.getMasterKeyIfPresent().get().getEncoded();
-                cryptoFileService.decryptFiles(oldKey, Path.of(vaultPath.getVaultPath()));
+                final boolean wasNoPwd = vaultSession.isOpendWithNoPassword();
+                final boolean wasWithKey = vaultSession.isProtectionEnabled();
+                log.info("[RESET-PWD] session state before: unlocked={}, withKey={}, noPwd={}",
+                        vaultSession.isUnlocked(), wasWithKey, wasNoPwd);
+
+                byte[] oldKey = vaultSession.getMasterKeyIfPresent()
+                        .map(k -> k.getEncoded())
+                        .orElse(null);
+
+                if (oldKey == null) {
+                    log.info("[RESET-PWD] no key present -> nothing to decrypt");
+                } else {
+                    cryptoFileService.decryptFiles(oldKey, Path.of(vaultPath.getVaultPath()));
+                }
+
                 vaultSession.lock();
                 vaultSession.openWithoutPassword();
+                log.info("[RESET-PWD] session state after: unlocked={}, withKey={}, noPwd={}",
+                        vaultSession.isUnlocked(), vaultSession.isProtectionEnabled(), vaultSession.isOpendWithNoPassword());
             }
-            catch(Exception e) {
-                log.info(e.getMessage());
+            catch (Exception e) {
+                log.info("[RESET-PWD] unexpected error: {}", e.toString());
             }
         });
     }

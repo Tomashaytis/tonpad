@@ -126,14 +126,15 @@ public class QuickStartDialogController extends AbstractController {
         });
     }
 
-    private void openRecentSelected() { // недавние волты
+    private void openRecentSelected() {
         String path = recentVaultsListView.getSelectionModel().getSelectedItem();
-        if(path == null || path.isBlank()) return; 
+        if (path == null || path.isBlank()) return;
         File dir = new File(path);
-        if(!dir.exists() || !dir.isDirectory()) {
-            if(confirmToRemoveBrokenRecent(path)) recentVaults.remove(path);
+        if (!dir.exists() || !dir.isDirectory()) {
+            if (confirmToRemoveBrokenRecent(path)) recentVaults.remove(path);
             return;
         }
+        vaultSession.lock();
 
         vaultService.checkVaultInitialization(Path.of(path));
         vaultPath.setVaultPath(path);
@@ -147,8 +148,7 @@ public class QuickStartDialogController extends AbstractController {
                 try {
                     vaultSession.unlock(pwd);
                     confirm.set(true);
-                }
-                catch(DerivationException e) {
+                } catch (DerivationException e) {
                     vaultSession.lock();
                     log.info(e.getMessage());
                     confirm.set(false);
@@ -158,14 +158,18 @@ public class QuickStartDialogController extends AbstractController {
                 vaultSession.openWithoutPassword();
                 confirm.set(true);
             },
-            () -> {});
-        if(!confirm.get()) return;
-        if(createVaultHandler != null) {
+            () -> {} // cancel
+        );
+
+        if (!confirm.get()) return;
+
+        if (createVaultHandler != null) {
             recentVaultService.setFirstRecent(recentVaults, path);
             createVaultHandler.accept(path);
             hide();
         }
     }
+
 
     private void setupEventHandlers() {
         closeDialogButton.setOnAction(e -> stage.close());
@@ -254,18 +258,16 @@ public class QuickStartDialogController extends AbstractController {
         return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
     }
 
-    private void selectFolder() { // открыть папку как волт
+    private void selectFolder() {
         DirectoryChooser directoryChooser = new DirectoryChooser();
         directoryChooser.setTitle("Select Vault Directory");
 
         File selectedDirectory = directoryChooser.showDialog(stage);
-        if(selectedDirectory == null) {
-            return;
-        }
+        if (selectedDirectory == null) return;
+        vaultSession.lock();
 
         String path = selectedDirectory.getAbsolutePath();
         vaultService.checkVaultInitialization(Path.of(path));
-
         vaultPath.setVaultPath(path);
         recentVaultService.setFirstRecent(recentVaults, path);
 
@@ -277,8 +279,7 @@ public class QuickStartDialogController extends AbstractController {
                 try {
                     vaultSession.unlock(pwd);
                     confirm.set(true);
-                }
-                catch(DerivationException e) {
+                } catch (DerivationException e) {
                     vaultSession.lock();
                     log.info(e.getMessage());
                     confirm.set(false);
@@ -288,14 +289,17 @@ public class QuickStartDialogController extends AbstractController {
                 vaultSession.openWithoutPassword();
                 confirm.set(true);
             },
-            () -> {});
-        if(createVaultHandler != null) {
-            System.out.println(vaultPath.getVaultPath());
+            () -> {} // cancel
+        );
+
+        if (!confirm.get()) return;
+
+        if (createVaultHandler != null) {
             createVaultHandler.accept(vaultPath.getVaultPath());
             hide();
         }
-//        String vaultPath = selectedDirectory.getAbsolutePath();
     }
+
 
     private void ensureEmptyDirectory(File directory) {
         if (!directory.exists()) {

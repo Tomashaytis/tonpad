@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DerivationServiceImpl implements DerivationService {
     private static final String KDF = "PBKDF2WithHmacSHA256";
-    private static final String salt = "40e0bbd7ba19094abf81cc4b320fba1f";
+    private static final byte[] SALT = hex("40e0bbd7ba19094abf81cc4b320fba1f");
     private static final int iterations = 500_000;
     private static final int KEY_LENGTH_BITS = 256;
     private static final Random rnd = new SecureRandom();
@@ -50,10 +50,16 @@ public class DerivationServiceImpl implements DerivationService {
 
     @Override
     public byte[] getSalt() {
-        char[] chars = salt.toCharArray();
-        byte[] result = new byte[chars.length]; 
-        for(int i = 0; i < chars.length; i++) result[i] = (byte)chars[i];
-        return result;
+        return SALT.clone();
+    }
+
+    private static byte[] hex(String text) {
+        int len = text.length();
+        byte[] output = new byte[len/2];
+        for(int i = 0; i < len; i += 2) {
+            output[i/2] = (byte) Integer.parseInt(text.substring(i, i + 2), 16);
+        }
+        return output;
     }
 
     // чтоб по времени нельзя было понять, где примерно различаются массивы
