@@ -3,6 +3,8 @@ package org.example.tonpad;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import lombok.RequiredArgsConstructor;
+import org.example.tonpad.core.exceptions.TonpadBaseException;
+import org.example.tonpad.core.exceptions.handler.GlobalExceptionHandler;
 import org.example.tonpad.ui.controllers.FileTreeController;
 import org.example.tonpad.ui.controllers.MainController;
 import org.example.tonpad.ui.controllers.QuickStartDialogController;
@@ -20,6 +22,9 @@ import org.springframework.context.ApplicationContext;
 @SpringBootApplication
 @EnableConfigurationProperties({TonpadConfig.class})
 public class TonpadApplication extends Application {
+
+    @Autowired
+    private GlobalExceptionHandler globalExceptionHandler;
 
     @Autowired
     private MainController mainController;
@@ -49,6 +54,12 @@ public class TonpadApplication extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> {
+            if (throwable instanceof TonpadBaseException exception) {
+                globalExceptionHandler.handle(exception);
+            }
+        });
+
         //testFieldController.init(primaryStage);
         quickStartDialogController.init();
         quickStartDialogController.setCreateVaultHandler(selectedPath -> {
