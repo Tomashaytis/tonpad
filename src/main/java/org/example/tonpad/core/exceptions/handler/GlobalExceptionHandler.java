@@ -27,8 +27,8 @@ public class GlobalExceptionHandler implements Thread.UncaughtExceptionHandler {
         }
 
         handlers.sort((h1, h2) -> {
-            Class<?> c1 = h1.getExceptionType();
-            Class<?> c2 = h2.getExceptionType();
+            Class<?> c1 = h1.exceptionType();
+            Class<?> c2 = h2.exceptionType();
 
             if (c1.isAssignableFrom(c2)) {
                 return 1;
@@ -53,9 +53,9 @@ public class GlobalExceptionHandler implements Thread.UncaughtExceptionHandler {
         }
 
         for (HandlerMethod handler : handlers) {
-            if (handler.getExceptionType().isInstance(exception)) {
+            if (handler.exceptionType().isInstance(exception)) {
                 try {
-                    handler.getMethod().invoke(this, exception);
+                    handler.method().invoke(this, exception);
 
                     return;
                 } catch (Exception e) {
