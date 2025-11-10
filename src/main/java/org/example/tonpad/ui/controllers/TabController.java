@@ -10,7 +10,6 @@ import javafx.scene.web.WebView;
 import javafx.util.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
@@ -144,17 +143,33 @@ public class TabController {
         EncryptionService encoder = new EncryptionServiceImpl(key);
 
         editorMap.put(tab, new EditorImpl(webView.getEngine(), false));
-        try {
-            editorMap.get(tab).setNoteContent(encoder.decrypt(noteContent, null));
-        } catch (DecryptionException e) {
+        try
+        {
+            String resNoteContent = encoder.decrypt(noteContent, null);
+            editorMap.get(tab).setNoteContent(resNoteContent);
+            
+            tab.setContent(content);
+            tab.setUserData(webView);
+
+            tabPane.getTabs().add(tabPane.getTabs().size() - 1, tab);
+            tabPane.getSelectionModel().select(tab);
+        }
+        catch(DecryptionException e)
+        {
+            javafx.stage.Window owner = (tabPane != null && tabPane.getScene() != null) ? tabPane.getScene().getWindow() : null;
+
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                    javafx.scene.control.Alert.AlertType.ERROR,
+                    "Заметка зашифрована другим паролем",
+                    javafx.scene.control.ButtonType.OK
+            );
+            if (owner != null) alert.initOwner(owner);
+            alert.setTitle("Ошибка");
+            alert.setHeaderText(null);
+            alert.showAndWait();
             e.printStackTrace();
         }
 
-        tab.setContent(content);
-        tab.setUserData(webView);
-
-        tabPane.getTabs().add(tabPane.getTabs().size() - 1, tab);
-        tabPane.getSelectionModel().select(tab);
     }
 
     private void replaceTabContent(Tab tab, String title, String noteContent) {
