@@ -10,6 +10,7 @@ import javafx.scene.web.WebView;
 import javafx.util.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TabController {
@@ -52,9 +54,9 @@ public class TabController {
         try {
             Path filePath = Path.of(path);
 
-            EncryptionService encoder = new EncryptionServiceImpl();
             if(vaultSession.isOpendWithNoPassword())
             {
+                EncryptionService encoder = new EncryptionServiceImpl();
                 if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
                     String noteContent = Files.readString(filePath);
 
@@ -64,30 +66,27 @@ public class TabController {
                 }
                 else
                 {
-                    javafx.stage.Window owner = (tabPane != null && tabPane.getScene() != null) ? tabPane.getScene().getWindow() : null;
-
-                    javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                            javafx.scene.control.Alert.AlertType.ERROR,
-                            "Пошел нахер отсюда, это не для тебя сделано, и не для таких как ты. Не ходи, не засирай заметки, никому ты тут не нужен, тебя не звали сюда. Тебе тут не рады. Уйди отсюда и больше никогда не приходи.",
-                            javafx.scene.control.ButtonType.OK
-                    );
-                    if (owner != null) alert.initOwner(owner);
-                    alert.setTitle("Ошибка");
-                    alert.setHeaderText(null);
-
-                    ((javafx.scene.control.Label) alert.getDialogPane().lookup(".content.label")).setWrapText(true);
-                    alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-
-                    alert.showAndWait();
+                    showAlert();
                 }
             }
             else
             {
-                String noteContent = Files.readString(filePath);
+                try
+                {
+                    byte[] key = vaultSession.getMasterKeyIfPresent().map(k -> k.getEncoded()).orElse(null);
+                    EncryptionService encoder = new EncryptionServiceImpl(key);
+                    String resNoteContent = encoder.decrypt(Files.readString(filePath), null);
 
-                Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-                pathMap.put(currentTab, filePath);
-                replaceTabContent(currentTab, getTabName(filePath), noteContent);
+                    Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+                    pathMap.put(currentTab, filePath);
+                    replaceTabContent(currentTab, getTabName(filePath), resNoteContent);
+                }
+                catch(DecryptionException e)
+                {
+                    showAlert();
+                    e.printStackTrace();
+                }
+                
             }
         }    
         catch (Exception e) {
@@ -140,7 +139,7 @@ public class TabController {
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
 
-        initTab(newTab, noteContent, content, webView, true);
+        initTab(newTab, noteContent, content, webView);
 
         newTab.setOnCloseRequest(event -> tabClose(newTab));
     }
@@ -151,7 +150,7 @@ public class TabController {
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
         pathMap.put(newTab, path);
-        initTab(newTab, noteContent, content, webView, true);
+        initTab(newTab, noteContent, content, webView);
 
         PauseTransition debounce = new PauseTransition(Duration.millis(1500));
         debounce.setOnFinished(event -> saveToFile(true));
@@ -163,63 +162,19 @@ public class TabController {
         content.addEventFilter(KeyEvent.KEY_TYPED, event -> debounce.playFromStart());
     }
 
-    private void initTab(Tab tab, String noteContent, AnchorPane content, WebView webView, boolean isSpetialTab) {
+    private void initTab(Tab tab, String noteContent, AnchorPane content, WebView webView) {
         AnchorPane.setTopAnchor(webView, 0.0);
         AnchorPane.setBottomAnchor(webView, 0.0);
         AnchorPane.setLeftAnchor(webView, 0.0);
         AnchorPane.setRightAnchor(webView, 0.0);
         content.getChildren().add(webView);
-
-        byte[] key = vaultSession.getMasterKeyIfPresent()
-                .map(k -> k.getEncoded())
-                .orElse(null);
-
         editorMap.put(tab, new EditorImpl(webView.getEngine(), false));
-        if (vaultSession.isOpendWithNoPassword())
-        {
-            editorMap.get(tab).setNoteContent(noteContent);
-        }
-        else
-        {
-            try
-            {
-                EncryptionService encoder = new EncryptionServiceImpl(key);
-                String resNoteContent = encoder.decrypt(noteContent, null);
-                editorMap.get(tab).setNoteContent(resNoteContent);
-                tab.setContent(content);
-                tab.setUserData(webView);
-
-                tabPane.getTabs().add(tabPane.getTabs().size() - 1, tab);
-                tabPane.getSelectionModel().select(tab);
-
-            }
-            catch(DecryptionException e)
-            {
-                javafx.stage.Window owner = (tabPane != null && tabPane.getScene() != null) ? tabPane.getScene().getWindow() : null;
-
-                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                        javafx.scene.control.Alert.AlertType.ERROR,
-                        "Пошел нахер отсюда, это не для тебя сделано, и не для таких как ты. Не ходи, не засирай заметки, никому ты тут не нужен, тебя не звали сюда. Тебе тут не рады. Уйди отсюда и больше никогда не приходи.",
-                        javafx.scene.control.ButtonType.OK
-                );
-                if (owner != null) alert.initOwner(owner);
-                alert.setTitle("Ошибка");
-                alert.setHeaderText(null);
-
-                ((javafx.scene.control.Label) alert.getDialogPane().lookup(".content.label")).setWrapText(true);
-                alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-
-                alert.showAndWait();
-                e.printStackTrace();
-            }
-        }
+        editorMap.get(tab).setNoteContent(noteContent);
         tab.setContent(content);
         tab.setUserData(webView);
 
         tabPane.getTabs().add(tabPane.getTabs().size() - 1, tab);
         tabPane.getSelectionModel().select(tab);
-        
-
     }
 
     private void replaceTabContent(Tab tab, String title, String noteContent) {
@@ -227,7 +182,7 @@ public class TabController {
 
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
-        initTab(tab, noteContent, content, webView, false);
+        initTab(tab, noteContent, content, webView);
         PauseTransition debounce = new PauseTransition(Duration.millis(1500));
         debounce.setOnFinished(event -> saveToFile(false));
 
@@ -243,6 +198,21 @@ public class TabController {
         int dotIndex = fileName.lastIndexOf('.');
         return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
     }
+
+    private void showAlert()
+    {
+        javafx.stage.Window owner = (tabPane != null && tabPane.getScene() != null) ? tabPane.getScene().getWindow() : null;
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.ERROR,
+                "Пошел нахер отсюда, это не для тебя сделано, и не для таких как ты. Не ходи, не засирай заметки, никому ты тут не нужен, тебя не звали сюда. Тебе тут не рады. Уйди отсюда и больше никогда не приходи.",
+                javafx.scene.control.ButtonType.OK);
+        if (owner != null) alert.initOwner(owner);
+        alert.setTitle("Ошибка");
+        alert.setHeaderText(null);
+        ((javafx.scene.control.Label) alert.getDialogPane().lookup(".content.label")).setWrapText(true);
+        alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+        alert.showAndWait();
+}
 
     private void tabClose(Tab tab) {
     }
