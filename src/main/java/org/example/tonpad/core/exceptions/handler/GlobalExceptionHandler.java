@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler implements Thread.UncaughtExceptionHandler {
 
     private final List<HandlerMethod> handlers = new ArrayList<>();
 
@@ -42,7 +42,12 @@ public class GlobalExceptionHandler {
         });
     }
 
-    public void handle(Throwable throwable) {
+    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+        handle(e);
+    }
+
+    private void handle(Throwable throwable) {
         if (!(throwable instanceof TonpadBaseException exception)) {
             return;
         }
