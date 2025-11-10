@@ -43,11 +43,7 @@ public class GlobalExceptionHandler implements Thread.UncaughtExceptionHandler {
     }
 
     @Override
-    public void uncaughtException(Thread t, Throwable e) {
-        handle(e);
-    }
-
-    private void handle(Throwable throwable) {
+    public void uncaughtException(Thread thread, Throwable throwable) {
         if (!(throwable instanceof TonpadBaseException exception)) {
             return;
         }
