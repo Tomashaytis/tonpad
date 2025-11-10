@@ -8,10 +8,13 @@ import org.example.tonpad.core.models.SortOptions;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javafx.scene.control.TreeItem;
 import javafx.scene.input.Clipboard;
+import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,11 +48,17 @@ public class FileSystemServiceImpl implements FileSystemService {
 
     private final static String FILE_WRITE_ERROR = "Ошибка при записи в файл";
 
-    private final static String FILE_SEARCH_ERROR = "Ошибка при записи в файл";
+    private final static String FILE_SEARCH_ERROR = "Ошибка при поиске файла";
+
+    private final static String FILE_COPY_ERROR = "Ошибка при копировании файла";
 
     private final static String RENAME_ERROR = "При переименовании произошла ошибка";
 
     private final static String DELETE_ERROR = "При удалении произошла ошибка";
+
+    private final static String FILE_OPENING_IN_EXPLORER_ERROR = "Ошибка при открытии файла в проводнике";
+
+    private static final Logger log = LoggerFactory.getLogger(FileSystemServiceImpl.class);
 
     private final RecursiveDeleteFileVisitor visitor = new RecursiveDeleteFileVisitor();
 
@@ -268,48 +277,32 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public void pasteFile(Path targetDir)
-    {            
-        try
-        {
-            for (Path src: buffer.getCopyBuffer())
-            {
-                if (Files.isDirectory(src) && isAncestor(src, targetDir)) {
-                    continue;
-                }
-                Path dstBase = targetDir.resolve(src.getFileName());
-                Path dst = uniqueName(targetDir, src.getFileName().toString());
-                if (buffer.isCutMode()) {
-                    if (Files.exists(dstBase)) {
-                        throw new CustomIOException(
-                                "Unable to move '" + src + "' because target '" + dstBase + "' already exists.");
-                    }
-                    try {
-                        Files.createDirectories(dstBase.getParent());
-                        Files.move(src, dstBase);
-                    } catch (IOException moveErr) {
-                        try {
-                            copyRecursive(src, dstBase,false);
-                            delete(src);
-                        } catch (Exception copyErr) {
-                            throw new CustomIOException(
-                                    "Move failed: " + src + " -> " + dstBase + " (" + copyErr.getMessage() + ")",
-                                    copyErr);
-                        }
-                    }
-                } else {
-                    copyRecursive(src, dst, false);
-                }
-            }
+    {
 
-            if (buffer.isCutMode()) {
-                buffer.setCopyBuffer(List.of());
-                buffer.setCutMode(false);
-            }
-            
-        }
-        catch (Exception ex) 
+        for(Path filePath: buffer.getCopyBuffer())
         {
-            log.error(ex.toString());
+            if (!buffer.isCutMode())
+            {
+                Path dst = uniqueDest(targetDir, filePath);
+                try {
+                    FileSystemUtils.copyRecursively(filePath, dst);
+                } catch (IOException e) {
+                    log.warn(FILE_COPY_ERROR);
+                    throw new CustomIOException(FILE_COPY_ERROR, e);
+                }
+            }
+            else
+            {
+                try {
+                    Path dst = targetDir.resolve(filePath.getFileName());
+
+                    if (!Files.exists(dst))
+                        Files.move(filePath, dst);
+                } catch (IOException e) {
+                    log.warn(FILE_COPY_ERROR);
+                    throw new CustomIOException(FILE_COPY_ERROR, e);
+                }
+            }
         }
     }
     
@@ -333,11 +326,10 @@ public class FileSystemServiceImpl implements FileSystemService {
         copyAbsFilePath(path.toString());
     }
     
-    public void copyRelFilePath(Path absPath)
+    public void copyRelFilePath(Path path)
     {
-        Path relPath = Path.of(vaultPath.getVaultPath()).relativize(absPath);
         var cc = new javafx.scene.input.ClipboardContent();
-        cc.putString(relPath.toString());
+        cc.putString(path.toString());
         Clipboard.getSystemClipboard().setContent(cc);
     }
 
@@ -354,15 +346,15 @@ public class FileSystemServiceImpl implements FileSystemService {
         try {
             if (os.contains("win")) {
                 if (file.isFile()) {
-                    new ProcessBuilder("explorer.exe", "/select,", file.getAbsolutePath().toString()).start();
+                    new ProcessBuilder("explorer.exe", "/select,", file.getAbsolutePath()).start();
                 } else {
-                    new ProcessBuilder("explorer.exe", file.getAbsolutePath().toString()).start();
+                    new ProcessBuilder("explorer.exe", file.getAbsolutePath()).start();
                 }
             } else if (os.contains("mac")) {
                 if (file.isFile()) {
-                    new ProcessBuilder("open", "-R", file.getAbsolutePath().toString()).start();
+                    new ProcessBuilder("open", "-R", file.getAbsolutePath()).start();
                 } else {
-                    new ProcessBuilder("open", file.getAbsolutePath().toString()).start();
+                    new ProcessBuilder("open", file.getAbsolutePath()).start();
                 }
             } else {
                 File dir = file.isDirectory() ? file : file.getParentFile();
@@ -375,10 +367,8 @@ public class FileSystemServiceImpl implements FileSystemService {
                 }
             }
         } catch (Exception ex) {
-            try {
-                java.awt.Desktop.getDesktop().open(file.isDirectory() ? file : file.getParentFile());
-            } catch (Exception ignored) { }
-            log.error("Failed to open in explorer: {}", path, ex);
+            log.warn(FILE_OPENING_IN_EXPLORER_ERROR);
+            throw new CustomIOException(FILE_OPENING_IN_EXPLORER_ERROR, ex);
         }
     }
 
@@ -387,56 +377,33 @@ public class FileSystemServiceImpl implements FileSystemService {
         showFileInExplorer(Path.of(path));
     }
 
-    public void renameFile(TreeItem<String> node)
-    {
+    private static Path uniqueDest(Path targetDir, Path src) {
+        String name = src.getFileName().toString();
 
-    }
-
-    private void copyRecursive(Path src, Path dst, boolean overwrite) throws Exception {
-        if (Files.isDirectory(src)) {
-            Files.createDirectories(dst);
-            try (var stream = Files.list(src)) {
-                for (Path c : stream.toList()) {
-                    copyRecursive(c, dst.resolve(c.getFileName()), overwrite);
-                }
+        String base;
+        String ext = "";
+        if (!Files.isDirectory(src)) {
+            int dot = name.lastIndexOf('.');
+            if (dot > 0 && dot < name.length() - 1) {
+                base = name.substring(0, dot);
+                ext  = name.substring(dot);
+            } else {
+                base = name;
             }
         } else {
-            Files.createDirectories(dst.getParent());
-            if (overwrite) {
-                Files.copy(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
-            } else {
-                Files.copy(src, dst, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
-            }
-        }
-    }
-
-    private boolean isAncestor(Path ancestor, Path child) {
-        ancestor = ancestor.toAbsolutePath().normalize();
-        child    = child.toAbsolutePath().normalize();
-        return child.startsWith(ancestor);
-    }
-
-    private Path uniqueName(Path dir, String baseName) {
-        Path candidate = dir.resolve(baseName);
-
-        if (!Files.exists(candidate)) return candidate;
-
-        String name = baseName;
-        String ext = "";
-        int dot = baseName.lastIndexOf('.');
-        if (dot > 0 && dot < baseName.length() - 1) {
-            name = baseName.substring(0, dot);
-            ext  = baseName.substring(dot);
+            base = name;
         }
 
-        candidate = dir.resolve(name + " copy" + ext);
+        Path candidate = targetDir.resolve(name);
         if (!Files.exists(candidate)) return candidate;
 
-        int k = 2;
+        int n = 1;
         while (true) {
-            candidate = dir.resolve(name + " copy " + k + ext);
+            String suffix = (n == 1) ? " copy" : " copy " + n;
+            String newName = base + suffix + ext;
+            candidate = targetDir.resolve(newName);
             if (!Files.exists(candidate)) return candidate;
-            k++;
+            n++;
         }
     }
 
