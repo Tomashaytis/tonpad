@@ -186,10 +186,12 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public Path rename(Path oldPath, Path newPath) {
-        if (!oldPath.toFile().renameTo(newPath.toFile())) {
+        if (checkAccess(oldPath)) {
+            if (!oldPath.toFile().renameTo(newPath.toFile())) {
             throw new CustomIOException(RENAME_ERROR);
+            }
         }
-
+        
         return newPath;
     }
 
@@ -198,11 +200,13 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public void delete(Path path) {
-        try {
-            Files.walkFileTree(path, visitor);
-        } catch (IOException e) {
-            log.warn(DELETE_ERROR, e);
-            throw new CustomIOException(DELETE_ERROR, e);
+        if (checkAccess(path)) {
+            try {
+                Files.walkFileTree(path, visitor);
+            } catch (IOException e) {
+                log.warn(DELETE_ERROR, e);
+                throw new CustomIOException(DELETE_ERROR, e);
+            }
         }
     }
 
