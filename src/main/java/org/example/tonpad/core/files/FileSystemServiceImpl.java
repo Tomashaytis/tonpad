@@ -446,7 +446,11 @@ public class FileSystemServiceImpl implements FileSystemService {
     {
         if (vaultSession.isOpendWithNoPassword())
         {
-            return true;
+            EncryptionService encoder = new EncryptionServiceImpl();
+            if (encoder.isOpeningWithNoPasswordAllowed(path)) {
+                return true;
+            }
+            return false;
         }
         else
         {

@@ -1,6 +1,9 @@
 package org.example.tonpad.core.service.crypto.Impl;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
@@ -33,6 +36,11 @@ public class EncryptionServiceImpl implements EncryptionService {
     private static final byte[] HEADER_BYTES = HEADER.getBytes(StandardCharsets.US_ASCII);
 
     private final SecretKey key;
+
+    public EncryptionServiceImpl()
+    {
+        this.key = null;
+    }
 
     public EncryptionServiceImpl(@NonNull byte[] key) {
         if (key.length != 16 && key.length != 24 && key.length != 32) throw new IllegalArgumentException(KEY_LENGTH_ERROR);
@@ -99,6 +107,21 @@ public class EncryptionServiceImpl implements EncryptionService {
             return cipher.doFinal(cipherText);
         } catch (Exception e) {
             throw new DecryptionException(e);
+        }
+    }
+
+    @Override
+    public boolean isOpeningWithNoPasswordAllowed(Path path)
+    {
+        try {
+            if ((Files.readString(path).startsWith(HEADER)))
+            {
+                return false;
+            }
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
