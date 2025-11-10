@@ -1,12 +1,15 @@
 package org.example.tonpad.core.exceptions.handler;
 
+import lombok.Getter;
+
 import java.lang.reflect.Method;
 
+@Getter
 public class HandlerMethod {
 
-    final Class<? extends Exception> exceptionType;
+    private final Class<? extends Exception> exceptionType;
 
-    final Method method;
+    private final Method method;
 
     HandlerMethod(Class<? extends Exception> exceptionType, Method method) {
         this.exceptionType = exceptionType;
