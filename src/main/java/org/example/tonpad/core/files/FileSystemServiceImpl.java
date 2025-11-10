@@ -4,6 +4,10 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.exceptions.CustomIOException;
+import org.example.tonpad.core.service.crypto.EncryptionService;
+import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
+import org.example.tonpad.core.service.crypto.exception.DecryptionException;
+import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.sort.SortOptions;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.jetbrains.annotations.NotNull;
@@ -56,6 +60,8 @@ public class FileSystemServiceImpl implements FileSystemService {
     private final Buffer buffer;
 
     private final VaultPath vaultPath;
+
+    private final VaultSession vaultSession;
 
     public FileTree getFileTree(String path) {
         return getFileTree(Path.of(path));
@@ -230,8 +236,10 @@ public class FileSystemServiceImpl implements FileSystemService {
 
     public void copyFile(Path path)
     {
-        buffer.setCopyBuffer(List.of(path));
-        buffer.setCutMode(false);
+        if (checkAccess(path)) {
+            buffer.setCopyBuffer(List.of(path));
+            buffer.setCutMode(false);
+        }
     }
     public void copyFile(String path)
     {
@@ -240,8 +248,10 @@ public class FileSystemServiceImpl implements FileSystemService {
 
     public void cutFile(Path path)
     {
-        buffer.setCopyBuffer(List.of(path));
-        buffer.setCutMode(true);
+        if (checkAccess(path)) {
+            buffer.setCopyBuffer(List.of(path));
+            buffer.setCutMode(true);
+        }
     }
     public void cutFile(String path)
     {
@@ -393,6 +403,54 @@ public class FileSystemServiceImpl implements FileSystemService {
             } else {
                 Files.copy(src, dst, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
             }
+        }
+    }
+
+    private boolean checkAccess(Path path)
+    {
+        if (vaultSession.isOpendWithNoPassword())
+        {
+            return true;
+        }
+        else
+        {
+            try
+            {
+                String noteContent = Files.readString(path);
+
+                byte[] key = vaultSession.getMasterKeyIfPresent()
+                .map(k -> k.getEncoded())
+                .orElse(null);
+                EncryptionService encoder = new EncryptionServiceImpl(key);
+                String resNoteContent = encoder.decrypt(noteContent, null);
+                return true;
+            }
+            catch(IOException e)
+            {
+                log.info("reading note exeption");
+                e.printStackTrace();
+            }
+            catch(DecryptionException e)
+            {
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                        javafx.scene.control.Alert.AlertType.ERROR,
+                        "Пошел нахер отсюда, это не для тебя сделано, и не для таких как ты. Не ходи, не засирай заметки, никому ты тут не нужен, тебя не звали сюда. Тебе тут не рады. Уйди отсюда и больше никогда не приходи.",
+                        javafx.scene.control.ButtonType.OK
+                );
+                var owner = javafx.stage.Window.getWindows().stream()
+                .filter(javafx.stage.Window::isShowing)
+                .findFirst().orElse(null);
+                if (owner != null) alert.initOwner(owner);
+                alert.setTitle("Ошибка");
+                alert.setHeaderText(null);
+
+                ((javafx.scene.control.Label) alert.getDialogPane().lookup(".content.label")).setWrapText(true);
+                alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+
+                alert.showAndWait();
+                e.printStackTrace();
+            }
+            return false;
         }
     }
 

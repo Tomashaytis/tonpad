@@ -140,35 +140,46 @@ public class TabController {
         byte[] key = vaultSession.getMasterKeyIfPresent()
                 .map(k -> k.getEncoded())
                 .orElse(null);
-        EncryptionService encoder = new EncryptionServiceImpl(key);
 
         editorMap.put(tab, new EditorImpl(webView.getEngine(), false));
-        try
+        if (vaultSession.isOpendWithNoPassword())
         {
-            String resNoteContent = encoder.decrypt(noteContent, null);
-            editorMap.get(tab).setNoteContent(resNoteContent);
-            
-            tab.setContent(content);
-            tab.setUserData(webView);
-
-            tabPane.getTabs().add(tabPane.getTabs().size() - 1, tab);
-            tabPane.getSelectionModel().select(tab);
+            editorMap.get(tab).setNoteContent(noteContent);
         }
-        catch(DecryptionException e)
+        else
         {
-            javafx.stage.Window owner = (tabPane != null && tabPane.getScene() != null) ? tabPane.getScene().getWindow() : null;
+            try
+            {
+                EncryptionService encoder = new EncryptionServiceImpl(key);
+                String resNoteContent = encoder.decrypt(noteContent, null);
+                editorMap.get(tab).setNoteContent(resNoteContent);
+            }
+            catch(DecryptionException e)
+            {
+                javafx.stage.Window owner = (tabPane != null && tabPane.getScene() != null) ? tabPane.getScene().getWindow() : null;
 
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                    javafx.scene.control.Alert.AlertType.ERROR,
-                    "Заметка зашифрована другим паролем",
-                    javafx.scene.control.ButtonType.OK
-            );
-            if (owner != null) alert.initOwner(owner);
-            alert.setTitle("Ошибка");
-            alert.setHeaderText(null);
-            alert.showAndWait();
-            e.printStackTrace();
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                        javafx.scene.control.Alert.AlertType.ERROR,
+                        "Пошел нахер отсюда, это не для тебя сделано, и не для таких как ты. Не ходи, не засирай заметки, никому ты тут не нужен, тебя не звали сюда. Тебе тут не рады. Уйди отсюда и больше никогда не приходи.",
+                        javafx.scene.control.ButtonType.OK
+                );
+                if (owner != null) alert.initOwner(owner);
+                alert.setTitle("Ошибка");
+                alert.setHeaderText(null);
+
+                ((javafx.scene.control.Label) alert.getDialogPane().lookup(".content.label")).setWrapText(true);
+                alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+
+                alert.showAndWait();
+                e.printStackTrace();
+            }
         }
+        tab.setContent(content);
+        tab.setUserData(webView);
+
+        tabPane.getTabs().add(tabPane.getTabs().size() - 1, tab);
+        tabPane.getSelectionModel().select(tab);
+
 
     }
 
@@ -202,7 +213,7 @@ public class TabController {
         byte[] key = vaultSession.getMasterKeyIfPresent()
                         .map(k -> k.getEncoded())
                         .orElse(null);
-        EncryptionService encoder = new EncryptionServiceImpl(key);
+        
         new Thread(() -> {
             try {
                 Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
@@ -211,7 +222,10 @@ public class TabController {
                 if (vaultSession.isOpendWithNoPassword())
                     fileService.writeFile(path, noteContent);
                 else
+                {
+                    EncryptionService encoder = new EncryptionServiceImpl(key);
                     fileService.writeFile(path, encoder.encrypt(noteContent, null));
+                }
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
