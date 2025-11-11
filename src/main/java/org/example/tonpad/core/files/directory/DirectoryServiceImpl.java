@@ -19,6 +19,10 @@ public class DirectoryServiceImpl implements DirectoryService {
         this.fileSystem = fileSystem;
     }
 
+    public boolean exists(Path path) {
+        return fileSystem.exists(path);
+    }
+
     public FileTree getFileTree(String path) {
         return fileSystem.getFileTree(path);
     }
