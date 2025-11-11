@@ -1,25 +1,75 @@
 import { Plugin } from "prosemirror-state";
 import { NodeSelector } from "../utils/node-selector.js";
 import { NodeConverter } from "../utils/node-converter.js";
+import { NodeInputter } from "../utils/node-inputter.js";
 import { NodeReconstructor } from "../utils/node-reconstructor.js";
 
 let sourceNodePos = null;
 
-export function copyPlugin() {
+export function clipboardPlugin() {
     return new Plugin({
         props: {
             handleDOMEvents: {
                 copy(view, e) {
-                    return NodeSelector.copySelectionToClipboard(view, e);
+                    const copied = NodeSelector.copySelectionToClipboard(view, e);
+                    if (window.editorBridge && window.editorBridge.setClipboardText) {
+                        window.editorBridge.setClipboardText(copied);
+                    }
+                    return true;
                 },
                 cut(view, e) {
                     const copied = NodeSelector.copySelectionToClipboard(view, e);
                     if (!copied) return false;
 
+                    if (window.editorBridge && window.editorBridge.setClipboardText) {
+                        window.editorBridge.setClipboardText(copied);
+                    }
+
                     const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
                     if (deleteTr) {
                         view.dispatch(deleteTr);
                         return true;
+                    }
+                    return false;
+                },
+                paste(view, e) {
+                    e.preventDefault();
+
+                    let clipboardText = "";
+
+                    if (e.clipboardData && e.clipboardData.getData) {
+                        clipboardText = e.clipboardData.getData('text/plain');
+                    }
+
+                    if (!clipboardText && window.editorBridge && window.editorBridge.getClipboardText) {
+                        clipboardText = window.editorBridge.getClipboardText();
+                    }
+
+                    if (!clipboardText) return false;
+
+                    const { state, dispatch } = view;
+                    const { selection } = state;
+
+                    if (!selection.empty) {
+                        const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
+                        if (deleteTr) {
+                            const newState = state.apply(deleteTr);
+
+                            if (clipboardText.length > 1) {
+                                return NodeInputter.handlePasteInNode(view, newState, dispatch, clipboardText, deleteTr);
+                            }
+                            if (clipboardText.length === 1) {
+                                return NodeInputter.handleInputInNode(newState, dispatch, clipboardText, deleteTr);
+                            }
+                            return false;
+                        }
+                    }
+
+                    if (clipboardText.length > 1) {
+                        return NodeInputter.handlePasteInNode(view, state, dispatch, clipboardText);
+                    }
+                    if (clipboardText.length === 1) {
+                        return NodeInputter.handleInputInNode(state, dispatch, clipboardText);
                     }
                     return false;
                 },
@@ -70,17 +120,17 @@ function cleanupSpecMarks(view) {
 function cleanupSourceNode(view, nodePos) {
     const { state, dispatch } = view;
     const { doc } = state;
-    
+
     const node = doc.nodeAt(nodePos);
     if (!node) return;
-    
+
     let tr = state.tr;
-    
+
     const paragraph = NodeConverter.constructParagraph(node.textContent);
     const reconstructor = new NodeReconstructor();
     const reconstructed = reconstructor.applyBlockRules([paragraph], 0);
-    
+
     tr = tr.replaceWith(nodePos, nodePos + node.nodeSize, reconstructed[0]);
-    
+
     dispatch(tr);
 }

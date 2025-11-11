@@ -14,7 +14,7 @@ public interface Editor {
 
     void insertSnippet(String snippetContent);
 
-    CompletableFuture<SearchResult> find(String text);
+    CompletableFuture<SearchResult> find(String query);
 
     CompletableFuture<SearchResult> findNext();
 

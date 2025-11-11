@@ -14,7 +14,7 @@ import { inputPlugin } from "./plugins/input.js"
 import { disableInsertPlugin } from "./plugins/disable-insert.js"
 import { hideSpecPlugin } from "./plugins/hide-spec.js"
 import { searchPlugin, searchCommands } from "./plugins/search.js"
-import { copyPlugin } from "./plugins/copy.js"
+import { clipboardPlugin } from "./plugins/clipboard.js"
 import jsYAML from 'js-yaml';
 
 export class Editor {
@@ -120,6 +120,7 @@ export class Editor {
     createPlugins() {
         return [
             history(),
+            clipboardPlugin(),
             keymapPlugin(this),
             dropCursor(),
             gapCursor(),
@@ -128,7 +129,6 @@ export class Editor {
             disableInsertPlugin(),
             //hideSpecPlugin(),
             searchPlugin(),
-            copyPlugin(),
         ];
     }
 

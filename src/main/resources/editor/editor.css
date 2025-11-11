@@ -481,14 +481,10 @@ li {
 /* Поиск */
 .search-match {
     background-color: #fff3cd;
-    border: 1px solid #ffeaa7;
-    border-radius: 2px;
     padding: 1px 0;
 }
 
 .search-match.current-match {
     background-color: #ffeb3b;
-    border-color: #fbc02d;
     font-weight: bold;
-    box-shadow: 0 0 0 1px #fbc02d;
 }

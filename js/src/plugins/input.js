@@ -18,35 +18,6 @@ export function inputPlugin() {
                 }
 
                 return NodeInputter.handleInputInNode(state, dispatch, text);
-            },
-            handlePaste: (view, event) => {
-                const { state, dispatch } = view;
-                const { selection } = state;
-
-                const clipboardText = event.clipboardData?.getData('text/plain');
-
-                if (!selection.empty) {
-                    const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
-                    if (deleteTr) {
-                        const newState = state.apply(deleteTr);
-
-                        if (clipboardText.length > 1) {
-                            return NodeInputter.handlePasteInNode(view, newState, dispatch, clipboardText, deleteTr);
-                        }
-                        if (clipboardText.length == 1) {
-                            return NodeInputter.handleInputInNode(newState, dispatch, clipboardText, deleteTr);
-                        }
-                        return false;
-                    }
-                }
-
-                if (clipboardText.length > 1) {
-                    return NodeInputter.handlePasteInNode(view, state, dispatch, clipboardText);
-                }
-                if (clipboardText.length == 1) {
-                    return NodeInputter.handleInputInNode(state, dispatch, clipboardText);
-                }
-                return false;
             }
         }
     });

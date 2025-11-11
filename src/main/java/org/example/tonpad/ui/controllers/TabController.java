@@ -4,6 +4,7 @@ import javafx.animation.PauseTransition;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.web.WebView;
@@ -32,9 +33,9 @@ public class TabController {
     private TabPane tabPane;
 
     @Getter
-    private final Map<Tab, Editor> editorMap = new ConcurrentHashMap<Tab, Editor>();
+    private final Map<Tab, Editor> editorMap = new ConcurrentHashMap<>();
 
-    private final Map<Tab, Path> pathMap = new ConcurrentHashMap<Tab, Path>();
+    private final Map<Tab, Path> pathMap = new ConcurrentHashMap<>();
 
     private final RegularFileService fileService;
 

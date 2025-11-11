@@ -25303,7 +25303,7 @@
               event.dataTransfer.setData('text/markdown', cleanedText);
           }
 
-          return true;
+          return cleanedText;
       }
   }
 
@@ -25514,35 +25514,6 @@
                   }
 
                   return NodeInputter.handleInputInNode(state, dispatch, text);
-              },
-              handlePaste: (view, event) => {
-                  const { state, dispatch } = view;
-                  const { selection } = state;
-
-                  const clipboardText = event.clipboardData?.getData('text/plain');
-
-                  if (!selection.empty) {
-                      const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
-                      if (deleteTr) {
-                          const newState = state.apply(deleteTr);
-
-                          if (clipboardText.length > 1) {
-                              return NodeInputter.handlePasteInNode(view, newState, dispatch, clipboardText, deleteTr);
-                          }
-                          if (clipboardText.length == 1) {
-                              return NodeInputter.handleInputInNode(newState, dispatch, clipboardText, deleteTr);
-                          }
-                          return false;
-                      }
-                  }
-
-                  if (clipboardText.length > 1) {
-                      return NodeInputter.handlePasteInNode(view, state, dispatch, clipboardText);
-                  }
-                  if (clipboardText.length == 1) {
-                      return NodeInputter.handleInputInNode(state, dispatch, clipboardText);
-                  }
-                  return false;
               }
           }
       });
@@ -25795,20 +25766,70 @@
 
   let sourceNodePos = null;
 
-  function copyPlugin() {
+  function clipboardPlugin() {
       return new Plugin({
           props: {
               handleDOMEvents: {
                   copy(view, e) {
-                      return NodeSelector.copySelectionToClipboard(view, e);
+                      const copied = NodeSelector.copySelectionToClipboard(view, e);
+                      if (window.editorBridge && window.editorBridge.setClipboardText) {
+                          window.editorBridge.setClipboardText(copied);
+                      }
+                      return true;
                   },
                   cut(view, e) {
-                      NodeSelector.copySelectionToClipboard(view, e);
+                      const copied = NodeSelector.copySelectionToClipboard(view, e);
+                      if (!copied) return false;
+
+                      if (window.editorBridge && window.editorBridge.setClipboardText) {
+                          window.editorBridge.setClipboardText(copied);
+                      }
 
                       const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
                       if (deleteTr) {
                           view.dispatch(deleteTr);
                           return true;
+                      }
+                      return false;
+                  },
+                  paste(view, e) {
+                      e.preventDefault();
+
+                      let clipboardText = "";
+
+                      if (e.clipboardData && e.clipboardData.getData) {
+                          clipboardText = e.clipboardData.getData('text/plain');
+                      }
+
+                      if (!clipboardText && window.editorBridge && window.editorBridge.getClipboardText) {
+                          clipboardText = window.editorBridge.getClipboardText();
+                      }
+
+                      if (!clipboardText) return false;
+
+                      const { state, dispatch } = view;
+                      const { selection } = state;
+
+                      if (!selection.empty) {
+                          const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
+                          if (deleteTr) {
+                              const newState = state.apply(deleteTr);
+
+                              if (clipboardText.length > 1) {
+                                  return NodeInputter.handlePasteInNode(view, newState, dispatch, clipboardText, deleteTr);
+                              }
+                              if (clipboardText.length === 1) {
+                                  return NodeInputter.handleInputInNode(newState, dispatch, clipboardText, deleteTr);
+                              }
+                              return false;
+                          }
+                      }
+
+                      if (clipboardText.length > 1) {
+                          return NodeInputter.handlePasteInNode(view, state, dispatch, clipboardText);
+                      }
+                      if (clipboardText.length === 1) {
+                          return NodeInputter.handleInputInNode(state, dispatch, clipboardText);
                       }
                       return false;
                   },
@@ -25859,18 +25880,18 @@
   function cleanupSourceNode(view, nodePos) {
       const { state, dispatch } = view;
       const { doc } = state;
-      
+
       const node = doc.nodeAt(nodePos);
       if (!node) return;
-      
+
       let tr = state.tr;
-      
+
       const paragraph = NodeConverter.constructParagraph(node.textContent);
       const reconstructor = new NodeReconstructor();
       const reconstructed = reconstructor.applyBlockRules([paragraph], 0);
-      
+
       tr = tr.replaceWith(nodePos, nodePos + node.nodeSize, reconstructed[0]);
-      
+
       dispatch(tr);
   }
 
@@ -29825,6 +29846,7 @@
       createPlugins() {
           return [
               history(),
+              clipboardPlugin(),
               keymapPlugin(this),
               dropCursor(),
               gapCursor(),
@@ -29833,7 +29855,6 @@
               disableInsertPlugin(),
               //hideSpecPlugin(),
               searchPlugin(),
-              copyPlugin(),
           ];
       }
 
@@ -30669,33 +30690,6 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
       const container = document.getElementById('editor');
       if (container) {
           window.editor = new Editor(container);
-          window.editor.setNoteContent(`---
-author: pavel
-time: 12:15
-message: Hi
----
-
-# Heading 1
-## Heading 2
-
-Quotes:
-> "It's easy!"
-> ProseMirror
-
-Lists:
-    1
-        2
-- item 1
-- item 2
-    - item 3
-    - item 4
-1. one
-2. two
-3. thee
-
-Marks: *em* **strong** ~~strike~~ ==highlight== __underline__ \`code\`
-
-Links: [note] [link](https://example.com) https://example.com my_email@mail.ru #tag`);
       }
   });
 

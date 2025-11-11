@@ -2,7 +2,10 @@ package org.example.tonpad.core.editor.impl;
 
 import javafx.application.Platform;
 import javafx.concurrent.Worker;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.web.WebEngine;
+import netscape.javascript.JSObject;
 import org.example.tonpad.core.editor.Editor;
 import org.example.tonpad.core.editor.dto.SearchResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 public class EditorImpl implements Editor {
 
     private final WebEngine webEngine;
+
     private volatile boolean isLoaded = false;
 
     public EditorImpl(WebEngine webEngine, boolean enableDebugAlerts) {
@@ -25,6 +29,9 @@ public class EditorImpl implements Editor {
         this.webEngine.getLoadWorker().stateProperty().addListener((obs, old, newState) -> {
             if (newState == Worker.State.SUCCEEDED) {
                 isLoaded = true;
+
+                JSObject window = (JSObject) this.webEngine.executeScript("window");
+                window.setMember("editorBridge", this);
             }
         });
 
@@ -42,6 +49,7 @@ public class EditorImpl implements Editor {
                 }
             });
             this.webEngine.setOnError(e -> System.err.println("\u001B[31mJS ERROR: " + e.getMessage() + "\u001B[0m"));
+            executeJs("debugAlerts.enable();");
         }
 
         this.webEngine.load(getEditorHtmlSource().toExternalForm());
@@ -64,9 +72,9 @@ public class EditorImpl implements Editor {
     }
 
     @Override
-    public CompletableFuture<SearchResult> find(String text) {
+    public CompletableFuture<SearchResult> find(String query) {
         String jsCode = String.format("editor.find(%s);",
-                toJsString(text));
+                toJsString(query));
 
         return executeJs(jsCode).thenApply(this::parseSearchResult);
     }
@@ -187,5 +195,19 @@ public class EditorImpl implements Editor {
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse search result", e);
         }
+    }
+
+    public void setClipboardText(String text) {
+        Platform.runLater(() -> {
+            Clipboard clipboard = Clipboard.getSystemClipboard();
+            ClipboardContent content = new ClipboardContent();
+            content.putString(text);
+            clipboard.setContent(content);
+        });
+    }
+
+    public String getClipboardText() {
+        Clipboard clipboard = Clipboard.getSystemClipboard();
+        return clipboard.hasString() ? clipboard.getString() : "";
     }
 }
