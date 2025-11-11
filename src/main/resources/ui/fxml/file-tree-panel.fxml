@@ -152,7 +152,7 @@
                   </Tooltip>
                </tooltip>
                <graphic>
-                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="expand-icon" />
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="change-vault-icon" />
                </graphic>
             </Button>
          </children>

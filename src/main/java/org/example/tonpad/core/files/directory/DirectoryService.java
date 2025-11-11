@@ -6,6 +6,8 @@ import java.nio.file.Path;
 
 public interface DirectoryService {
 
+    boolean exists(Path path);
+
     FileTree getFileTree(String path);
 
     Path createDir(Path path, String name);
