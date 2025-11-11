@@ -256,16 +256,16 @@
     height: 100%;
     line-height: 1.6;
     font-size: 16px;
-    tab-size: 5;
+    tab-size: 4;
 }
 
 /* Notation block как заголовок */
-h1.notation-block-row,
-h2.notation-block-row,
-h3.notation-block-row,
-h4.notation-block-row,
-h5.notation-block-row,
-h6.notation-block-row {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     min-height: 1.6em;
     margin: 0;
     padding: 0;
@@ -274,14 +274,16 @@ h6.notation-block-row {
 }
 
 /* Notation block для цитат */
-.notation-block-row.notation-block-quote {
+blockquote {
     position: relative;
     padding-left: 12px;
+    margin: 0;
+    font-style: italic;
     /* место для вертикальной линии */
 }
 
 /* Вертикальная линия как в Obsidian */
-.notation-block-row.notation-block-quote::before {
+blockquote::before {
     content: "";
     position: absolute;
     left: 0;
@@ -292,42 +294,24 @@ h6.notation-block-row {
 }
 
 /* Одиночная цитата - скругленные концы */
-.notation-block-row.notation-block-quote::before {
+blockquote:before {
     border-radius: 2px;
 }
 
 /* Когда есть цитата сверху - убираем скругление верха */
-.notation-block-row.notation-block-quote+.notation-block-row.notation-block-quote::before {
+blockquote+blockquote::before {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 }
 
 /* Когда есть цитата снизу - убираем скругление низа */
-.notation-block-row.notation-block-quote:has(+ .notation-block-row.notation-block-quote)::before {
+blockquote:has(+ blockquote)::before {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
 }
 
-/* Heading внутри notation_block как span */
-.heading-content {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    font: inherit;
-}
-
-/* Blockquote внутри notation_block как span */
-.blockquote-content {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    font: inherit;
-    font-style: italic;
-}
-
 /* Spec блоки для заголовков */
 .heading-spec {
-    height: 100%;
     margin: 0;
     padding: 0;
     color: #b8cb76;
@@ -347,44 +331,44 @@ h6.notation-block-row {
 }
 
 /* Размеры для разных уровней заголовков */
-h1.notation-block-row,
-h1.notation-block-row .heading-content,
-h1.notation-block-row .heading-spec {
+h1,
+h1 .heading,
+h1 .heading-spec {
     font-size: 32px;
     line-height: 1.3;
 }
 
-h2.notation-block-row,
-h2.notation-block-row .heading-content,
-h2.notation-block-row .heading-spec {
+h2,
+h2 .heading,
+h2 .heading-spec {
     font-size: 28px;
     line-height: 1.3;
 }
 
-h3.notation-block-row,
-h3.notation-block-row .heading-content,
-h3.notation-block-row .heading-spec {
+h3,
+h3 .heading,
+h3 .heading-spec {
     font-size: 24px;
     line-height: 1.4;
 }
 
-h4.notation-block-row,
-h4.notation-block-row .heading-content,
-h4.notation-block-row .heading-spec {
+h4,
+h4 .heading,
+h4 .heading-spec {
     font-size: 20px;
     line-height: 1.4;
 }
 
-h5.notation-block-row,
-h5.notation-block-row .heading-content,
-h5.notation-block-row .heading-spec {
+h5,
+h5 .heading,
+h5 .heading-spec {
     font-size: 18px;
     line-height: 1.5;
 }
 
-h6.notation-block-row,
-h6.notation-block-row .heading-content,
-h6.notation-block-row .heading-spec {
+h6
+h6 .heading,
+h6 .heading-spec {
     font-size: 16px;
     line-height: 1.5;
 }
@@ -395,20 +379,6 @@ h6.notation-block-row .heading-spec {
     line-height: 1.6;
     margin: 0;
     padding: 0;
-}
-
-/* Обычные заголовки (вне notation_block) */
-.heading {
-    margin: 1em 0 0.5em 0;
-    font-weight: bold;
-}
-
-/* Обычные blockquote (вне notation_block) */
-.blockquote {
-    margin: 0;
-    padding: 0;
-    font-style: italic;
-    border-left: 3px solid #b8cb76;
 }
 
 /* оОбщие стили символов марок*/
@@ -475,38 +445,29 @@ a:hover {
     position: relative;
 }
 
-.tab:not(:last-child)::after {
+.tab::after {
     content: "";
     position: absolute;
-    right: 2px;
+    right: -3px;
     top: -4px;
     bottom: -4px;
-    width: 2px;
+    width: 1.8px;
     background: #79854c;
 }
 
 /* Стили для маркеров списка */
 .marker {
-    padding-left: 16px;
+    padding-left: 17px;
     color: #79854c;
 }
 
-/* Стили для списка из табов */
-.notation-block-tab-list {
-    margin: 0;
-    padding: 0;
-    font-size: 16px;
+.tab:not(:has(~ :is(.tab, .marker)))::after {
+  display: none;
 }
 
-/* Стили для маркированного списка */
-.notation-block-bullet-list {
-    margin: 0;
-    padding: 0;
-    font-size: 16px;
-}
-
-/* Стили для нумерованного списка */
-.notation-block-ordered-list {
+/* Стили для списка */
+li {
+    list-style-type: none;
     margin: 0;
     padding: 0;
     font-size: 16px;

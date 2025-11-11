@@ -30,41 +30,12 @@ export const markdownSerializer = new ExtendedMarkdownSerializer(
         },
 
         heading: (state, node) => {
-            state.write("#".repeat(node.attrs.level) + " ");
             state.renderInline(node);
             state.write("\n");
         },
 
-        notation_block: (state, node) => {
-            if (node.attrs.type === 'heading') {
-                state.write("#".repeat(node.attrs.level) + " ");
-                state.renderInline(node.child(1));
-                state.write("\n");
-            } else if (node.attrs.type === 'blockquote') {
-                state.write("> ");
-                state.renderInline(node.child(1));
-                state.write("\n");
-            } else if (node.attrs.type === 'tab_list') {
-                state.write("\t".repeat(node.attrs.level));
-                state.renderInline(node.child(1));
-                state.write("\n");
-            } else if (node.attrs.type === 'bullet_list') {
-                state.write("\t".repeat(node.attrs.level));
-                state.write(node.child(1).attrs.marker + ' ')
-                state.renderInline(node.child(1));
-                state.write("\n");
-            } else if (node.attrs.type === 'ordered_list') {
-                state.write("\t".repeat(node.attrs.level));
-                state.write(`${node.child(1).attrs.number}. `)
-                state.renderInline(node.child(1));
-                state.write("\n");
-            } else {
-                state.renderContent(node);
-            }
-        },
-
         blockquote: (state, node) => {
-            state.wrapBlock("> ", null, node, () => state.renderContent(node));
+            state.renderInline(node);
             state.write("\n");
         },
 
@@ -78,14 +49,18 @@ export const markdownSerializer = new ExtendedMarkdownSerializer(
             state.write("\n```\n");
         },
 
-        bullet_list: (state, node) => {
-            state.renderList(node, "  ", () => "- ");
+        tab_list_item: (state, node) => {
+            state.renderInline(node);
             state.write("\n");
         },
 
-        ordered_list: (state, node) => {
-            const start = node.attrs.order || 1;
-            state.renderList(node, "  ", (i) => `${start + i}. `);
+        bullet_list_item: (state, node) => {
+            state.renderInline(node);
+            state.write("\n");
+        },
+
+        ordered_list_item: (state, node) => {
+            state.renderInline(node);
             state.write("\n");
         },
 
@@ -113,6 +88,20 @@ export const markdownSerializer = new ExtendedMarkdownSerializer(
     },
     {
         spec: {
+            open: "",
+            close: "",
+            mixable: true,
+            expelEnclosingWhitespace: true,
+            escape: false
+        },
+        tab: {
+            open: "",
+            close: "",
+            mixable: true,
+            expelEnclosingWhitespace: true,
+            escape: false
+        },
+        marker: {
             open: "",
             close: "",
             mixable: true,

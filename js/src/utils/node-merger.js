@@ -83,13 +83,7 @@ export class NodeMerger {
     static performMerge(state, currentPos, neighborInfo, direction) {
         const $current = state.doc.resolve(currentPos);
 
-        let mergeParams;
-
-        mergeParams = this.handleSpecialCases($current, neighborInfo, direction);
-
-        if (!mergeParams) {
-            mergeParams = this.getNormalMergeParams($current, neighborInfo, direction);
-        }
+        const mergeParams = this.getMergeParams($current, neighborInfo, direction);
 
         if (!mergeParams) return null;
 
@@ -100,48 +94,7 @@ export class NodeMerger {
         return tr;
     }
 
-    static handleSpecialCases($current, neighborInfo, direction) {
-        const currentParent = $current.node($current.depth - 1);
-        const neighborParent = neighborInfo.parent;
-
-        if (currentParent === neighborParent &&
-            currentParent.type.name === 'notation_block' &&
-            currentParent.attrs.layout === 'row') {
-
-            return this.handleNotationBlockRowMerge($current, currentParent, direction);
-        }
-
-        return null;
-    }
-
-    static handleNotationBlockRowMerge($current, currentParent, direction) {
-        const blockDepth = $current.depth - 1;
-        const from = $current.start(blockDepth) - 1;
-        const to = from + currentParent.nodeSize;
-
-        let { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(currentParent);
-
-        if (direction === 'up') {
-            specContent = specContent.slice(1);
-        } else {
-            nodeContent = nodeContent.slice(1);
-        }
-
-        let cursorPos = from + specContent.length + 1;
-
-        const mergedText = specContent + nodeContent;
-
-        const mergedParagraph = NodeConverter.constructParagraph(mergedText);
-
-        return {
-            from,
-            to,
-            mergedParagraphs: [mergedParagraph],
-            cursorPos
-        };
-    }
-
-    static getNormalMergeParams($current, neighborInfo, direction) {
+    static getMergeParams($current, neighborInfo, direction) {
         const parentDepth = neighborInfo.depth - 1;
         const parent = neighborInfo.parent;
 
@@ -236,15 +189,14 @@ export class NodeMerger {
     static applyReconstruction(tr, mergedParagraphs, from, to, cursorPos) {
         const reconstructor = new NodeReconstructor();
 
-        const blockResult = reconstructor.applyBlockRules(mergedParagraphs, from, cursorPos);
-        const blockReconstructed = blockResult.paragraphs;
+        const reconstructed = reconstructor.applyBlockRules(mergedParagraphs, from);
+        const blockReconstructed = reconstructed;
         const hasBlockChanges = blockReconstructed.some((para, index) => para !== mergedParagraphs[index]);
 
         let finalParagraphs = mergedParagraphs;
 
         if (hasBlockChanges) {
             finalParagraphs = blockReconstructed;
-            cursorPos += blockResult.blocksBeforeCursor;
         }
 
         const reconstructedParagraphs = finalParagraphs.map(paragraph => {

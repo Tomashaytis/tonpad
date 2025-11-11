@@ -4,6 +4,8 @@ import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.scene.web.WebEngine;
 import org.example.tonpad.core.editor.Editor;
+import org.example.tonpad.core.editor.dto.SearchResult;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.net.URL;
 import java.util.Objects;
@@ -51,6 +53,37 @@ public class EditorImpl implements Editor {
                 toJsString(noteContent));
 
         executeJs(jsCode);
+    }
+
+    @Override
+    public void insertSnippet(String snippetContent) {
+        String jsCode = String.format("editor.insertSnippet(%s);",
+                toJsString(snippetContent));
+
+        executeJs(jsCode);
+    }
+
+    @Override
+    public CompletableFuture<SearchResult> find(String text) {
+        String jsCode = String.format("editor.find(%s);",
+                toJsString(text));
+
+        return executeJs(jsCode).thenApply(this::parseSearchResult);
+    }
+
+    @Override
+    public CompletableFuture<SearchResult> findNext() {
+        return executeJs("editor.findNext();").thenApply(this::parseSearchResult);
+    }
+
+    @Override
+    public CompletableFuture<SearchResult> findPrevious() {
+        return executeJs("editor.findPrevious();").thenApply(this::parseSearchResult);
+    }
+
+    @Override
+    public CompletableFuture<SearchResult> clearSearch() {
+        return executeJs("editor.clearSearch();").thenApply(this::parseSearchResult);
     }
 
     @Override
@@ -142,5 +175,17 @@ public class EditorImpl implements Editor {
                 future.completeExceptionally(e);
             }
         });
+    }
+
+    private SearchResult parseSearchResult(String json) {
+        if (json == null || json.equals("null")) {
+            return null;
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(json, SearchResult.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse search result", e);
+        }
     }
 }

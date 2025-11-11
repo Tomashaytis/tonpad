@@ -1,6 +1,6 @@
 import { markdownSchema } from "../schema/markdown-schema.js";
 import { NodeConverter } from "./node-converter.js";
-import { findTabLevel } from "./utils.js";
+import { findTabs } from "./utils.js";
 
 export class NodeReconstructor {
     constructor() {
@@ -34,6 +34,11 @@ export class NodeReconstructor {
                 name: 'tab_list',
                 pattern: /^((?:(?:    )|\t)+)(.*)$/,
                 handler: this.reconstructTabListItem.bind(this)
+            },
+            {
+                name: 'paragraph',
+                pattern: /^(.*)$/,
+                handler: this.reconstructParagraph.bind(this)
             },
         ];
 
@@ -196,10 +201,9 @@ export class NodeReconstructor {
         return paragraphs;
     }
 
-    applyBlockRules(paragraphs, startPos, targetCursorIndex = -1) {
+    applyBlockRules(paragraphs, startPos) {
         const results = [];
         let currentPos = startPos;
-        let blocksBeforeCursor = 0;
 
         for (let i = 0; i < paragraphs.length; i++) {
             const paragraph = paragraphs[i];
@@ -216,24 +220,23 @@ export class NodeReconstructor {
 
             results.push(reconstructed || paragraph);
 
-            if (targetCursorIndex !== -1 && i < targetCursorIndex) {
-                const offset = targetCursorIndex - startPos;
-                if (reconstructed && reconstructed.type.name === 'notation_block' && reconstructed.attrs.layout === 'row') {
-                    if (offset > reconstructed.child(0).nodeSize - 1) {
-                        blocksBeforeCursor += 3;
-                    } else {
-                        blocksBeforeCursor += 1;
-                    }
-                }
-            }
-
             currentPos += paragraph.nodeSize;
         }
 
-        return {
-            paragraphs: results,
-            blocksBeforeCursor: blocksBeforeCursor
-        };
+        return results
+    }
+
+    reconstructTextContent(text) {
+        if (!text) return null;
+
+        const textNode = markdownSchema.text(text);
+        const tempParagraph = markdownSchema.nodes.paragraph.create({}, [textNode]);
+        const reconstructed = this.reconstructMarks(tempParagraph);
+        if (reconstructed) {
+            return reconstructed.content;
+        }
+
+        return [textNode];
     }
 
     wrapWithMark(markName, text, href = "") {
@@ -265,40 +268,58 @@ export class NodeReconstructor {
         }
     }
 
+    reconstructParagraph(match, originalParagraph, pos) {
+        const [_, content] = match;
+        const textNodes = this.reconstructTextContent(content)
+
+        return NodeConverter.constructParagraphWithMarks(textNodes);
+    }
+
     reconstructHeading(match, originalParagraph, pos) {
         const [_, hashes, content] = match;
         const level = hashes.length;
-        return NodeConverter.constructHeading(content, level);
+
+        const textNodes = this.reconstructTextContent(content)
+
+        return NodeConverter.constructHeading(textNodes, level);
     }
 
     reconstructBlockquote(match, originalParagraph, pos) {
         const [_, content] = match;
 
-        return NodeConverter.constructBlockquote(content);
+        const textNodes = this.reconstructTextContent(content);
+
+        return NodeConverter.constructBlockquote(textNodes);
     }
 
     reconstructTabListItem(match, originalParagraph, pos) {
         const [_, spaces, content] = match;
 
-        const level = findTabLevel(spaces);
+        const tabs = findTabs(spaces);
 
-        return NodeConverter.constructTabListItem(content, level);
+        const textNodes = this.reconstructTextContent(content);
+
+        return NodeConverter.constructTabListItem(textNodes, tabs);
     }
 
     reconstructBulletListItem(match, originalParagraph, pos) {
         const [_, spaces, marker, content] = match;
 
-        const level = findTabLevel(spaces);
+        const tabs = findTabs(spaces);
 
-        return NodeConverter.constructBulletListItem(content, level, marker);
+        const textNodes = this.reconstructTextContent(content);
+
+        return NodeConverter.constructBulletListItem(textNodes, tabs, marker);
     }
 
     reconstructOrderedListItem(match, originalParagraph, pos) {
         const [_, spaces, number, content] = match;
 
-        const level = findTabLevel(spaces);
+        const tabs = findTabs(spaces);
 
-        return NodeConverter.constructOrderedListItem(content, level, parseInt(number));
+        const textNodes = this.reconstructTextContent(content);
+
+        return NodeConverter.constructOrderedListItem(textNodes, tabs, parseInt(number));
     }
 
     reconstructCodeBlock(match, originalParagraph, pos) {

@@ -5,11 +5,11 @@ import { gapCursor } from "prosemirror-gapcursor";
 import { history, } from "prosemirror-history";
 import { markdownSchema } from "./schema/markdown-schema.js";
 import { NodeConverter } from "./utils/node-converter.js";
+import { NodeInputter } from "./utils/node-inputter.js";
 import { NodeReconstructor } from "./utils/node-reconstructor.js";
 import { markdownSerializer } from "./serializer/markdown-serializer.js";
 import { blockNavigationPlugin } from "./plugins/block-navigation.js"
 import { keymapPlugin } from "./plugins/keymap.js";
-import { inputRulesPlugin } from "./plugins/input-rules.js";
 import { inputPlugin } from "./plugins/input.js"
 import { disableInsertPlugin } from "./plugins/disable-insert.js"
 import { hideSpecPlugin } from "./plugins/hide-spec.js"
@@ -79,6 +79,8 @@ export class Editor {
 
     rebuildTree() {
         let tr = this.view.state.tr;
+        tr.setMeta('addToHistory', false);
+
         let hasChanges = false;
 
         const reconstructor = new NodeReconstructor();
@@ -93,16 +95,12 @@ export class Editor {
         changes.sort((a, b) => b.pos - a.pos).forEach((change) => {
             if (change.type === 'paragraph') {
                 const paragraph = change.node;
-                const text = paragraph.textContent;
 
-                const blockResult = reconstructor.applyBlockRules([paragraph], change.pos);
-                const reconstructedNode = blockResult.paragraphs[0];
+                const reconstructed = reconstructor.applyBlockRules([paragraph], change.pos);
+                const reconstructedNode = reconstructed[0];
 
-                const markReconstruction = reconstructor.reconstructMarksInNode(reconstructedNode);
-                const finalNode = markReconstruction || reconstructedNode;
-
-                if (finalNode !== paragraph) {
-                    tr = tr.replaceWith(change.pos, change.pos + paragraph.nodeSize, finalNode);
+                if (reconstructedNode !== paragraph) {
+                    tr = tr.replaceWith(change.pos, change.pos + paragraph.nodeSize, reconstructedNode);
                     hasChanges = true;
                 }
             }
@@ -125,7 +123,6 @@ export class Editor {
             keymapPlugin(this),
             dropCursor(),
             gapCursor(),
-            inputRulesPlugin(),
             blockNavigationPlugin(),
             inputPlugin(),
             disableInsertPlugin(),
@@ -307,6 +304,7 @@ export class Editor {
 
         setTimeout(() => okButton.focus(), 0);
     }
+
     updateFrontMatterValue(key, newValue) {
         if (this.frontMatter[key] === newValue) return;
 
@@ -527,29 +525,113 @@ export class Editor {
     find(query, caseSensitive = false) {
         const command = searchCommands.find(query, caseSensitive);
         const executed = command(this.view.state, this.view.dispatch);
-        
+
         if (executed) {
-            return this.getSearchInfo();
+            setTimeout(() => {
+                const nextCommand = searchCommands.getCurrentResult();
+                const currentResult = nextCommand(this.view.state);
+
+                if (currentResult) {
+                    this.view.focus();
+
+                    const cursorPos = currentResult.from;
+
+                    const cursorElement = this.view.domAtPos(cursorPos).node;
+                    if (cursorElement.nodeType === Node.TEXT_NODE) {
+                        cursorElement.parentNode.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    } else {
+                        cursorElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    }
+                }
+            }, 0);
+
+            return JSON.stringify(this.getSearchInfo());
         }
-        return null;
+        return JSON.stringify(null);
     }
 
     findNext() {
         const command = searchCommands.findNext();
         const executed = command(this.view.state, this.view.dispatch);
-        return executed ? this.getSearchInfo() : null;
+        if (executed) {
+            setTimeout(() => {
+                const nextCommand = searchCommands.getCurrentResult();
+                const currentResult = nextCommand(this.view.state);
+
+                if (currentResult) {
+                    this.view.focus();
+
+                    const cursorPos = currentResult.from;
+
+                    const cursorElement = this.view.domAtPos(cursorPos).node;
+                    if (cursorElement.nodeType === Node.TEXT_NODE) {
+                        cursorElement.parentNode.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    } else {
+                        cursorElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    }
+                }
+            }, 0);
+
+            return JSON.stringify(this.getSearchInfo());
+        }
+        return JSON.stringify(null);
     }
 
     findPrevious() {
         const command = searchCommands.findPrevious();
         const executed = command(this.view.state, this.view.dispatch);
-        return executed ? this.getSearchInfo() : null;
+        if (executed) {
+            setTimeout(() => {
+                const nextCommand = searchCommands.getCurrentResult();
+                const currentResult = nextCommand(this.view.state);
+
+                if (currentResult) {
+                    this.view.focus();
+
+                    const cursorPos = currentResult.from;
+
+                    const cursorElement = this.view.domAtPos(cursorPos).node;
+                    if (cursorElement.nodeType === Node.TEXT_NODE) {
+                        cursorElement.parentNode.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    } else {
+                        cursorElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    }
+                }
+            }, 0);
+
+            return JSON.stringify(this.getSearchInfo());
+        }
+        return JSON.stringify(null);
     }
 
     clearSearch() {
         const command = searchCommands.clearSearch();
         const executed = command(this.view.state, this.view.dispatch);
-        return executed ? this.getSearchInfo() : null;
+        return JSON.stringify(executed ? this.getSearchInfo() : null);
     }
 
     getSearchInfo() {
@@ -558,18 +640,23 @@ export class Editor {
     }
 
     setNoteContent(content) {
-        try {
-            const docContent = this.parseDoc(content);
-            this.frontMatter = docContent.frontMatter;
-            this.updateFrontMatterTable();
+        const docContent = this.parseDoc(content);
+        this.frontMatter = docContent.frontMatter;
+        this.updateFrontMatterTable();
 
-            const newDoc = this.createDocumentFromText(docContent.markdown);
-            const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
-            this.view.dispatch(tr);
+        const newDoc = this.createDocumentFromText(docContent.markdown);
+        const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
+        tr.setMeta('addToHistory', false);
 
-            this.rebuildTree();
-        } catch (error) {
-            console.log(`Error: ${error}`);
+        this.view.dispatch(tr);
+
+        this.rebuildTree();
+    }
+
+    insertSnippet(snippetContent) {
+        if (snippetContent) {
+            const { state, dispatch } = this.view;
+            NodeInputter.handlePasteInNode(this.view, state, dispatch, snippetContent);
         }
     }
 
@@ -638,7 +725,7 @@ export class Editor {
     }
 
     getNoteContent() {
-        const frontMatter =  this.getFrontMatterYAML() !== "" ? "---\n" + this.getFrontMatterYAML() + "---\n\n" : "";
+        const frontMatter = this.getFrontMatterYAML() !== "" ? "---\n" + this.getFrontMatterYAML() + "---\n\n" : "";
         return frontMatter + this.getMarkdown();
     }
 

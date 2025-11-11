@@ -5,52 +5,36 @@ import { markdownSchema } from "../schema/markdown-schema.js";
 import { NodeMerger } from "../utils/node-merger.js";
 import { NodeSplitter } from "../utils/node-splitter.js";
 import { NodeInputter } from "../utils/node-inputter.js";
-import { NodeConverter } from "../utils/node-converter.js";
-import { NodeReconstructor } from "../utils/node-reconstructor.js";
-import { TextSelection } from "prosemirror-state";
+import { NodeSelector } from "../utils/node-selector.js";
 
 export function keymapPlugin(editor) {
     return keymap({
         ...baseKeymap,
         "Tab": (state, dispatch, view) => {
-            const { from, to } = state.selection;
-            const { $from } = state.selection;
+            const { selection } = state;
 
-            if ($from.parent.type.name === 'spec_block') {
-                return NodeInputter.handleInputInSpec(view, from, to, '\t');
+            if (!selection.empty) {
+                const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
+                if (deleteTr) {
+                    const newState = state.apply(deleteTr);
+                    return NodeInputter.handleInputInNode(newState, dispatch, '\t', deleteTr);
+                }
             }
 
-            if ($from.parent.type.name === 'paragraph') {
-                const level = 1;
-                const blockStart = $from.before(1);
-                const blockEnd = $from.after(1);
-                const currentBlock = $from.node(1);
-
-                const fullText = currentBlock.textContent;
-                const nodeText = fullText;
-
-                const nodeBlock = NodeConverter.constructTabListItem(nodeText, level);
-
-                const reconstructor = new NodeReconstructor();
-                const nodeWithMarks = reconstructor.reconstructMarksInNode(nodeBlock);
-
-                let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || nodeBlock);
-
-                const containerPos = tr.mapping.map(blockStart);
-                const specNode = (nodeWithMarks || nodeBlock).content.child(0);
-                const cursorPos = containerPos + specNode.nodeSize;
-
-                let selection = TextSelection.create(tr.doc, cursorPos);
-
-                dispatch(tr.setSelection(selection));
-                return true;
-            }
-
-            return NodeInputter.handleInputInNormalNode(view, from, to, '\t');
+            return NodeInputter.handleInputInNode(state, dispatch, '\t');
         },
         "Enter": (state, dispatch, view) => {
-            const event = new KeyboardEvent('keydown', { key: 'Enter' });
-            const splitterResult = NodeSplitter.handleEnter(view, event);
+            const { selection } = state;
+
+            if (!selection.empty) {
+                const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
+                if (deleteTr) {
+                    const newState = state.apply(deleteTr);
+                    return NodeSplitter.splitBlockNode(newState, dispatch, deleteTr);
+                }
+            }
+
+            const splitterResult = NodeSplitter.splitBlockNode(state, dispatch);
 
             if (splitterResult !== undefined && splitterResult !== false) {
                 return splitterResult;
@@ -66,7 +50,14 @@ export function keymapPlugin(editor) {
         "Backspace": (state, dispatch, view) => {
             const { $from, empty } = state.selection;
 
-            if (!empty) return false;
+            if (!empty) {
+                const tr = NodeSelector.createDeleteSelectionTransaction(view);
+                if (tr) {
+                    dispatch(tr);
+                    return true;
+                }
+                return false;
+            }
 
             const isAtBlockStart = $from.parentOffset === 0;
 
@@ -78,9 +69,7 @@ export function keymapPlugin(editor) {
                     return true;
                 }
             } else {
-                const from = $from.pos - 1;
-                const to = $from.pos;
-                return NodeInputter.handleDeleteChar(view, from, to);
+                return NodeInputter.handleDeleteChar(view);
             }
 
             return false;
@@ -88,8 +77,14 @@ export function keymapPlugin(editor) {
         "Delete": (state, dispatch, view) => {
             const { $from, empty } = state.selection;
 
-            if (!empty) return false;
-
+            if (!empty) {
+                const tr = NodeSelector.createDeleteSelectionTransaction(view);
+                if (tr) {
+                    dispatch(tr);
+                    return true;
+                }
+                return false;
+            }
             const isAtBlockEnd = $from.parentOffset === $from.parent.textContent.length;
 
             if (isAtBlockEnd) {
@@ -100,9 +95,7 @@ export function keymapPlugin(editor) {
                     return true;
                 }
             } else {
-                const from = $from.pos - 1;
-                const to = $from.pos;
-                return NodeInputter.handleDeleteChar(view, from, to, false);
+                return NodeInputter.handleDeleteChar(view, false);
             }
 
             return false;

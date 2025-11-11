@@ -2,6 +2,7 @@ package org.example.tonpad.ui.controllers;
 
 import java.util.*;
 
+import org.example.tonpad.core.editor.Editor;
 import org.example.tonpad.core.js.funtcion.ClearDomSelection;
 import org.example.tonpad.core.js.funtcion.GetHtml;
 import org.example.tonpad.core.js.funtcion.JsFunction;
@@ -39,6 +40,9 @@ public class SearchInTextController {
 
     @Setter
     private TabPane tabPane;
+
+    @Setter
+    private Map<Tab, Editor> EditorMap;
 
     private final SearchService searchService;
 

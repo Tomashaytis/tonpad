@@ -8,6 +8,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.web.WebView;
 import javafx.util.Duration;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.example.tonpad.core.editor.impl.EditorImpl;
@@ -21,7 +22,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 
 @Component
@@ -31,6 +31,7 @@ public class TabController {
     @Setter
     private TabPane tabPane;
 
+    @Getter
     private final Map<Tab, Editor> editorMap = new ConcurrentHashMap<Tab, Editor>();
 
     private final Map<Tab, Path> pathMap = new ConcurrentHashMap<Tab, Path>();
@@ -160,15 +161,9 @@ public class TabController {
     }
 
     private void saveToFile() {
-        new Thread(() -> {
-            try {
-                Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-                Path path = pathMap.get(currentTab);
-                String noteContent = editorMap.get(currentTab).getNoteContent().get(3, TimeUnit.SECONDS);
-                fileService.writeFile(path, noteContent);
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
-        }).start();
+        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+        Path path = pathMap.get(currentTab);
+        editorMap.get(currentTab).getNoteContent()
+                .thenAccept(noteContent -> fileService.writeFile(path, noteContent));
     }
 }

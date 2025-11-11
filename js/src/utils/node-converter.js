@@ -9,162 +9,166 @@ export class NodeConverter {
         return markdownSchema.nodes.paragraph.create(null, content);
     }
 
-    static constructHeading(text, level) {
+    static constructParagraphWithMarks(contentNodes) {
+        const children = [];
+
+        if (contentNodes && contentNodes.forEach) {
+            contentNodes.forEach(node => children.push(node));
+        } else if (contentNodes) {
+            children.push(contentNodes);
+        }
+
+        return markdownSchema.nodes.paragraph.create(null, contentNodes);
+    }
+
+    static constructHeading(contentNodes, level) {
+        const specOffset = level + 1;
+
+        const children = [
+            markdownSchema.text("#".repeat(level) + " ", [markdownSchema.marks.spec.create({
+                specClass: "heading-spec"
+            })])
+        ];
+
+        if (contentNodes && contentNodes.forEach) {
+            contentNodes.forEach(node => children.push(node));
+        } else if (contentNodes) {
+            children.push(contentNodes);
+        }
+
         const headingNode = markdownSchema.nodes.heading.create(
             {
                 level: level,
-                renderAs: "span"
+                specOffset: specOffset
             },
-            text ? markdownSchema.text(text) : null
+            children
         );
 
-        const specNode = markdownSchema.nodes.spec_block.create(
-            {
-                level: level,
-                specClass: "heading-spec",
-            },
-            markdownSchema.text("#".repeat(level) + " ")
-        );
-
-        return markdownSchema.nodes.notation_block.create(
-            {
-                type: "heading",
-                layout: "row",
-                level: level,
-            },
-            [specNode, headingNode]
-        );
+        return headingNode;
     }
 
-    static constructBlockquote(text) {
+    static constructBlockquote(contentNodes) {
+        const specOffset = 2;
+
+        const children = [
+            markdownSchema.text("> ", [markdownSchema.marks.spec.create({
+                specClass: "blockquote-spec"
+            })])
+        ];
+
+        if (contentNodes && contentNodes.forEach) {
+            contentNodes.forEach(node => children.push(node));
+        } else if (contentNodes) {
+            children.push(contentNodes);
+        }
+
         const blockquoteNode = markdownSchema.nodes.blockquote.create(
             {
-                renderAs: "span"
+                specOffset: specOffset
             },
-            text ? markdownSchema.text(text) : null
+            children
         );
 
-        const specNode = markdownSchema.nodes.spec_block.create(
-            {
-                specClass: "blockquote-spec",
-            },
-            markdownSchema.text("> ")
-        );
-
-        return markdownSchema.nodes.notation_block.create(
-            {
-                type: "blockquote",
-                layout: "row",
-            },
-            [specNode, blockquoteNode]
-        );
+        return blockquoteNode;
     }
 
-    static constructTabListItem(text, level) {
-        const tabListNode = markdownSchema.nodes.tab_list_item.create(
-            {
-                level: level,
-                renderAs: "span"
-            },
-            text ? markdownSchema.text(text) : null
-        );
+    static constructTabListItem(contentNodes, tabs) {
+        let specOffset = 0;
+        const level = tabs.length;
 
         let index = 0;
-        const textNodes = Array(level).fill(null).map(() =>
-            markdownSchema.text("\t", [markdownSchema.marks.tab.create({
+        const children = Array(level).fill(null).map((_, i) =>
+            markdownSchema.text(tabs[i], [markdownSchema.marks.tab.create({
                 tabIndex: index++
             })])
         );
 
-        const specNode = markdownSchema.nodes.spec_block.create(
-            {
-                level: level,
-                specClass: "tab-list-spec",
-            },
-            textNodes
-        );
+        tabs.forEach(tab => {
+            specOffset += tab.length;
+        });
 
-        return markdownSchema.nodes.notation_block.create(
+        if (contentNodes && contentNodes.forEach) {
+            contentNodes.forEach(node => children.push(node));
+        } else if (contentNodes) {
+            children.push(contentNodes);
+        }
+
+        return markdownSchema.nodes.tab_list_item.create(
             {
                 level: level,
-                type: "tab_list",
-                layout: "row",
+                specOffset: specOffset,
+                tabs: tabs
             },
-            [specNode, tabListNode]
+            children
         );
     }
 
-    static constructBulletListItem(text, level, marker = '-') {
-        const bulletListNode = markdownSchema.nodes.bullet_list_item.create(
+    static constructBulletListItem(contentNodes, tabs, marker = '-') {
+        let specOffset = 2;
+        const level = tabs.length;
+
+        let index = 0;
+        const children = Array(level).fill(null).map((_, i) =>
+            markdownSchema.text(tabs[i], [markdownSchema.marks.tab.create({
+                tabIndex: index++
+            })])
+        );
+
+        tabs.forEach(tab => {
+            specOffset += tab.length;
+        });
+
+        children.push(markdownSchema.text(marker + " ", [markdownSchema.marks.marker.create()]));
+
+        if (contentNodes && contentNodes.forEach) {
+            contentNodes.forEach(node => children.push(node));
+        } else if (contentNodes) {
+            children.push(contentNodes);
+        }
+
+        return markdownSchema.nodes.bullet_list_item.create(
             {
                 level: level,
                 marker: marker,
-                renderAs: "span"
+                specOffset: specOffset,
+                tabs: tabs
             },
-            text ? markdownSchema.text(text) : null
-        );
-
-        let index = 0;
-        const textNodes = Array(level).fill(null).map(() =>
-            markdownSchema.text("\t", [markdownSchema.marks.tab.create({
-                tabIndex: index++
-            })])
-        );
-
-        textNodes.push(markdownSchema.text(marker + ' ', [markdownSchema.marks.marker.create()]))
-
-        const specNode = markdownSchema.nodes.spec_block.create(
-            {
-                level: level,
-                specClass: "bullet-list-spec",
-            },
-            textNodes
-        );
-
-        return markdownSchema.nodes.notation_block.create(
-            {
-                level: level,
-                type: "bullet_list",
-                layout: "row",
-            },
-            [specNode, bulletListNode]
+            children
         );
     }
 
-    static constructOrderedListItem(text, level, number = 1) {
-        const bulletListNode = markdownSchema.nodes.ordered_list_item.create(
-            {
-                level: level,
-                number: number,
-                renderAs: "span"
-            },
-            text ? markdownSchema.text(text) : null
-        );
+    static constructOrderedListItem(contentNodes, tabs, number = 1) {
+        const marker = `${number}. `;
+        let specOffset = marker.length;
+        const level = tabs.length;
 
         let index = 0;
-        const textNodes = Array(level).fill(null).map(() =>
-            markdownSchema.text("\t", [markdownSchema.marks.tab.create({
+        const children = Array(level).fill(null).map((_, i) =>
+            markdownSchema.text(tabs[i], [markdownSchema.marks.tab.create({
                 tabIndex: index++
             })])
         );
 
-        textNodes.push(markdownSchema.text(`${number}. `, [markdownSchema.marks.marker.create()]))
+        tabs.forEach(tab => {
+            specOffset += tab.length;
+        });
 
-        const specNode = markdownSchema.nodes.spec_block.create(
+        children.push(markdownSchema.text(`${number}. `, [markdownSchema.marks.marker.create()]));
+
+        if (contentNodes && contentNodes.forEach) {
+            contentNodes.forEach(node => children.push(node));
+        } else if (contentNodes) {
+            children.push(contentNodes);
+        }
+
+        return markdownSchema.nodes.ordered_list_item.create(
             {
                 level: level,
-                specClass: "ordered-list-spec",
+                number: number,
+                specOffset: specOffset,
+                tabs: tabs
             },
-            textNodes
-        );
-
-        return markdownSchema.nodes.notation_block.create(
-            {
-                level: level,
-                type: "ordered_list",
-                layout: "row",
-            },
-            [specNode, bulletListNode]
+            children
         );
     }
 
@@ -273,7 +277,7 @@ export class NodeConverter {
             //'code_block': this.destructCodeBlock,
         };
 
-        if (node.type.name === "notation_block" && specialHandlers[node.attrs.type]) {
+        if (specialHandlers[node.attrs.type]) {
             return specialHandlers[node.attrs.type].call(this, node);
         }
 
