@@ -13,7 +13,8 @@ export const markdownSchema = new Schema({
         },
         blockquote: {
             attrs: {
-                renderAs: { default: "blockquote" }
+                renderAs: { default: "blockquote" },
+                specOffset: { defult: 0 }
             },
             content: "text*",
             group: "block",
@@ -34,7 +35,8 @@ export const markdownSchema = new Schema({
         heading: {
             attrs: {
                 level: { default: 1 },
-                renderAs: { default: "h" }
+                renderAs: { default: "h" },
+                specOffset: { defult: 0 }
             },
             content: "(text | image)*",
             group: "block",
@@ -61,7 +63,7 @@ export const markdownSchema = new Schema({
             defining: true,
             marks: "",
             attrs: {
-                params: { default: "" },
+                params: { default: "" }
             },
             parseDOM: [
                 {
@@ -83,14 +85,16 @@ export const markdownSchema = new Schema({
         tab_list_item: {
             attrs: {
                 level: { default: 1 },
-                renderAs: { default: "li" }
+                renderAs: { default: "li" },
+                specOffset: { defult: 0 },
+                tabs: { default: [] }
             },
             content: "(text | image)*",
             group: "block",
             defining: true,
             parseDOM: [{ tag: "li" }],
             toDOM(node) { 
-                const tag = node.attrs.renderAs === "span" ? "span" : "li" + node.attrs.level;
+                const tag = node.attrs.renderAs === "span" ? "span" : "li";
                 const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
                 return [tag, { class: className }, 0];
@@ -100,14 +104,16 @@ export const markdownSchema = new Schema({
             attrs: {
                 level: { default: 1 },
                 marker: { default: ' ' },
-                renderAs: { default: "li" }
+                renderAs: { default: "li" },
+                specOffset: { defult: 0 },
+                tabs: { default: [] }
             },
             content: "(text | image)*",
             group: "block",
             defining: true,
             parseDOM: [{ tag: "li" }],
             toDOM(node) { 
-                const tag = node.attrs.renderAs === "span" ? "span" : "li" + node.attrs.level;
+                const tag = node.attrs.renderAs === "span" ? "span" : "li";
                 const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
                 return [tag, { class: className }, 0];
@@ -117,14 +123,16 @@ export const markdownSchema = new Schema({
             attrs: {
                 level: { default: 1 },
                 number: { default: 0 },
-                renderAs: { default: "li" }
+                renderAs: { default: "li" },
+                specOffset: { defult: 0 },
+                tabs: { default: [] }
             },
             content: "(text | image)*",
             group: "block",
             defining: true,
             parseDOM: [{ tag: "li" }],
             toDOM(node) { 
-                const tag = node.attrs.renderAs === "span" ? "span" : "li" + node.attrs.level;
+                const tag = node.attrs.renderAs === "span" ? "span" : "li";
                 const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
                 return [tag, { class: className }, 0];
@@ -169,76 +177,6 @@ export const markdownSchema = new Schema({
                 content: { default: "" },
                 isInline: { default: false }
             }
-        },
-        notation_block: {
-            attrs: {
-                type: { default: "none" },
-                layout: { default: "row" },
-                level: { default: 0 },
-            },
-            content: "block+",
-            group: "block",
-            toDOM(node) {
-                if (node.attrs.type === "heading") {
-                    return ["h" + node.attrs.level, {
-                        class: `notation-block-${node.attrs.layout}`,
-                        'data-level': node.attrs.level
-                    }, 0]
-                }
-                if (node.attrs.type === "blockquote") {
-                    return ["div", {
-                        class: `notation-block-${node.attrs.layout} notation-block-quote`
-                    }, 0]
-                }
-                if (node.attrs.type === "tab_list") {
-                    return ["div", {
-                        class: `notation-block-${node.attrs.layout} notation-block-tab-list`,
-                        'data-level': node.attrs.level
-                    }, 0]
-                }
-                if (node.attrs.type === "bullet_list") {
-                    return ["div", {
-                        class: `notation-block-${node.attrs.layout} notation-block-bullet-list`,
-                        'data-level': node.attrs.level
-                    }, 0]
-                }
-                if (node.attrs.type === "ordered_list") {
-                    return ["div", {
-                        class: `notation-block-${node.attrs.layout} notation-block-ordered-list`,
-                        'data-level': node.attrs.level
-                    }, 0]
-                }
-                if (node.attrs.type === "checkbox_list") {
-                    return ["div", {
-                        class: `notation-block-${node.attrs.layout} notation-block-checkbox-list`,
-                        'data-level': node.attrs.level
-                    }, 0]
-                }
-                return ["div", {
-                    class: `notation-block-${node.attrs.layout}`,
-                    'data-level': node.attrs.level
-                }, 0]
-            }
-        },
-        spec_block: {
-            attrs: {
-                type: { default: "none" },
-                level: { default: 0 },
-                specClass: { default: "spec-block" },
-            },
-            content: "text*",
-            group: "block",
-            parseDOM: [{ tag: "spec" }],
-            toDOM(node) {
-                return [
-                    "span",
-                    {
-                        class: `${node.attrs.specClass}`,
-                        'data-level': node.attrs.level
-                    },
-                    0
-                ];
-            },
         },
     },
     marks: {
@@ -384,3 +322,4 @@ export const markdownSchema = new Schema({
         },
     }
 });
+
