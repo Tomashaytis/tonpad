@@ -1,82 +1,9 @@
 import { NodeConverter } from "./node-converter.js";
 import { NodeReconstructor } from "./node-reconstructor.js";
-import { markdownSchema } from "../schema/markdown-schema.js";
 import { TextSelection } from "prosemirror-state";
 
 export class NodeInputter {
-    static handleInputInSpec(view, from, to, text) {
-        const { state, dispatch } = view;
-        const { selection } = state;
-        const { $from } = selection;
-        const notationBlock = this.findParentNotationBlock($from);
-        if (!notationBlock) return false;
-
-        const { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(notationBlock);
-
-        let cursorOffset = $from.parentOffset;
-
-        let marksCheck = {
-            text: text,
-            offset: 0
-        }
-
-        if (cursorOffset === notationBlock.child(0).nodeSize - 2) {
-            marksCheck = this.checkMarks(text, $from);
-            if (marksCheck.text !== '') {
-                marksCheck.offset += 3;
-            }
-        }
-
-        const newSpecContent =
-            specContent.slice(0, cursorOffset) +
-            marksCheck.text +
-            specContent.slice(cursorOffset);
-
-        let fullText = newSpecContent + nodeContent;
-
-        let paragraph = NodeConverter.constructParagraph(fullText);
-        const blockPos = $from.before($from.depth - 1);
-        const blockSize = notationBlock.nodeSize;
-
-        const reconstructor = new NodeReconstructor();
-        const blockResult = reconstructor.applyBlockRules([paragraph], blockPos, from + cursorOffset);
-        let reconstructedNode = blockResult.paragraphs[0];
-
-        const markReconstruction = reconstructor.reconstructMarksInNode(reconstructedNode);
-        if (markReconstruction) {
-            reconstructedNode = markReconstruction;
-        }
-
-        let tr = state.tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
-
-        if (reconstructedNode.type.name == 'notation_block') {
-            if (['tab_list', 'bullet_list', 'ordered_list'].includes(reconstructedNode.attrs.type) && text === '\t') {
-                if (notationBlock.child(0).nodeSize - cursorOffset === 2) {
-                    cursorOffset -= 2;
-                } else {
-                    cursorOffset += 1;
-                }
-            } else {
-                if (reconstructedNode.child(0).nodeSize === notationBlock.child(0).nodeSize) {
-                    cursorOffset += 0;
-                } else if (reconstructedNode.child(0).nodeSize < notationBlock.child(0).nodeSize) {
-                    cursorOffset += 3;
-                } else {
-                    cursorOffset += 1;
-                }
-            }
-        }
-
-        const cursorPos = blockPos + cursorOffset + marksCheck.offset + 2;
-        const curSelection = TextSelection.create(tr.doc, cursorPos);
-        tr = tr.setSelection(curSelection);
-
-        dispatch(tr);
-        return true;
-    }
-
-    static handleInputInNormalNode(view, from, to, text) {
-        const { state, dispatch } = view;
+    static handleInputInNode(state, dispatch, text, baseTr = null) {
         const { selection } = state;
         const { $from } = selection;
 
@@ -91,36 +18,109 @@ export class NodeInputter {
             marksCheck.text +
             node.textContent.slice($from.parentOffset);
 
-        let newNode = node.type.create(node.attrs, markdownSchema.text(newText));
+        let newNode = NodeConverter.constructParagraph(newText);
 
         const reconstructor = new NodeReconstructor();
 
-        const blockResult = reconstructor.applyBlockRules([newNode], nodePos);
-        newNode = blockResult.paragraphs[0];
+        const reconstructed = reconstructor.applyBlockRules([newNode], nodePos);
+        newNode = reconstructed[0];
 
-        const markReconstruction = reconstructor.reconstructMarksInNode(newNode);
-        if (markReconstruction) {
-            newNode = markReconstruction;
-        }
+        let tr = baseTr || state.tr;
 
-        if (newNode !== node) {
-            const tr = state.tr.replaceWith(nodePos, nodePos + nodeSize, newNode);
+        tr = tr.replaceWith(nodePos, nodePos + nodeSize, newNode);
 
-            const oldSize = node.nodeSize;
-            const newSize = newNode.nodeSize;
-            const sizeDiff = newSize - oldSize;
+        const oldSize = node.nodeSize;
+        const newSize = newNode.nodeSize;
+        const sizeDiff = newSize - oldSize;
 
-            const cursorPos = $from.pos + sizeDiff + marksCheck.offset;
-            tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
+        const cursorPos = $from.pos + sizeDiff + marksCheck.offset;
+        tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
 
-            dispatch(tr);
-            return true;
-        }
-
-        return false;
+        dispatch(tr);
+        return true;
     }
 
-    static handleDeleteChar(view, from, to, backward = true) {
+    static handlePasteInNode(view, state, dispatch, text, baseTr = null, offsetToEnd = true) {
+        const lines = text.split('\n');
+
+        return this.handleMultiLinePaste(view, state, dispatch, lines, baseTr, offsetToEnd);
+    }
+
+    static handleMultiLinePaste(view, state, dispatch, lines, baseTr = null, offsetToEnd = true) {
+        const { $from } = state.selection;
+        const node = $from.parent;
+
+        const beforeText = node.textContent.slice(0, $from.parentOffset);
+        const afterText = node.textContent.slice($from.parentOffset);
+
+        const paragraphs = [];
+
+        lines.forEach((line, index) => {
+            let paragraphText = '';
+
+            if (lines.length === 1) {
+                paragraphText = beforeText + line + afterText;
+            } else if (index === 0) {
+                paragraphText = beforeText + line;
+            } else if (index === lines.length - 1) {
+                paragraphText = line + afterText;
+            } else {
+                paragraphText = line;
+            }
+
+            let paragraph = NodeConverter.constructParagraph(paragraphText);
+            paragraphs.push(paragraph);
+        });
+
+        const reconstructor = new NodeReconstructor();
+        const reconstructed = reconstructor.applyBlockRules(paragraphs, 0);
+
+        const nodePos = $from.before();
+        const nodeSize = node.nodeSize;
+
+        let cursorOffset = 0;
+        if (offsetToEnd) {
+            reconstructed.forEach((node, index) => {
+                cursorOffset += node.nodeSize;
+            });
+            cursorOffset -= afterText.length + 1;
+        }
+
+        let tr = baseTr || state.tr;
+
+        tr = tr.replaceWith(nodePos, nodePos + nodeSize, reconstructed);
+
+        const cursorPos = nodePos + cursorOffset;
+
+        tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
+
+        dispatch(tr);
+
+        if (offsetToEnd) {
+            setTimeout(() => {
+                view.focus();
+
+                const cursorElement = view.domAtPos(cursorPos).node;
+                if (cursorElement.nodeType === Node.TEXT_NODE) {
+                    cursorElement.parentNode.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                } else {
+                    cursorElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }
+            }, 0);
+        }
+
+        return true;
+    }
+
+    static handleDeleteChar(view, backward = true) {
         const { state, dispatch } = view;
         const { selection } = state;
         const { $from } = selection;
@@ -133,10 +133,6 @@ export class NodeInputter {
             return false;
         }
 
-        if (node.type.name === 'spec_block') {
-            return this.handleDeleteInSpec(view, from, to, backward);
-        }
-
         let newText;
         if (backward) {
             newText = textContent.slice(0, cursorOffset - 1) + textContent.slice(cursorOffset);
@@ -147,108 +143,19 @@ export class NodeInputter {
 
         let newNode;
 
-        if (node.type.name === 'paragraph') {
-            newNode = NodeConverter.constructParagraph(newText);
-        } else {
-            newNode = node.type.create(node.attrs, newText ? markdownSchema.text(newText) : null);
-        }
+        newNode = NodeConverter.constructParagraph(newText);
 
         const nodePos = $from.before();
         const nodeSize = node.nodeSize;
 
         const reconstructor = new NodeReconstructor();
 
-        if (node.type.name === 'paragraph') {
-            const blockResult = reconstructor.applyBlockRules([newNode], nodePos);
-            newNode = blockResult.paragraphs[0];
-        }
-
-        if (backward && cursorOffset === 1) {
-            const parent = $from.node($from.depth - 1);
-            if (parent && parent.type.name === 'notation_block') {
-                const childIndex = $from.indexAfter();
-                if (childIndex === 1) {
-                    if (parent.child(0).type.name === 'spec_block') {
-                        cursorOffset -= 2;
-                    }
-                }
-            }
-        }
-
-        const markReconstruction = reconstructor.reconstructMarksInNode(newNode);
-        if (markReconstruction) {
-            newNode = markReconstruction;
-        }
+        const reconstructed = reconstructor.applyBlockRules([newNode], nodePos);
+        newNode = reconstructed[0];
 
         let tr = state.tr.replaceWith(nodePos, nodePos + nodeSize, newNode);
 
-        if (newNode.type.name == 'notation_block') {
-            cursorOffset += 1;
-        }
-
         const cursorPos = nodePos + cursorOffset;
-        const curSelection = TextSelection.create(tr.doc, cursorPos);
-        tr.setSelection(curSelection);
-
-        dispatch(tr);
-        return true;
-    }
-
-    static handleDeleteInSpec(view, from, to, backward = true) {
-        const { state, dispatch } = view;
-        const { selection } = state;
-        const { $from } = selection;
-        let tr = state.tr;
-
-        const notationBlock = this.findParentNotationBlock($from);
-        if (!notationBlock) return false;
-
-        const { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(notationBlock);
-
-        let cursorOffset = $from.parentOffset;
-
-        if (cursorOffset === 0 && backward || cursorOffset === notationBlock.child(0).nodeSize - 2 && !backward) {
-            return false;
-        }
-
-        let newSpecContent;
-        if (backward) {
-            newSpecContent = specContent.slice(0, cursorOffset - 1) + specContent.slice(cursorOffset);
-        } else {
-            newSpecContent = specContent.slice(0, cursorOffset) + specContent.slice(cursorOffset + 1);
-            cursorOffset += 1;
-        }
-
-        const fullText = newSpecContent + nodeContent;
-        let paragraph = NodeConverter.constructParagraph(fullText);
-
-        const blockPos = $from.before($from.depth - 1);
-        const blockSize = notationBlock.nodeSize;
-
-        const reconstructor = new NodeReconstructor();
-        const blockResult = reconstructor.applyBlockRules([paragraph], blockPos);
-        let reconstructedNode = blockResult.paragraphs[0];
-
-        const markReconstruction = reconstructor.reconstructMarksInNode(reconstructedNode);
-        if (markReconstruction) {
-            reconstructedNode = markReconstruction;
-        }
-
-        tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
-
-        if (reconstructedNode.type.name == 'notation_block') {
-            if (notationBlock.child(0).nodeSize - cursorOffset === 2 && backward) {
-                if (notationBlock.attrs.type == 'tab_list') {
-                    cursorOffset += 1;
-                } else {
-                    cursorOffset += 3;
-                }
-            } else {
-                cursorOffset += 1;
-            }
-        }
-
-        const cursorPos = blockPos + cursorOffset;
         const curSelection = TextSelection.create(tr.doc, cursorPos);
         tr.setSelection(curSelection);
 
@@ -283,6 +190,8 @@ export class NodeInputter {
             { pattern: /\[$/, leftDelimiter: "[", rightDelimiter: "]" },
             { pattern: /\($/, leftDelimiter: "(", rightDelimiter: ")" },
             { pattern: /\{$/, leftDelimiter: "{", rightDelimiter: "}" },
+            { pattern: /"$/, leftDelimiter: "\"", rightDelimiter: "\"" },
+            { pattern: /'$/, leftDelimiter: "\'", rightDelimiter: "'" },
         ];
 
         for (const rule of markRules) {

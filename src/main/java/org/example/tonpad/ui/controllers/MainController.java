@@ -20,7 +20,6 @@ import org.example.tonpad.ui.extentions.VaultPath;
 import org.example.tonpad.ui.service.ThemeService;
 import org.springframework.stereotype.Component;
 
-import java.net.URISyntaxException;
 import java.util.Objects;
 
 @Component
@@ -118,6 +117,7 @@ public class MainController extends AbstractController {
 
 
         searchInTextController.setTabPane(tabPane);
+        searchInTextController.setEditorMap(tabController.getEditorMap());
         searchInTextController.init(searchInTextPane);
 
         settingsController.init(settingsPane);

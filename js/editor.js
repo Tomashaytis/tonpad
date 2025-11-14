@@ -13719,7 +13719,8 @@
           },
           blockquote: {
               attrs: {
-                  renderAs: { default: "blockquote" }
+                  renderAs: { default: "blockquote" },
+                  specOffset: { defult: 0 }
               },
               content: "text*",
               group: "block",
@@ -13740,7 +13741,8 @@
           heading: {
               attrs: {
                   level: { default: 1 },
-                  renderAs: { default: "h" }
+                  renderAs: { default: "h" },
+                  specOffset: { defult: 0 }
               },
               content: "(text | image)*",
               group: "block",
@@ -13767,7 +13769,7 @@
               defining: true,
               marks: "",
               attrs: {
-                  params: { default: "" },
+                  params: { default: "" }
               },
               parseDOM: [
                   {
@@ -13789,14 +13791,16 @@
           tab_list_item: {
               attrs: {
                   level: { default: 1 },
-                  renderAs: { default: "li" }
+                  renderAs: { default: "li" },
+                  specOffset: { defult: 0 },
+                  tabs: { default: [] }
               },
               content: "(text | image)*",
               group: "block",
               defining: true,
               parseDOM: [{ tag: "li" }],
               toDOM(node) { 
-                  const tag = node.attrs.renderAs === "span" ? "span" : "li" + node.attrs.level;
+                  const tag = node.attrs.renderAs === "span" ? "span" : "li";
                   const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
                   return [tag, { class: className }, 0];
@@ -13806,14 +13810,16 @@
               attrs: {
                   level: { default: 1 },
                   marker: { default: ' ' },
-                  renderAs: { default: "li" }
+                  renderAs: { default: "li" },
+                  specOffset: { defult: 0 },
+                  tabs: { default: [] }
               },
               content: "(text | image)*",
               group: "block",
               defining: true,
               parseDOM: [{ tag: "li" }],
               toDOM(node) { 
-                  const tag = node.attrs.renderAs === "span" ? "span" : "li" + node.attrs.level;
+                  const tag = node.attrs.renderAs === "span" ? "span" : "li";
                   const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
                   return [tag, { class: className }, 0];
@@ -13823,14 +13829,16 @@
               attrs: {
                   level: { default: 1 },
                   number: { default: 0 },
-                  renderAs: { default: "li" }
+                  renderAs: { default: "li" },
+                  specOffset: { defult: 0 },
+                  tabs: { default: [] }
               },
               content: "(text | image)*",
               group: "block",
               defining: true,
               parseDOM: [{ tag: "li" }],
               toDOM(node) { 
-                  const tag = node.attrs.renderAs === "span" ? "span" : "li" + node.attrs.level;
+                  const tag = node.attrs.renderAs === "span" ? "span" : "li";
                   const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
                   return [tag, { class: className }, 0];
@@ -13875,76 +13883,6 @@
                   content: { default: "" },
                   isInline: { default: false }
               }
-          },
-          notation_block: {
-              attrs: {
-                  type: { default: "none" },
-                  layout: { default: "row" },
-                  level: { default: 0 },
-              },
-              content: "block+",
-              group: "block",
-              toDOM(node) {
-                  if (node.attrs.type === "heading") {
-                      return ["h" + node.attrs.level, {
-                          class: `notation-block-${node.attrs.layout}`,
-                          'data-level': node.attrs.level
-                      }, 0]
-                  }
-                  if (node.attrs.type === "blockquote") {
-                      return ["div", {
-                          class: `notation-block-${node.attrs.layout} notation-block-quote`
-                      }, 0]
-                  }
-                  if (node.attrs.type === "tab_list") {
-                      return ["div", {
-                          class: `notation-block-${node.attrs.layout} notation-block-tab-list`,
-                          'data-level': node.attrs.level
-                      }, 0]
-                  }
-                  if (node.attrs.type === "bullet_list") {
-                      return ["div", {
-                          class: `notation-block-${node.attrs.layout} notation-block-bullet-list`,
-                          'data-level': node.attrs.level
-                      }, 0]
-                  }
-                  if (node.attrs.type === "ordered_list") {
-                      return ["div", {
-                          class: `notation-block-${node.attrs.layout} notation-block-ordered-list`,
-                          'data-level': node.attrs.level
-                      }, 0]
-                  }
-                  if (node.attrs.type === "checkbox_list") {
-                      return ["div", {
-                          class: `notation-block-${node.attrs.layout} notation-block-checkbox-list`,
-                          'data-level': node.attrs.level
-                      }, 0]
-                  }
-                  return ["div", {
-                      class: `notation-block-${node.attrs.layout}`,
-                      'data-level': node.attrs.level
-                  }, 0]
-              }
-          },
-          spec_block: {
-              attrs: {
-                  type: { default: "none" },
-                  level: { default: 0 },
-                  specClass: { default: "spec-block" },
-              },
-              content: "text*",
-              group: "block",
-              parseDOM: [{ tag: "spec" }],
-              toDOM(node) {
-                  return [
-                      "span",
-                      {
-                          class: `${node.attrs.specClass}`,
-                          'data-level': node.attrs.level
-                      },
-                      0
-                  ];
-              },
           },
       },
       marks: {
@@ -14099,162 +14037,166 @@
           return markdownSchema.nodes.paragraph.create(null, content);
       }
 
-      static constructHeading(text, level) {
+      static constructParagraphWithMarks(contentNodes) {
+          const children = [];
+
+          if (contentNodes && contentNodes.forEach) {
+              contentNodes.forEach(node => children.push(node));
+          } else if (contentNodes) {
+              children.push(contentNodes);
+          }
+
+          return markdownSchema.nodes.paragraph.create(null, contentNodes);
+      }
+
+      static constructHeading(contentNodes, level) {
+          const specOffset = level + 1;
+
+          const children = [
+              markdownSchema.text("#".repeat(level) + " ", [markdownSchema.marks.spec.create({
+                  specClass: "heading-spec"
+              })])
+          ];
+
+          if (contentNodes && contentNodes.forEach) {
+              contentNodes.forEach(node => children.push(node));
+          } else if (contentNodes) {
+              children.push(contentNodes);
+          }
+
           const headingNode = markdownSchema.nodes.heading.create(
               {
                   level: level,
-                  renderAs: "span"
+                  specOffset: specOffset
               },
-              text ? markdownSchema.text(text) : null
+              children
           );
 
-          const specNode = markdownSchema.nodes.spec_block.create(
-              {
-                  level: level,
-                  specClass: "heading-spec",
-              },
-              markdownSchema.text("#".repeat(level) + " ")
-          );
-
-          return markdownSchema.nodes.notation_block.create(
-              {
-                  type: "heading",
-                  layout: "row",
-                  level: level,
-              },
-              [specNode, headingNode]
-          );
+          return headingNode;
       }
 
-      static constructBlockquote(text) {
+      static constructBlockquote(contentNodes) {
+          const specOffset = 2;
+
+          const children = [
+              markdownSchema.text("> ", [markdownSchema.marks.spec.create({
+                  specClass: "blockquote-spec"
+              })])
+          ];
+
+          if (contentNodes && contentNodes.forEach) {
+              contentNodes.forEach(node => children.push(node));
+          } else if (contentNodes) {
+              children.push(contentNodes);
+          }
+
           const blockquoteNode = markdownSchema.nodes.blockquote.create(
               {
-                  renderAs: "span"
+                  specOffset: specOffset
               },
-              text ? markdownSchema.text(text) : null
+              children
           );
 
-          const specNode = markdownSchema.nodes.spec_block.create(
-              {
-                  specClass: "blockquote-spec",
-              },
-              markdownSchema.text("> ")
-          );
-
-          return markdownSchema.nodes.notation_block.create(
-              {
-                  type: "blockquote",
-                  layout: "row",
-              },
-              [specNode, blockquoteNode]
-          );
+          return blockquoteNode;
       }
 
-      static constructTabListItem(text, level) {
-          const tabListNode = markdownSchema.nodes.tab_list_item.create(
-              {
-                  level: level,
-                  renderAs: "span"
-              },
-              text ? markdownSchema.text(text) : null
-          );
+      static constructTabListItem(contentNodes, tabs) {
+          let specOffset = 0;
+          const level = tabs.length;
 
           let index = 0;
-          const textNodes = Array(level).fill(null).map(() =>
-              markdownSchema.text("\t", [markdownSchema.marks.tab.create({
+          const children = Array(level).fill(null).map((_, i) =>
+              markdownSchema.text(tabs[i], [markdownSchema.marks.tab.create({
                   tabIndex: index++
               })])
           );
 
-          const specNode = markdownSchema.nodes.spec_block.create(
-              {
-                  level: level,
-                  specClass: "tab-list-spec",
-              },
-              textNodes
-          );
+          tabs.forEach(tab => {
+              specOffset += tab.length;
+          });
 
-          return markdownSchema.nodes.notation_block.create(
+          if (contentNodes && contentNodes.forEach) {
+              contentNodes.forEach(node => children.push(node));
+          } else if (contentNodes) {
+              children.push(contentNodes);
+          }
+
+          return markdownSchema.nodes.tab_list_item.create(
               {
                   level: level,
-                  type: "tab_list",
-                  layout: "row",
+                  specOffset: specOffset,
+                  tabs: tabs
               },
-              [specNode, tabListNode]
+              children
           );
       }
 
-      static constructBulletListItem(text, level, marker = '-') {
-          const bulletListNode = markdownSchema.nodes.bullet_list_item.create(
+      static constructBulletListItem(contentNodes, tabs, marker = '-') {
+          let specOffset = 2;
+          const level = tabs.length;
+
+          let index = 0;
+          const children = Array(level).fill(null).map((_, i) =>
+              markdownSchema.text(tabs[i], [markdownSchema.marks.tab.create({
+                  tabIndex: index++
+              })])
+          );
+
+          tabs.forEach(tab => {
+              specOffset += tab.length;
+          });
+
+          children.push(markdownSchema.text(marker + " ", [markdownSchema.marks.marker.create()]));
+
+          if (contentNodes && contentNodes.forEach) {
+              contentNodes.forEach(node => children.push(node));
+          } else if (contentNodes) {
+              children.push(contentNodes);
+          }
+
+          return markdownSchema.nodes.bullet_list_item.create(
               {
                   level: level,
                   marker: marker,
-                  renderAs: "span"
+                  specOffset: specOffset,
+                  tabs: tabs
               },
-              text ? markdownSchema.text(text) : null
-          );
-
-          let index = 0;
-          const textNodes = Array(level).fill(null).map(() =>
-              markdownSchema.text("\t", [markdownSchema.marks.tab.create({
-                  tabIndex: index++
-              })])
-          );
-
-          textNodes.push(markdownSchema.text(marker + ' ', [markdownSchema.marks.marker.create()]));
-
-          const specNode = markdownSchema.nodes.spec_block.create(
-              {
-                  level: level,
-                  specClass: "bullet-list-spec",
-              },
-              textNodes
-          );
-
-          return markdownSchema.nodes.notation_block.create(
-              {
-                  level: level,
-                  type: "bullet_list",
-                  layout: "row",
-              },
-              [specNode, bulletListNode]
+              children
           );
       }
 
-      static constructOrderedListItem(text, level, number = 1) {
-          const bulletListNode = markdownSchema.nodes.ordered_list_item.create(
-              {
-                  level: level,
-                  number: number,
-                  renderAs: "span"
-              },
-              text ? markdownSchema.text(text) : null
-          );
+      static constructOrderedListItem(contentNodes, tabs, number = 1) {
+          const marker = `${number}. `;
+          let specOffset = marker.length;
+          const level = tabs.length;
 
           let index = 0;
-          const textNodes = Array(level).fill(null).map(() =>
-              markdownSchema.text("\t", [markdownSchema.marks.tab.create({
+          const children = Array(level).fill(null).map((_, i) =>
+              markdownSchema.text(tabs[i], [markdownSchema.marks.tab.create({
                   tabIndex: index++
               })])
           );
 
-          textNodes.push(markdownSchema.text(`${number}. `, [markdownSchema.marks.marker.create()]));
+          tabs.forEach(tab => {
+              specOffset += tab.length;
+          });
 
-          const specNode = markdownSchema.nodes.spec_block.create(
+          children.push(markdownSchema.text(`${number}. `, [markdownSchema.marks.marker.create()]));
+
+          if (contentNodes && contentNodes.forEach) {
+              contentNodes.forEach(node => children.push(node));
+          } else if (contentNodes) {
+              children.push(contentNodes);
+          }
+
+          return markdownSchema.nodes.ordered_list_item.create(
               {
                   level: level,
-                  specClass: "ordered-list-spec",
+                  number: number,
+                  specOffset: specOffset,
+                  tabs: tabs
               },
-              textNodes
-          );
-
-          return markdownSchema.nodes.notation_block.create(
-              {
-                  level: level,
-                  type: "ordered_list",
-                  layout: "row",
-              },
-              [specNode, bulletListNode]
+              children
           );
       }
 
@@ -14363,7 +14305,7 @@
               //'code_block': this.destructCodeBlock,
           };
 
-          if (node.type.name === "notation_block" && specialHandlers[node.attrs.type]) {
+          if (specialHandlers[node.attrs.type]) {
               return specialHandlers[node.attrs.type].call(this, node);
           }
 
@@ -14416,51 +14358,27 @@
       }
   }
 
-  function findTabLevel(spaces) {
+  function findTabs(spaces) {
       if (!spaces) {
-          return 0;
+          return [];
       }
 
-      let level = 0;
       let index = 0;
+      const tabs = [];
 
       while (index < spaces.length) {
           if (spaces.substring(index, index + 4) === "    ") {
-              level++;
+              tabs.push('    ');
               index += 4;
           } else if (spaces[index] === "\t") {
-              level++;
+              tabs.push('\t');
               index += 1;
           } else {
               index++;
           }
       }
 
-      return level;
-  }
-
-  function correctCursorPos(tr, cursorPos) {
-      const $newPos = tr.doc.resolve(cursorPos);
-
-      const notationBlock = findParentNotationBlock($newPos);
-
-      if (notationBlock && notationBlock.attrs.layout === "row") {
-          if (notationBlock.child(1) === $newPos.parent && $newPos.parentOffset == 0) {
-              cursorPos = cursorPos - 2;
-              return TextSelection.create(tr.doc, cursorPos);
-          }
-      }
-      return null;
-  }
-
-  function findParentNotationBlock($pos) {
-      for (let depth = $pos.depth; depth >= 0; depth--) {
-          const node = $pos.node(depth);
-          if (node && node.type.name === 'notation_block') {
-              return node;
-          }
-      }
-      return null;
+      return tabs;
   }
 
   function findNodePosition(state, targetNode) {
@@ -14552,6 +14470,11 @@
                   name: 'tab_list',
                   pattern: /^((?:(?:    )|\t)+)(.*)$/,
                   handler: this.reconstructTabListItem.bind(this)
+              },
+              {
+                  name: 'paragraph',
+                  pattern: /^(.*)$/,
+                  handler: this.reconstructParagraph.bind(this)
               },
           ];
 
@@ -14714,10 +14637,9 @@
           return paragraphs;
       }
 
-      applyBlockRules(paragraphs, startPos, targetCursorIndex = -1) {
+      applyBlockRules(paragraphs, startPos) {
           const results = [];
           let currentPos = startPos;
-          let blocksBeforeCursor = 0;
 
           for (let i = 0; i < paragraphs.length; i++) {
               const paragraph = paragraphs[i];
@@ -14734,24 +14656,23 @@
 
               results.push(reconstructed || paragraph);
 
-              if (targetCursorIndex !== -1 && i < targetCursorIndex) {
-                  const offset = targetCursorIndex - startPos;
-                  if (reconstructed && reconstructed.type.name === 'notation_block' && reconstructed.attrs.layout === 'row') {
-                      if (offset > reconstructed.child(0).nodeSize - 1) {
-                          blocksBeforeCursor += 3;
-                      } else {
-                          blocksBeforeCursor += 1;
-                      }
-                  }
-              }
-
               currentPos += paragraph.nodeSize;
           }
 
-          return {
-              paragraphs: results,
-              blocksBeforeCursor: blocksBeforeCursor
-          };
+          return results
+      }
+
+      reconstructTextContent(text) {
+          if (!text) return null;
+
+          const textNode = markdownSchema.text(text);
+          const tempParagraph = markdownSchema.nodes.paragraph.create({}, [textNode]);
+          const reconstructed = this.reconstructMarks(tempParagraph);
+          if (reconstructed) {
+              return reconstructed.content;
+          }
+
+          return [textNode];
       }
 
       wrapWithMark(markName, text, href = "") {
@@ -14783,45 +14704,286 @@
           }
       }
 
+      reconstructParagraph(match, originalParagraph, pos) {
+          const [_, content] = match;
+          const textNodes = this.reconstructTextContent(content);
+
+          return NodeConverter.constructParagraphWithMarks(textNodes);
+      }
+
       reconstructHeading(match, originalParagraph, pos) {
           const [_, hashes, content] = match;
           const level = hashes.length;
-          return NodeConverter.constructHeading(content, level);
+
+          const textNodes = this.reconstructTextContent(content);
+
+          return NodeConverter.constructHeading(textNodes, level);
       }
 
       reconstructBlockquote(match, originalParagraph, pos) {
           const [_, content] = match;
 
-          return NodeConverter.constructBlockquote(content);
+          const textNodes = this.reconstructTextContent(content);
+
+          return NodeConverter.constructBlockquote(textNodes);
       }
 
       reconstructTabListItem(match, originalParagraph, pos) {
           const [_, spaces, content] = match;
 
-          const level = findTabLevel(spaces);
+          const tabs = findTabs(spaces);
 
-          return NodeConverter.constructTabListItem(content, level);
+          const textNodes = this.reconstructTextContent(content);
+
+          return NodeConverter.constructTabListItem(textNodes, tabs);
       }
 
       reconstructBulletListItem(match, originalParagraph, pos) {
           const [_, spaces, marker, content] = match;
 
-          const level = findTabLevel(spaces);
+          const tabs = findTabs(spaces);
 
-          return NodeConverter.constructBulletListItem(content, level, marker);
+          const textNodes = this.reconstructTextContent(content);
+
+          return NodeConverter.constructBulletListItem(textNodes, tabs, marker);
       }
 
       reconstructOrderedListItem(match, originalParagraph, pos) {
           const [_, spaces, number, content] = match;
 
-          const level = findTabLevel(spaces);
+          const tabs = findTabs(spaces);
 
-          return NodeConverter.constructOrderedListItem(content, level, parseInt(number));
+          const textNodes = this.reconstructTextContent(content);
+
+          return NodeConverter.constructOrderedListItem(textNodes, tabs, parseInt(number));
       }
 
       reconstructCodeBlock(match, originalParagraph, pos) {
           const [_, language, content] = match;
           return null;
+      }
+  }
+
+  class NodeInputter {
+      static handleInputInNode(state, dispatch, text, baseTr = null) {
+          const { selection } = state;
+          const { $from } = selection;
+
+          const node = $from.parent;
+
+          const marksCheck = this.checkMarks(text, $from);
+
+          const nodePos = $from.before();
+          const nodeSize = node.nodeSize;
+
+          const newText = node.textContent.slice(0, $from.parentOffset) +
+              marksCheck.text +
+              node.textContent.slice($from.parentOffset);
+
+          let newNode = NodeConverter.constructParagraph(newText);
+
+          const reconstructor = new NodeReconstructor();
+
+          const reconstructed = reconstructor.applyBlockRules([newNode], nodePos);
+          newNode = reconstructed[0];
+
+          let tr = baseTr || state.tr;
+
+          tr = tr.replaceWith(nodePos, nodePos + nodeSize, newNode);
+
+          const oldSize = node.nodeSize;
+          const newSize = newNode.nodeSize;
+          const sizeDiff = newSize - oldSize;
+
+          const cursorPos = $from.pos + sizeDiff + marksCheck.offset;
+          tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
+
+          dispatch(tr);
+          return true;
+      }
+
+      static handlePasteInNode(view, state, dispatch, text, baseTr = null, offsetToEnd = true) {
+          const lines = text.split('\n');
+
+          return this.handleMultiLinePaste(view, state, dispatch, lines, baseTr, offsetToEnd);
+      }
+
+      static handleMultiLinePaste(view, state, dispatch, lines, baseTr = null, offsetToEnd = true) {
+          const { $from } = state.selection;
+          const node = $from.parent;
+
+          const beforeText = node.textContent.slice(0, $from.parentOffset);
+          const afterText = node.textContent.slice($from.parentOffset);
+
+          const paragraphs = [];
+
+          lines.forEach((line, index) => {
+              let paragraphText = '';
+
+              if (lines.length === 1) {
+                  paragraphText = beforeText + line + afterText;
+              } else if (index === 0) {
+                  paragraphText = beforeText + line;
+              } else if (index === lines.length - 1) {
+                  paragraphText = line + afterText;
+              } else {
+                  paragraphText = line;
+              }
+
+              let paragraph = NodeConverter.constructParagraph(paragraphText);
+              paragraphs.push(paragraph);
+          });
+
+          const reconstructor = new NodeReconstructor();
+          const reconstructed = reconstructor.applyBlockRules(paragraphs, 0);
+
+          const nodePos = $from.before();
+          const nodeSize = node.nodeSize;
+
+          let cursorOffset = 0;
+          if (offsetToEnd) {
+              reconstructed.forEach((node, index) => {
+                  cursorOffset += node.nodeSize;
+              });
+              cursorOffset -= afterText.length + 1;
+          }
+
+          let tr = baseTr || state.tr;
+
+          tr = tr.replaceWith(nodePos, nodePos + nodeSize, reconstructed);
+
+          const cursorPos = nodePos + cursorOffset;
+
+          tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
+
+          dispatch(tr);
+
+          if (offsetToEnd) {
+              setTimeout(() => {
+                  view.focus();
+
+                  const cursorElement = view.domAtPos(cursorPos).node;
+                  if (cursorElement.nodeType === Node.TEXT_NODE) {
+                      cursorElement.parentNode.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'center',
+                          inline: 'nearest'
+                      });
+                  } else {
+                      cursorElement.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'center',
+                          inline: 'nearest'
+                      });
+                  }
+              }, 0);
+          }
+
+          return true;
+      }
+
+      static handleDeleteChar(view, backward = true) {
+          const { state, dispatch } = view;
+          const { selection } = state;
+          const { $from } = selection;
+
+          const node = $from.parent;
+          const textContent = node.textContent;
+          let cursorOffset = $from.parentOffset;
+
+          if (cursorOffset === 0 && backward || cursorOffset === node.nodeSize - 2 && !backward) {
+              return false;
+          }
+
+          let newText;
+          if (backward) {
+              newText = textContent.slice(0, cursorOffset - 1) + textContent.slice(cursorOffset);
+          } else {
+              newText = textContent.slice(0, cursorOffset) + textContent.slice(cursorOffset + 1);
+              cursorOffset += 1;
+          }
+
+          let newNode;
+
+          newNode = NodeConverter.constructParagraph(newText);
+
+          const nodePos = $from.before();
+          const nodeSize = node.nodeSize;
+
+          const reconstructor = new NodeReconstructor();
+
+          const reconstructed = reconstructor.applyBlockRules([newNode], nodePos);
+          newNode = reconstructed[0];
+
+          let tr = state.tr.replaceWith(nodePos, nodePos + nodeSize, newNode);
+
+          const cursorPos = nodePos + cursorOffset;
+          const curSelection = TextSelection.create(tr.doc, cursorPos);
+          tr.setSelection(curSelection);
+
+          dispatch(tr);
+          return true;
+      }
+
+      static findParentNotationBlock($pos) {
+          for (let depth = $pos.depth; depth >= 0; depth--) {
+              const node = $pos.node(depth);
+              if (node && node.type.name === 'notation_block') {
+                  return node;
+              }
+          }
+          return null;
+      }
+
+      static checkMarks(text, $from) {
+          if (!$from.parent.isTextblock) return null;
+
+          const parent = $from.parent;
+          const textBefore = parent.textBetween(0, $from.parentOffset);
+          const textAfter = parent.textBetween($from.parentOffset, parent.nodeSize - 2);
+
+          const markRules = [
+              { pattern: /\*\*$/, leftDelimiter: "**", rightDelimiter: "**" },
+              { pattern: /\*$/, leftDelimiter: "*", rightDelimiter: "*" },
+              { pattern: /~~$/, leftDelimiter: "~~", rightDelimiter: "~~" },
+              { pattern: /==$/, leftDelimiter: "==", rightDelimiter: "==" },
+              { pattern: /__$/, leftDelimiter: "__", rightDelimiter: "__" },
+              { pattern: /`$/, leftDelimiter: "`", rightDelimiter: "`" },
+              { pattern: /\[$/, leftDelimiter: "[", rightDelimiter: "]" },
+              { pattern: /\($/, leftDelimiter: "(", rightDelimiter: ")" },
+              { pattern: /\{$/, leftDelimiter: "{", rightDelimiter: "}" },
+              { pattern: /"$/, leftDelimiter: "\"", rightDelimiter: "\"" },
+              { pattern: /'$/, leftDelimiter: "\'", rightDelimiter: "'" },
+          ];
+
+          for (const rule of markRules) {
+              if (rule.pattern.test(textBefore + text)) {
+                  if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && !textAfter.startsWith(' ')) {
+                      break;
+                  }
+                  if (textAfter.startsWith(rule.rightDelimiter[0])) {
+                      return {
+                          text: "",
+                          offset: 1
+                      };
+                  }
+                  if (rule.leftDelimiter == "**" && rule.pattern.test(textBefore)) {
+                      return {
+                          text: rule.rightDelimiter,
+                          offset: -2
+                      };
+                  }
+                  return {
+                      text: text + rule.rightDelimiter,
+                      offset: -rule.rightDelimiter.length
+                  };
+              }
+          }
+
+          return {
+              text: text,
+              offset: 0
+          };
       }
   }
 
@@ -23973,41 +24135,12 @@
           },
 
           heading: (state, node) => {
-              state.write("#".repeat(node.attrs.level) + " ");
               state.renderInline(node);
               state.write("\n");
           },
 
-          notation_block: (state, node) => {
-              if (node.attrs.type === 'heading') {
-                  state.write("#".repeat(node.attrs.level) + " ");
-                  state.renderInline(node.child(1));
-                  state.write("\n");
-              } else if (node.attrs.type === 'blockquote') {
-                  state.write("> ");
-                  state.renderInline(node.child(1));
-                  state.write("\n");
-              } else if (node.attrs.type === 'tab_list') {
-                  state.write("\t".repeat(node.attrs.level));
-                  state.renderInline(node.child(1));
-                  state.write("\n");
-              } else if (node.attrs.type === 'bullet_list') {
-                  state.write("\t".repeat(node.attrs.level));
-                  state.write(node.child(1).attrs.marker + ' ');
-                  state.renderInline(node.child(1));
-                  state.write("\n");
-              } else if (node.attrs.type === 'ordered_list') {
-                  state.write("\t".repeat(node.attrs.level));
-                  state.write(`${node.child(1).attrs.number}. `);
-                  state.renderInline(node.child(1));
-                  state.write("\n");
-              } else {
-                  state.renderContent(node);
-              }
-          },
-
           blockquote: (state, node) => {
-              state.wrapBlock("> ", null, node, () => state.renderContent(node));
+              state.renderInline(node);
               state.write("\n");
           },
 
@@ -24021,14 +24154,18 @@
               state.write("\n```\n");
           },
 
-          bullet_list: (state, node) => {
-              state.renderList(node, "  ", () => "- ");
+          tab_list_item: (state, node) => {
+              state.renderInline(node);
               state.write("\n");
           },
 
-          ordered_list: (state, node) => {
-              const start = node.attrs.order || 1;
-              state.renderList(node, "  ", (i) => `${start + i}. `);
+          bullet_list_item: (state, node) => {
+              state.renderInline(node);
+              state.write("\n");
+          },
+
+          ordered_list_item: (state, node) => {
+              state.renderInline(node);
               state.write("\n");
           },
 
@@ -24056,6 +24193,20 @@
       },
       {
           spec: {
+              open: "",
+              close: "",
+              mixable: true,
+              expelEnclosingWhitespace: true,
+              escape: false
+          },
+          tab: {
+              open: "",
+              close: "",
+              mixable: true,
+              expelEnclosingWhitespace: true,
+              escape: false
+          },
+          marker: {
               open: "",
               close: "",
               mixable: true,
@@ -24113,132 +24264,63 @@
               handleKeyDown: keydownHandler({
                   "ArrowDown": (state, dispatch, view) => {
                       const { $from } = state.selection;
+                      let currentOffset = $from.parentOffset;
                       const navInfo = getNavigationInfo(state);
                       const nextNode = getNeighbor(navInfo, 'next');
-                      let currentOffset = $from.parentOffset;
-                      if ($from.parent.type.name === 'spec_block') {
-                          currentOffset = 0;
-                      }
-                      
-                      let tr = state.tr;
 
-                      if (navInfo.targetNode.type.name === 'notation_block' && navInfo.targetNode.attrs.layout === 'col') {
-                          return false;
-                      }
+                      if (!nextNode) return false;
 
-                      if (nextNode) {
-                          if (nextNode.type.name === 'notation_block' && nextNode.attrs.layout === 'col') {
-                              return false;
+                      const nextNodePos = findNodePosition(state, nextNode);
+
+                      if ($from.parent.attrs.specOffset && nextNode.attrs.specOffset) {
+                          if ($from.parent.attrs.specOffset && currentOffset >= $from.parent.attrs.specOffset) {
+                              currentOffset -= $from.parent.attrs.specOffset;
                           }
-
-                          if (nextNode.type.name === 'notation_block' && nextNode.childCount >= 2) {
-                              const nextNodePos = findNodePosition(state, nextNode);
-                              if (nextNodePos !== -1) {
-                                  const secondChildPos = nextNodePos + nextNode.child(0).nodeSize + 2;
-                                  const $pos = state.doc.resolve(secondChildPos);
-
-                                  const targetOffset = Math.min(currentOffset, $pos.parent.content.size, nextNode.nodeSize - 2);
-                                  let targetPos = $pos.pos + targetOffset;
-
-                                  const correctedSelection = correctCursorPos(tr, targetPos);
-                                  if (correctedSelection) {
-                                      tr = tr.setSelection(correctedSelection);
-                                  } else {
-                                      tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
-                                  }
-                                  
-                                  dispatch(tr);
-                                  return true;
-                              }
-                          } else {
-                              const nextNodePos = findNodePosition(state, nextNode);
-                              if (nextNodePos !== -1) {
-                                  const $pos = state.doc.resolve(nextNodePos);
-                                  const targetOffset = Math.min(currentOffset, $pos.parent.content.size, nextNode.nodeSize - 2);
-                                  let targetPos = $pos.pos + targetOffset + 1;
-
-                                  const correctedSelection = correctCursorPos(tr, targetPos);
-                                  if (correctedSelection) {
-                                      tr = tr.setSelection(correctedSelection);
-                                  } else {
-                                      tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
-                                  }
-                                  
-                                  dispatch(tr);
-                                  return true;
-                              }
+                          currentOffset += nextNode.attrs.specOffset;
+                      } else {
+                          if ($from.parent.attrs.specOffset && currentOffset >= $from.parent.attrs.specOffset) {
+                              currentOffset -= $from.parent.attrs.specOffset;
+                          }
+                          if (nextNode.attrs.specOffset) {
+                              currentOffset += nextNode.attrs.specOffset;
                           }
                       }
-                      return false;
+
+                      const newPos = nextNodePos + Math.min(currentOffset + 1, nextNode.nodeSize - 1);
+                      const tr = state.tr.setSelection(state.selection.constructor.near(state.tr.doc.resolve((newPos))));
+
+                      if (dispatch) dispatch(tr);
+                      return true;
                   },
                   "ArrowUp": (state, dispatch, view) => {
                       const { $from } = state.selection;
                       let currentOffset = $from.parentOffset;
-                      if ($from.parent.type.name === 'spec_block') {
-                          currentOffset = 0;
-                      }
                       const navInfo = getNavigationInfo(state);
                       const prevNode = getNeighbor(navInfo, 'previous');
-                      
-                      let tr = state.tr;
 
-                      if (navInfo.targetNode.type.name === 'notation_block' && navInfo.targetNode.attrs.layout === 'col') {
-                          return false;
-                      }
+                      if (!prevNode) return false;
 
-                      /*if (navInfo && navInfo.targetNode && navInfo.targetNode.type.name === 'notation_block' && !($from.parent.type.name === 'spec_block' && currentOffset === 0)) {
-                          const notationBlock = navInfo.targetNode;
-                          const notationPos = findNodePosition(state, notationBlock);
-                          if (notationPos !== -1) {
-                              let targetPos = notationPos + 2;
+                      const prevNodePos = findNodePosition(state, prevNode);
 
-                              const correctedSelection = correctCursorPosWithoutChanges(tr, targetPos);
-                              if (correctedSelection) {
-                                  tr = tr.setSelection(correctedSelection);
-                              } else {
-                                  tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
-                              }
-                              
-                              dispatch(tr);
-                              return true;
+                      if ($from.parent.attrs.specOffset && prevNode.attrs.specOffset) {
+                          if ($from.parent.attrs.specOffset && currentOffset >= $from.parent.attrs.specOffset) {
+                              currentOffset -= $from.parent.attrs.specOffset;
                           }
-                      }*/
-
-                      if (prevNode.type.name === 'notation_block' && prevNode.attrs.layout === 'col') {
-                          return false;
-                      }
-
-                      if (prevNode) {
-                          let targetPos;
-
-                          if (prevNode.type.name === 'notation_block' && prevNode.childCount >= 2) {
-                              const prevNodePos = findNodePosition(state, prevNode);
-                              if (prevNodePos !== -1) {
-                                  const secondChildPos = prevNodePos + prevNode.child(0).nodeSize + 2;
-                                  const $pos = state.doc.resolve(secondChildPos);
-                                  targetPos = $pos.pos + Math.min(currentOffset, $pos.parent.content.size, prevNode.nodeSize - 2);
-                              }
-                          } else {
-                              const prevNodePos = findNodePosition(state, prevNode);
-                              if (prevNodePos !== -1) {
-                                  const $pos = state.doc.resolve(prevNodePos);
-                                  targetPos = $pos.pos + Math.min(currentOffset, $pos.parent.content.size, prevNode.nodeSize - 2) + 1;
-                              }
+                          currentOffset += prevNode.attrs.specOffset;
+                      } else {
+                          if ($from.parent.attrs.specOffset && currentOffset >= $from.parent.attrs.specOffset) {
+                              currentOffset -= $from.parent.attrs.specOffset;
                           }
-
-                          if (targetPos !== undefined) {
-                              const correctedSelection = correctCursorPos(tr, targetPos);
-                              if (correctedSelection) {
-                                  tr = tr.setSelection(correctedSelection);
-                              } else {
-                                  tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
-                              }
-                              
-                              dispatch(tr);
-                              return true;
+                          if (prevNode.attrs.specOffset) {
+                              currentOffset += prevNode.attrs.specOffset;
                           }
                       }
-                      return false;
+
+                      const newPos = prevNodePos + Math.min(currentOffset + 1, prevNode.nodeSize - 1);
+                      const tr = state.tr.setSelection(state.selection.constructor.near(state.tr.doc.resolve((newPos))));
+
+                      if (dispatch) dispatch(tr);
+                      return true;
                   },
               })
           }
@@ -24894,13 +24976,7 @@
       static performMerge(state, currentPos, neighborInfo, direction) {
           const $current = state.doc.resolve(currentPos);
 
-          let mergeParams;
-
-          mergeParams = this.handleSpecialCases($current, neighborInfo, direction);
-
-          if (!mergeParams) {
-              mergeParams = this.getNormalMergeParams($current, neighborInfo, direction);
-          }
+          const mergeParams = this.getMergeParams($current, neighborInfo, direction);
 
           if (!mergeParams) return null;
 
@@ -24911,48 +24987,7 @@
           return tr;
       }
 
-      static handleSpecialCases($current, neighborInfo, direction) {
-          const currentParent = $current.node($current.depth - 1);
-          const neighborParent = neighborInfo.parent;
-
-          if (currentParent === neighborParent &&
-              currentParent.type.name === 'notation_block' &&
-              currentParent.attrs.layout === 'row') {
-
-              return this.handleNotationBlockRowMerge($current, currentParent, direction);
-          }
-
-          return null;
-      }
-
-      static handleNotationBlockRowMerge($current, currentParent, direction) {
-          const blockDepth = $current.depth - 1;
-          const from = $current.start(blockDepth) - 1;
-          const to = from + currentParent.nodeSize;
-
-          let { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(currentParent);
-
-          if (direction === 'up') {
-              specContent = specContent.slice(1);
-          } else {
-              nodeContent = nodeContent.slice(1);
-          }
-
-          let cursorPos = from + specContent.length + 1;
-
-          const mergedText = specContent + nodeContent;
-
-          const mergedParagraph = NodeConverter.constructParagraph(mergedText);
-
-          return {
-              from,
-              to,
-              mergedParagraphs: [mergedParagraph],
-              cursorPos
-          };
-      }
-
-      static getNormalMergeParams($current, neighborInfo, direction) {
+      static getMergeParams($current, neighborInfo, direction) {
           const parentDepth = neighborInfo.depth - 1;
           const parent = neighborInfo.parent;
 
@@ -25047,15 +25082,14 @@
       static applyReconstruction(tr, mergedParagraphs, from, to, cursorPos) {
           const reconstructor = new NodeReconstructor();
 
-          const blockResult = reconstructor.applyBlockRules(mergedParagraphs, from, cursorPos);
-          const blockReconstructed = blockResult.paragraphs;
+          const reconstructed = reconstructor.applyBlockRules(mergedParagraphs, from);
+          const blockReconstructed = reconstructed;
           const hasBlockChanges = blockReconstructed.some((para, index) => para !== mergedParagraphs[index]);
 
           let finalParagraphs = mergedParagraphs;
 
           if (hasBlockChanges) {
               finalParagraphs = blockReconstructed;
-              cursorPos += blockResult.blocksBeforeCursor;
           }
 
           const reconstructedParagraphs = finalParagraphs.map(paragraph => {
@@ -25082,109 +25116,9 @@
   }
 
   class NodeSplitter {
-      static handleEnter(view, event) {
-          const { state, dispatch } = view;
+      static splitBlockNode(state, dispatch, baseTr = null) {
           const { selection } = state;
           const { $from } = selection;
-
-          if ($from.parent.type.name === 'spec_block') {
-              return this.handleEnterInSpec(view, event);
-          }
-
-          const notationBlock = this.findParentNotationBlock($from);
-          if (notationBlock && notationBlock.attrs.layout === 'row') {
-              return this.handleEnterInNotationBlock(view, event, notationBlock);
-          }
-
-          return this.handleNormalEnter(view, event);
-      }
-
-      static findParentNotationBlock($pos) {
-          for (let depth = $pos.depth; depth >= 0; depth--) {
-              const node = $pos.node(depth);
-              if (node && node.type.name === 'notation_block') {
-                  return node;
-              }
-          }
-          return null;
-      }
-
-      static handleEnterInSpec(view, event) {
-          const { state, dispatch } = view;
-          const { selection } = state;
-          const { $from } = selection;
-
-          const notationBlock = this.findParentNotationBlock($from);
-          if (!notationBlock) return false;
-
-          event.preventDefault();
-
-          const paragraph = NodeConverter.destructNode(notationBlock)[0];
-          const fullText = paragraph.textContent;
-          const cursorOffset = $from.parentOffset;
-
-          const beforeText = fullText.slice(0, cursorOffset);
-          const afterText = fullText.slice(cursorOffset);
-
-          const blockPos = $from.before($from.depth - 1);
-          const blockSize = notationBlock.nodeSize;
-          let offset = 1;
-
-          let newNodes = [];
-
-          let upperNode;
-          let lowerNode;
-          if (notationBlock.attrs.type === 'blockquote' && notationBlock.child(1).textContent.length !== 0) {
-              upperNode = NodeConverter.constructParagraph(beforeText);
-              lowerNode = NodeConverter.constructBlockquote(afterText);
-              offset += lowerNode.child(0).nodeSize - 1;
-              newNodes.push(upperNode);
-          } else if (notationBlock.attrs.type === 'tab_list' && notationBlock.child(1).textContent.length !== 0) {
-              upperNode = NodeConverter.constructParagraph(beforeText);
-              lowerNode = NodeConverter.constructTabListItem(afterText, notationBlock.attrs.level);
-              offset += lowerNode.child(0).nodeSize - 1;
-              newNodes.push(upperNode);
-          } else if (notationBlock.attrs.type === 'bullet_list' && notationBlock.child(1).textContent.length !== 0) {
-              upperNode = NodeConverter.constructParagraph(beforeText);
-              lowerNode = NodeConverter.constructBulletListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.marker);
-              offset += lowerNode.child(0).nodeSize - 1;
-              newNodes.push(upperNode);
-          } else if (notationBlock.attrs.type === 'ordered_list' && notationBlock.child(1).textContent.length !== 0) {
-              upperNode = NodeConverter.constructParagraph(beforeText);
-              lowerNode = NodeConverter.constructOrderedListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.number + 1);
-              offset += lowerNode.child(0).nodeSize - 1;
-              newNodes.push(upperNode);
-          } else {
-              if (!['blockquote', 'tab_list', 'bullet_list', 'ordered_list'].includes(notationBlock.attrs.type)) {
-                  upperNode = NodeConverter.constructParagraph(beforeText);
-                  newNodes.push(upperNode);
-              }
-              lowerNode = NodeConverter.constructParagraph(afterText);
-          }
-          newNodes.push(lowerNode);
-
-          let tr = state.tr;
-          const reconstructedNodes = this.applyReconstruction(newNodes);
-          tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNodes);
-
-          if (reconstructedNodes.length > 1) {
-              const cursorPos = blockPos + reconstructedNodes[0].nodeSize + offset;
-              tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
-          } else if (reconstructedNodes.length === 1) {
-              const cursorPos = blockPos + reconstructedNodes[0].nodeSize - 1;
-              tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
-          }
-
-          dispatch(tr);
-          return true;
-      }
-
-      static handleNormalEnter(view, event) {
-          const { state, dispatch } = view;
-          const { selection } = state;
-          const { $from } = selection;
-
-          event.preventDefault();
 
           const node = $from.parent;
           const nodePos = $from.before();
@@ -25200,79 +25134,92 @@
           let upperNode, lowerNode;
 
           if (beforeText) {
-              upperNode = node.type.create(node.attrs, markdownSchema.text(beforeText));
+              upperNode = NodeConverter.constructParagraph(markdownSchema.text(beforeText));
           } else {
               upperNode = NodeConverter.constructParagraph();
           }
-          newNodes.push(upperNode);
 
-          if (afterText) {
-              lowerNode = node.type.create(node.attrs, markdownSchema.text(afterText));
+          let useSpecOffset = false;
+
+          if (node.type.name === 'blockquote') {
+              if (cursorOffset === node.attrs.specOffset && afterText === '') {
+                  upperNode = NodeConverter.constructParagraph();
+                  newNodes.push(upperNode);
+              } else {
+                  const spec = node.textContent.slice(0, node.attrs.specOffset);
+                  lowerNode = NodeConverter.constructParagraph(markdownSchema.text(spec + afterText));
+                  useSpecOffset = true;
+                  newNodes.push(upperNode);
+                  newNodes.push(lowerNode);
+              }
+          } else if (node.type.name === 'tab_list_item') {
+              if (cursorOffset === node.attrs.specOffset && afterText === '') {
+                  const spec = node.attrs.tabs.slice(0, -1).join('');
+                  upperNode = NodeConverter.constructParagraph(spec ? markdownSchema.text(spec) : null);
+                  newNodes.push(upperNode);
+              } else {
+                  const spec = node.textContent.slice(0, node.attrs.specOffset);
+                  lowerNode = NodeConverter.constructParagraph(markdownSchema.text(spec + afterText));
+                  useSpecOffset = true;
+                  newNodes.push(upperNode);
+                  newNodes.push(lowerNode);
+              }
+          } else if (node.type.name === 'bullet_list_item') {
+              if (cursorOffset === node.attrs.specOffset && afterText === '') {
+                  let spec;
+                  if (node.attrs.level > 0) {
+                      spec = node.attrs.tabs.slice(0, -1).join('') + `${node.attrs.marker} `;
+                  } else {
+                      spec = '';
+                  }
+                  upperNode = NodeConverter.constructParagraph(spec ? markdownSchema.text(spec) : null);
+                  newNodes.push(upperNode);
+              } else {
+                  const spec = node.textContent.slice(0, node.attrs.specOffset);
+                  lowerNode = NodeConverter.constructParagraph(markdownSchema.text(spec + afterText));
+                  useSpecOffset = true;
+                  newNodes.push(upperNode);
+                  newNodes.push(lowerNode);
+              }
+          } else if (node.type.name === 'ordered_list_item') {
+              if (cursorOffset === node.attrs.specOffset && afterText === '') {
+                  let spec;
+                  if (node.attrs.level > 0) {
+                      spec = node.attrs.tabs.slice(0, -1).join('') + `${node.attrs.number}. `;
+                  } else {
+                      spec = '';
+                  }
+                  upperNode = NodeConverter.constructParagraph(spec ? markdownSchema.text(spec) : null);
+                  newNodes.push(upperNode);
+              } else {
+                  const spec = node.attrs.tabs.join('') + `${node.attrs.number + 1}. `;
+                  lowerNode = NodeConverter.constructParagraph(markdownSchema.text(spec + afterText));
+                  useSpecOffset = true;
+                  newNodes.push(upperNode);
+                  newNodes.push(lowerNode);
+              }
           } else {
-              lowerNode = NodeConverter.constructParagraph();
+              if (afterText) {
+                  lowerNode = NodeConverter.constructParagraph(markdownSchema.text(afterText));
+              } else {
+                  lowerNode = NodeConverter.constructParagraph();
+              }
+              newNodes.push(upperNode);
+              newNodes.push(lowerNode);
           }
-          newNodes.push(lowerNode);
 
-          let tr = state.tr;
+          let tr = baseTr || state.tr;
           const reconstructedNodes = this.applyReconstruction(newNodes);
           tr = tr.replaceWith(nodePos, nodePos + nodeSize, reconstructedNodes);
 
           if (reconstructedNodes.length > 1) {
-              const cursorPos = nodePos + reconstructedNodes[0].nodeSize + 1;
+              let specOffset = 0;
+              if (useSpecOffset) {
+                  specOffset = reconstructedNodes[1].attrs.specOffset;
+              }
+              const cursorPos = nodePos + reconstructedNodes[0].nodeSize + 1 + specOffset;
               tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
           }
-
-          dispatch(tr);
-          return true;
-      }
-
-      static handleEnterInNotationBlock(view, event, notationBlock) {
-          const { state, dispatch } = view;
-          const { selection } = state;
-          const { $from } = selection;
-
-          event.preventDefault();
-
-          const blockPos = $from.before($from.depth - 1);
-          const blockSize = notationBlock.nodeSize;
-          const cursorOffset = $from.parentOffset;
-
-          const nodeSpecContent = notationBlock.child(0).textContent;
-          const nodeContent = notationBlock.child(1).textContent;
-          const beforeText = nodeContent.slice(0, cursorOffset);
-          const afterText = nodeContent.slice(cursorOffset);
-          let offset = 1;
-
-          let newNodes = [];
-
-          const upperNode = NodeConverter.constructParagraph(nodeSpecContent + beforeText);
-
-          newNodes.push(upperNode);
-
-          let lowerNode;
-          if (notationBlock.attrs.type === 'blockquote') {
-              lowerNode = NodeConverter.constructBlockquote(afterText);
-              offset += lowerNode.child(0).nodeSize - 1;
-          } else if (notationBlock.attrs.type === 'tab_list') {
-              lowerNode = NodeConverter.constructTabListItem(afterText, notationBlock.attrs.level);
-              offset += lowerNode.child(0).nodeSize - 1;
-          } else if (notationBlock.attrs.type === 'bullet_list') {
-              lowerNode = NodeConverter.constructBulletListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.marker);
-              offset += lowerNode.child(0).nodeSize - 1;
-          } else if (notationBlock.attrs.type === 'ordered_list') {
-              lowerNode = NodeConverter.constructOrderedListItem(afterText, notationBlock.attrs.level, notationBlock.child(1).attrs.number + 1);
-              offset += lowerNode.child(0).nodeSize - 1;
-          } else {
-              lowerNode = NodeConverter.constructParagraph(afterText);
-          }
-          newNodes.push(lowerNode);
-
-          let tr = state.tr;
-          const reconstructedNodes = this.applyReconstruction(newNodes);
-          tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNodes);
-
-          const cursorPos = blockPos + (beforeText ? reconstructedNodes[0].nodeSize : nodeSpecContent.length + 4) + offset;
-          tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
 
           dispatch(tr);
           return true;
@@ -25285,8 +25232,8 @@
           for (let i = 0; i < nodes.length; i++) {
               const node = nodes[i];
 
-              const blockResult = reconstructor.applyBlockRules([node], 0);
-              let reconstructedNode = blockResult.paragraphs[0];
+              const reconstructed = reconstructor.applyBlockRules([node], 0);
+              let reconstructedNode = reconstructed[0];
 
               const markReconstruction = reconstructor.reconstructMarksInNode(reconstructedNode);
               if (markReconstruction) {
@@ -25300,316 +25247,63 @@
       }
   }
 
-  class NodeInputter {
-      static handleInputInSpec(view, from, to, text) {
-          const { state, dispatch } = view;
+  class NodeSelector {
+      static createDeleteSelectionTransaction(view) {
+          const { state } = view;
           const { selection } = state;
-          const { $from } = selection;
-          const notationBlock = this.findParentNotationBlock($from);
-          if (!notationBlock) return false;
+          const { $from, $to } = selection;
 
-          const { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(notationBlock);
-
-          let cursorOffset = $from.parentOffset;
-
-          let marksCheck = {
-              text: text,
-              offset: 0
-          };
-
-          if (cursorOffset === notationBlock.child(0).nodeSize - 2) {
-              marksCheck = this.checkMarks(text, $from);
-              if (marksCheck.text !== '') {
-                  marksCheck.offset += 3;
-              }
+          if (selection.empty) {
+              return state.tr;
           }
 
-          const newSpecContent =
-              specContent.slice(0, cursorOffset) +
-              marksCheck.text +
-              specContent.slice(cursorOffset);
+          const fromPos = $from.pos;
 
-          let fullText = newSpecContent + nodeContent;
+          const firstNode = $from.parent;
+          const lastNode = $to.parent;
 
-          let paragraph = NodeConverter.constructParagraph(fullText);
-          const blockPos = $from.before($from.depth - 1);
-          const blockSize = notationBlock.nodeSize;
+          const firstNodePos = $from.before();
+          const lastNodePos = $to.before();
+
+          const textBeforeSelection = firstNode.textContent.slice(0, $from.parentOffset);
+          const textAfterSelection = lastNode.textContent.slice($to.parentOffset);
+
+          const newText = textBeforeSelection + textAfterSelection;
+          let newNode = NodeConverter.constructParagraph(newText);
 
           const reconstructor = new NodeReconstructor();
-          const blockResult = reconstructor.applyBlockRules([paragraph], blockPos, from + cursorOffset);
-          let reconstructedNode = blockResult.paragraphs[0];
+          const reconstructed = reconstructor.applyBlockRules([newNode], firstNodePos);
+          newNode = reconstructed[0];
 
-          const markReconstruction = reconstructor.reconstructMarksInNode(reconstructedNode);
-          if (markReconstruction) {
-              reconstructedNode = markReconstruction;
-          }
+          const tr = state.tr.replaceWith(firstNodePos, lastNodePos + lastNode.nodeSize, newNode);
 
-          let tr = state.tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
+          const cursorPos = fromPos;
+          tr.setSelection(TextSelection.create(tr.doc, cursorPos));
 
-          if (reconstructedNode.type.name == 'notation_block') {
-              if (['tab_list', 'bullet_list', 'ordered_list'].includes(reconstructedNode.attrs.type) && text === '\t') {
-                  if (notationBlock.child(0).nodeSize - cursorOffset === 2) {
-                      cursorOffset -= 2;
-                  } else {
-                      cursorOffset += 1;
-                  }
-              } else {
-                  if (reconstructedNode.child(0).nodeSize === notationBlock.child(0).nodeSize) {
-                      cursorOffset += 0;
-                  } else if (reconstructedNode.child(0).nodeSize < notationBlock.child(0).nodeSize) {
-                      cursorOffset += 3;
-                  } else {
-                      cursorOffset += 1;
-                  }
-              }
-          }
-
-          const cursorPos = blockPos + cursorOffset + marksCheck.offset + 2;
-          const curSelection = TextSelection.create(tr.doc, cursorPos);
-          tr = tr.setSelection(curSelection);
-
-          dispatch(tr);
-          return true;
+          return tr;
       }
 
-      static handleInputInNormalNode(view, from, to, text) {
-          const { state, dispatch } = view;
-          const { selection } = state;
-          const { $from } = selection;
+      static copySelectionToClipboard(view, event) {
+          const { state } = view;
+          const { selection, doc } = state;
+          const { $from, $to } = selection;
 
-          const node = $from.parent;
+          const fragment = doc.content.cut($from.pos, $to.pos);
 
-          const marksCheck = this.checkMarks(text, $from);
+          const tempDoc = state.schema.topNodeType.create({}, fragment);
+          const markdownText = markdownSerializer.serialize(tempDoc);
+          const cleanedText = markdownText.replace(/\n{3,}/g, '\n\n').trim();
 
-          const nodePos = $from.before();
-          const nodeSize = node.nodeSize;
-
-          const newText = node.textContent.slice(0, $from.parentOffset) +
-              marksCheck.text +
-              node.textContent.slice($from.parentOffset);
-
-          let newNode = node.type.create(node.attrs, markdownSchema.text(newText));
-
-          const reconstructor = new NodeReconstructor();
-
-          const blockResult = reconstructor.applyBlockRules([newNode], nodePos);
-          newNode = blockResult.paragraphs[0];
-
-          const markReconstruction = reconstructor.reconstructMarksInNode(newNode);
-          if (markReconstruction) {
-              newNode = markReconstruction;
+          if (event.clipboardData) {
+              event.clipboardData.setData('text/plain', cleanedText);
+              event.clipboardData.setData('text/markdown', cleanedText);
+              event.preventDefault();
+          } else if (event.dataTransfer) {
+              event.dataTransfer.setData('text/plain', cleanedText);
+              event.dataTransfer.setData('text/markdown', cleanedText);
           }
 
-          if (newNode !== node) {
-              const tr = state.tr.replaceWith(nodePos, nodePos + nodeSize, newNode);
-
-              const oldSize = node.nodeSize;
-              const newSize = newNode.nodeSize;
-              const sizeDiff = newSize - oldSize;
-
-              const cursorPos = $from.pos + sizeDiff + marksCheck.offset;
-              tr.setSelection(selection.constructor.near(tr.doc.resolve(cursorPos)));
-
-              dispatch(tr);
-              return true;
-          }
-
-          return false;
-      }
-
-      static handleDeleteChar(view, from, to, backward = true) {
-          const { state, dispatch } = view;
-          const { selection } = state;
-          const { $from } = selection;
-
-          const node = $from.parent;
-          const textContent = node.textContent;
-          let cursorOffset = $from.parentOffset;
-
-          if (cursorOffset === 0 && backward || cursorOffset === node.nodeSize - 2 && !backward) {
-              return false;
-          }
-
-          if (node.type.name === 'spec_block') {
-              return this.handleDeleteInSpec(view, from, to, backward);
-          }
-
-          let newText;
-          if (backward) {
-              newText = textContent.slice(0, cursorOffset - 1) + textContent.slice(cursorOffset);
-          } else {
-              newText = textContent.slice(0, cursorOffset) + textContent.slice(cursorOffset + 1);
-              cursorOffset += 1;
-          }
-
-          let newNode;
-
-          if (node.type.name === 'paragraph') {
-              newNode = NodeConverter.constructParagraph(newText);
-          } else {
-              newNode = node.type.create(node.attrs, newText ? markdownSchema.text(newText) : null);
-          }
-
-          const nodePos = $from.before();
-          const nodeSize = node.nodeSize;
-
-          const reconstructor = new NodeReconstructor();
-
-          if (node.type.name === 'paragraph') {
-              const blockResult = reconstructor.applyBlockRules([newNode], nodePos);
-              newNode = blockResult.paragraphs[0];
-          }
-
-          if (backward && cursorOffset === 1) {
-              const parent = $from.node($from.depth - 1);
-              if (parent && parent.type.name === 'notation_block') {
-                  const childIndex = $from.indexAfter();
-                  if (childIndex === 1) {
-                      if (parent.child(0).type.name === 'spec_block') {
-                          cursorOffset -= 2;
-                      }
-                  }
-              }
-          }
-
-          const markReconstruction = reconstructor.reconstructMarksInNode(newNode);
-          if (markReconstruction) {
-              newNode = markReconstruction;
-          }
-
-          let tr = state.tr.replaceWith(nodePos, nodePos + nodeSize, newNode);
-
-          if (newNode.type.name == 'notation_block') {
-              cursorOffset += 1;
-          }
-
-          const cursorPos = nodePos + cursorOffset;
-          const curSelection = TextSelection.create(tr.doc, cursorPos);
-          tr.setSelection(curSelection);
-
-          dispatch(tr);
-          return true;
-      }
-
-      static handleDeleteInSpec(view, from, to, backward = true) {
-          const { state, dispatch } = view;
-          const { selection } = state;
-          const { $from } = selection;
-          let tr = state.tr;
-
-          const notationBlock = this.findParentNotationBlock($from);
-          if (!notationBlock) return false;
-
-          const { specContent, nodeContent } = NodeConverter.extractNotationBlockRowText(notationBlock);
-
-          let cursorOffset = $from.parentOffset;
-
-          if (cursorOffset === 0 && backward || cursorOffset === notationBlock.child(0).nodeSize - 2 && !backward) {
-              return false;
-          }
-
-          let newSpecContent;
-          if (backward) {
-              newSpecContent = specContent.slice(0, cursorOffset - 1) + specContent.slice(cursorOffset);
-          } else {
-              newSpecContent = specContent.slice(0, cursorOffset) + specContent.slice(cursorOffset + 1);
-              cursorOffset += 1;
-          }
-
-          const fullText = newSpecContent + nodeContent;
-          let paragraph = NodeConverter.constructParagraph(fullText);
-
-          const blockPos = $from.before($from.depth - 1);
-          const blockSize = notationBlock.nodeSize;
-
-          const reconstructor = new NodeReconstructor();
-          const blockResult = reconstructor.applyBlockRules([paragraph], blockPos);
-          let reconstructedNode = blockResult.paragraphs[0];
-
-          const markReconstruction = reconstructor.reconstructMarksInNode(reconstructedNode);
-          if (markReconstruction) {
-              reconstructedNode = markReconstruction;
-          }
-
-          tr = tr.replaceWith(blockPos, blockPos + blockSize, reconstructedNode);
-
-          if (reconstructedNode.type.name == 'notation_block') {
-              if (notationBlock.child(0).nodeSize - cursorOffset === 2 && backward) {
-                  if (notationBlock.attrs.type == 'tab_list') {
-                      cursorOffset += 1;
-                  } else {
-                      cursorOffset += 3;
-                  }
-              } else {
-                  cursorOffset += 1;
-              }
-          }
-
-          const cursorPos = blockPos + cursorOffset;
-          const curSelection = TextSelection.create(tr.doc, cursorPos);
-          tr.setSelection(curSelection);
-
-          dispatch(tr);
-          return true;
-      }
-
-      static findParentNotationBlock($pos) {
-          for (let depth = $pos.depth; depth >= 0; depth--) {
-              const node = $pos.node(depth);
-              if (node && node.type.name === 'notation_block') {
-                  return node;
-              }
-          }
-          return null;
-      }
-
-      static checkMarks(text, $from) {
-          if (!$from.parent.isTextblock) return null;
-
-          const parent = $from.parent;
-          const textBefore = parent.textBetween(0, $from.parentOffset);
-          const textAfter = parent.textBetween($from.parentOffset, parent.nodeSize - 2);
-
-          const markRules = [
-              { pattern: /\*\*$/, leftDelimiter: "**", rightDelimiter: "**" },
-              { pattern: /\*$/, leftDelimiter: "*", rightDelimiter: "*" },
-              { pattern: /~~$/, leftDelimiter: "~~", rightDelimiter: "~~" },
-              { pattern: /==$/, leftDelimiter: "==", rightDelimiter: "==" },
-              { pattern: /__$/, leftDelimiter: "__", rightDelimiter: "__" },
-              { pattern: /`$/, leftDelimiter: "`", rightDelimiter: "`" },
-              { pattern: /\[$/, leftDelimiter: "[", rightDelimiter: "]" },
-              { pattern: /\($/, leftDelimiter: "(", rightDelimiter: ")" },
-              { pattern: /\{$/, leftDelimiter: "{", rightDelimiter: "}" },
-          ];
-
-          for (const rule of markRules) {
-              if (rule.pattern.test(textBefore + text)) {
-                  if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && !textAfter.startsWith(' ')) {
-                      break;
-                  }
-                  if (textAfter.startsWith(rule.rightDelimiter[0])) {
-                      return {
-                          text: "",
-                          offset: 1
-                      };
-                  }
-                  if (rule.leftDelimiter == "**" && rule.pattern.test(textBefore)) {
-                      return {
-                          text: rule.rightDelimiter,
-                          offset: -2
-                      };
-                  }
-                  return {
-                      text: text + rule.rightDelimiter,
-                      offset: -rule.rightDelimiter.length
-                  };
-              }
-          }
-
-          return {
-              text: text,
-              offset: 0
-          };
+          return cleanedText;
       }
   }
 
@@ -25617,44 +25311,30 @@
       return keymap({
           ...baseKeymap,
           "Tab": (state, dispatch, view) => {
-              const { from, to } = state.selection;
-              const { $from } = state.selection;
+              const { selection } = state;
 
-              if ($from.parent.type.name === 'spec_block') {
-                  return NodeInputter.handleInputInSpec(view, from, to, '\t');
+              if (!selection.empty) {
+                  const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
+                  if (deleteTr) {
+                      const newState = state.apply(deleteTr);
+                      return NodeInputter.handleInputInNode(newState, dispatch, '\t', deleteTr);
+                  }
               }
 
-              if ($from.parent.type.name === 'paragraph') {
-                  const level = 1;
-                  const blockStart = $from.before(1);
-                  const blockEnd = $from.after(1);
-                  const currentBlock = $from.node(1);
-
-                  const fullText = currentBlock.textContent;
-                  const nodeText = fullText;
-
-                  const nodeBlock = NodeConverter.constructTabListItem(nodeText, level);
-
-                  const reconstructor = new NodeReconstructor();
-                  const nodeWithMarks = reconstructor.reconstructMarksInNode(nodeBlock);
-
-                  let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || nodeBlock);
-
-                  const containerPos = tr.mapping.map(blockStart);
-                  const specNode = (nodeWithMarks || nodeBlock).content.child(0);
-                  const cursorPos = containerPos + specNode.nodeSize;
-
-                  let selection = TextSelection.create(tr.doc, cursorPos);
-
-                  dispatch(tr.setSelection(selection));
-                  return true;
-              }
-
-              return NodeInputter.handleInputInNormalNode(view, from, to, '\t');
+              return NodeInputter.handleInputInNode(state, dispatch, '\t');
           },
           "Enter": (state, dispatch, view) => {
-              const event = new KeyboardEvent('keydown', { key: 'Enter' });
-              const splitterResult = NodeSplitter.handleEnter(view, event);
+              const { selection } = state;
+
+              if (!selection.empty) {
+                  const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
+                  if (deleteTr) {
+                      const newState = state.apply(deleteTr);
+                      return NodeSplitter.splitBlockNode(newState, dispatch, deleteTr);
+                  }
+              }
+
+              const splitterResult = NodeSplitter.splitBlockNode(state, dispatch);
 
               if (splitterResult !== undefined && splitterResult !== false) {
                   return splitterResult;
@@ -25670,7 +25350,14 @@
           "Backspace": (state, dispatch, view) => {
               const { $from, empty } = state.selection;
 
-              if (!empty) return false;
+              if (!empty) {
+                  const tr = NodeSelector.createDeleteSelectionTransaction(view);
+                  if (tr) {
+                      dispatch(tr);
+                      return true;
+                  }
+                  return false;
+              }
 
               const isAtBlockStart = $from.parentOffset === 0;
 
@@ -25682,9 +25369,7 @@
                       return true;
                   }
               } else {
-                  const from = $from.pos - 1;
-                  const to = $from.pos;
-                  return NodeInputter.handleDeleteChar(view, from, to);
+                  return NodeInputter.handleDeleteChar(view);
               }
 
               return false;
@@ -25692,8 +25377,14 @@
           "Delete": (state, dispatch, view) => {
               const { $from, empty } = state.selection;
 
-              if (!empty) return false;
-
+              if (!empty) {
+                  const tr = NodeSelector.createDeleteSelectionTransaction(view);
+                  if (tr) {
+                      dispatch(tr);
+                      return true;
+                  }
+                  return false;
+              }
               const isAtBlockEnd = $from.parentOffset === $from.parent.textContent.length;
 
               if (isAtBlockEnd) {
@@ -25704,9 +25395,7 @@
                       return true;
                   }
               } else {
-                  const from = $from.pos - 1;
-                  const to = $from.pos;
-                  return NodeInputter.handleDeleteChar(view, from, to, false);
+                  return NodeInputter.handleDeleteChar(view, false);
               }
 
               return false;
@@ -25809,619 +25498,22 @@
       });
   }
 
-  /**
-  Input rules are regular expressions describing a piece of text
-  that, when typed, causes something to happen. This might be
-  changing two dashes into an emdash, wrapping a paragraph starting
-  with `"> "` into a blockquote, or something entirely different.
-  */
-  class InputRule {
-      /**
-      Create an input rule. The rule applies when the user typed
-      something and the text directly in front of the cursor matches
-      `match`, which should end with `$`.
-      
-      The `handler` can be a string, in which case the matched text, or
-      the first matched group in the regexp, is replaced by that
-      string.
-      
-      Or a it can be a function, which will be called with the match
-      array produced by
-      [`RegExp.exec`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec),
-      as well as the start and end of the matched range, and which can
-      return a [transaction](https://prosemirror.net/docs/ref/#state.Transaction) that describes the
-      rule's effect, or null to indicate the input was not handled.
-      */
-      constructor(
-      /**
-      @internal
-      */
-      match, handler, options = {}) {
-          this.match = match;
-          this.match = match;
-          this.handler = typeof handler == "string" ? stringHandler(handler) : handler;
-          this.undoable = options.undoable !== false;
-          this.inCode = options.inCode || false;
-          this.inCodeMark = options.inCodeMark !== false;
-      }
-  }
-  function stringHandler(string) {
-      return function (state, match, start, end) {
-          let insert = string;
-          if (match[1]) {
-              let offset = match[0].lastIndexOf(match[1]);
-              insert += match[0].slice(offset + match[1].length);
-              start += offset;
-              let cutOff = start - end;
-              if (cutOff > 0) {
-                  insert = match[0].slice(offset - cutOff, offset) + insert;
-                  start = end;
-              }
-          }
-          return state.tr.insertText(insert, start, end);
-      };
-  }
-  const MAX_MATCH = 500;
-  /**
-  Create an input rules plugin. When enabled, it will cause text
-  input that matches any of the given rules to trigger the rule's
-  action.
-  */
-  function inputRules({ rules }) {
-      let plugin = new Plugin({
-          state: {
-              init() { return null; },
-              apply(tr, prev) {
-                  let stored = tr.getMeta(this);
-                  if (stored)
-                      return stored;
-                  return tr.selectionSet || tr.docChanged ? null : prev;
-              }
-          },
-          props: {
-              handleTextInput(view, from, to, text) {
-                  return run(view, from, to, text, rules, plugin);
-              },
-              handleDOMEvents: {
-                  compositionend: (view) => {
-                      setTimeout(() => {
-                          let { $cursor } = view.state.selection;
-                          if ($cursor)
-                              run(view, $cursor.pos, $cursor.pos, "", rules, plugin);
-                      });
-                  }
-              }
-          },
-          isInputRules: true
-      });
-      return plugin;
-  }
-  function run(view, from, to, text, rules, plugin) {
-      if (view.composing)
-          return false;
-      let state = view.state, $from = state.doc.resolve(from);
-      let textBefore = $from.parent.textBetween(Math.max(0, $from.parentOffset - MAX_MATCH), $from.parentOffset, null, "\ufffc") + text;
-      for (let i = 0; i < rules.length; i++) {
-          let rule = rules[i];
-          if (!rule.inCodeMark && $from.marks().some(m => m.type.spec.code))
-              continue;
-          if ($from.parent.type.spec.code) {
-              if (!rule.inCode)
-                  continue;
-          }
-          else if (rule.inCode === "only") {
-              continue;
-          }
-          let match = rule.match.exec(textBefore);
-          let tr = match && match[0].length >= text.length &&
-              rule.handler(state, match, from - (match[0].length - text.length), to);
-          if (!tr)
-              continue;
-          if (rule.undoable)
-              tr.setMeta(plugin, { transform: tr, from, to, text });
-          view.dispatch(tr);
-          return true;
-      }
-      return false;
-  }
-
-  /**
-  Converts double dashes to an emdash.
-  */
-  new InputRule(/--$/, "—", { inCodeMark: false });
-  /**
-  Converts three dots to an ellipsis character.
-  */
-  new InputRule(/\.\.\.$/, "…", { inCodeMark: false });
-  /**
-  “Smart” opening double quotes.
-  */
-  new InputRule(/(?:^|[\s\{\[\(\<'"\u2018\u201C])(")$/, "“", { inCodeMark: false });
-  /**
-  “Smart” closing double quotes.
-  */
-  new InputRule(/"$/, "”", { inCodeMark: false });
-  /**
-  “Smart” opening single quotes.
-  */
-  new InputRule(/(?:^|[\s\{\[\(\<'"\u2018\u201C])(')$/, "‘", { inCodeMark: false });
-  /**
-  “Smart” closing single quotes.
-  */
-  new InputRule(/'$/, "’", { inCodeMark: false });
-
-  function inputRulesPlugin() {
-      return inputRules({
-          rules: [
-              new InputRule(/^(#{1,6})\s$/, (state, match, start, end) => {
-                  const level = match[1].length;
-
-                  const $start = state.doc.resolve(start);
-                  const blockStart = $start.before(1);
-                  const blockEnd = $start.after(1);
-                  const currentBlock = $start.node(1);
-
-                  const fullText = currentBlock.textContent;
-                  const nodeText = fullText.slice(match[1].length);
-
-                  const nodeBlock = NodeConverter.constructHeading(nodeText, level);
-
-                  const reconstructor = new NodeReconstructor();
-                  const nodeWithMarks = reconstructor.reconstructMarksInNode(nodeBlock);
-
-                  let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || nodeBlock);
-
-                  const containerPos = tr.mapping.map(blockStart);
-                  const specNode = (nodeWithMarks || nodeBlock).content.child(0);
-
-                  const cursorPos = containerPos + specNode.nodeSize;
-                  let selection = TextSelection.create(tr.doc, cursorPos);
-
-                  return tr.setSelection(selection);
-              }),
-              new InputRule(/^#$/, (state, match, start, end) => {
-                  const level = 1;
-
-                  const $start = state.doc.resolve(start);
-                  const blockStart = $start.before(1);
-                  const blockEnd = $start.after(1);
-                  const currentBlock = $start.node(1);
-
-                  const fullText = currentBlock.textContent;
-                  let nodeText = fullText;
-
-                  if (nodeText.length === 0 || nodeText[0] !== ' ') {
-                      return null;
-                  }
-
-                  nodeText = nodeText.slice(1);
-
-                  const nodeBlock = NodeConverter.constructHeading(nodeText, level);
-
-                  const reconstructor = new NodeReconstructor();
-                  const nodeWithMarks = reconstructor.reconstructMarksInNode(nodeBlock);
-
-                  let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || nodeBlock);
-
-                  const containerPos = tr.mapping.map(blockStart);
-                  const specNode = (nodeWithMarks || nodeBlock).content.child(0);
-
-                  const cursorPos = containerPos + specNode.nodeSize - 1;
-                  let selection = TextSelection.create(tr.doc, cursorPos);
-
-                  return tr.setSelection(selection);
-              }),
-              new InputRule(/^>\s$/, (state, match, start, end) => {
-                  const $start = state.doc.resolve(start);
-                  const blockStart = $start.before(1);
-                  const blockEnd = $start.after(1);
-                  const currentBlock = $start.node(1);
-
-                  const fullText = currentBlock.textContent;
-                  const nodeText = fullText.slice(2);
-
-                  const nodeBlock = NodeConverter.constructBlockquote(nodeText);
-
-                  const reconstructor = new NodeReconstructor();
-                  const nodeWithMarks = reconstructor.reconstructMarksInNode(nodeBlock);
-
-                  let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || nodeBlock);
-
-                  const containerPos = tr.mapping.map(blockStart);
-                  const specNode = (nodeWithMarks || nodeBlock).content.child(0);
-
-                  const cursorPos = containerPos + specNode.nodeSize;
-                  let selection = TextSelection.create(tr.doc, cursorPos);
-
-                  return tr.setSelection(selection);
-              }),
-              new InputRule(/^>$/, (state, match, start, end) => {
-                  const $start = state.doc.resolve(start);
-                  const blockStart = $start.before(1);
-                  const blockEnd = $start.after(1);
-                  const currentBlock = $start.node(1);
-
-                  const fullText = currentBlock.textContent;
-                  let nodeText = fullText;
-
-                  if (nodeText.length === 0 || nodeText[0] !== ' ') {
-                      return null;
-                  }
-
-                  nodeText = nodeText.slice(1);
-
-                  const nodeBlock = NodeConverter.constructBlockquote(nodeText);
-
-                  const reconstructor = new NodeReconstructor();
-                  const nodeWithMarks = reconstructor.reconstructMarksInNode(nodeBlock);
-
-                  let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || nodeBlock);
-
-                  const containerPos = tr.mapping.map(blockStart);
-                  const specNode = (nodeWithMarks || nodeBlock).content.child(0);
-
-                  const cursorPos = containerPos + specNode.nodeSize;
-                  let selection = TextSelection.create(tr.doc, cursorPos);
-
-                  return tr.setSelection(selection);
-              }),
-              new InputRule(/^((?:(?:    )|\t)+)$/, (state, match, start, end) => {
-                  const $start = state.doc.resolve(start);
-                  const parent = $start.parent;
-                  const level = findTabLevel(match[1]);
-
-                  if (parent.type.name === 'spec_block') {
-                      return null;
-                  }
-
-                  const notationParent = $start.node($start.depth - 1);
-                  if (notationParent && notationParent.type.name === 'notation_block' &&
-                      notationParent.attrs.type === 'tab_list' &&
-                      parent.type.name === 'tab_list_item') {
-
-                      const currentLevel = notationParent.attrs.level || 1;
-                      const newLevel = currentLevel + level;
-
-                      const nodeText = parent.textContent.slice(match[1].length - 1);
-                      const updatedBlock = NodeConverter.constructTabListItem(nodeText, newLevel);
-
-                      const reconstructor = new NodeReconstructor();
-                      const nodeWithMarks = reconstructor.reconstructMarksInNode(updatedBlock);
-
-                      const blockStart = $start.before(1);
-                      const blockEnd = $start.after(1);
-
-                      let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || updatedBlock);
-
-                      const containerPos = tr.mapping.map(blockStart);
-                      const specNode = (nodeWithMarks || updatedBlock).content.child(0);
-                      const cursorPos = containerPos + specNode.nodeSize;
-
-                      let selection = TextSelection.create(tr.doc, cursorPos);
-
-                      return tr.setSelection(selection);
-                  }
-
-                  const blockStart = $start.before(1);
-                  const blockEnd = $start.after(1);
-                  const currentBlock = $start.node(1);
-
-                  const fullText = currentBlock.textContent;
-                  const nodeText = fullText.slice(match[1].length);
-
-                  const nodeBlock = NodeConverter.constructTabListItem(nodeText, level);
-
-                  const reconstructor = new NodeReconstructor();
-                  const nodeWithMarks = reconstructor.reconstructMarksInNode(nodeBlock);
-
-                  let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || nodeBlock);
-
-                  const containerPos = tr.mapping.map(blockStart);
-                  const specNode = (nodeWithMarks || nodeBlock).content.child(0);
-
-                  const cursorPos = containerPos + specNode.nodeSize;
-                  let selection = TextSelection.create(tr.doc, cursorPos);
-
-                  return tr.setSelection(selection);
-              }),
-              new InputRule(/^((?:(?:    )|\t)*)([+-]) $/, (state, match, start, end) => {
-                  const $start = state.doc.resolve(start);
-                  const parent = $start.parent;
-                  if (!match[1]) {
-                      match[1] = "";
-                  }
-
-                  const level = findTabLevel(match[1]);
-
-                  if (parent.type.name === 'spec_block') {
-                      return null;
-                  }
-
-                  const notationParent = $start.node($start.depth - 1);
-                  if (notationParent && notationParent.type.name === 'notation_block' &&
-                      notationParent.attrs.type === 'tab_list' &&
-                      parent.type.name === 'tab_list_item') {
-
-                      const currentLevel = notationParent.attrs.level || 1;
-                      const newLevel = currentLevel + level;
-
-                      const nodeText = parent.textContent.slice(match[1].length + 1);
-                      const updatedBlock = NodeConverter.constructBulletListItem(nodeText, newLevel, match[2]);
-
-                      const reconstructor = new NodeReconstructor();
-                      const nodeWithMarks = reconstructor.reconstructMarksInNode(updatedBlock);
-
-                      const blockStart = $start.before(1);
-                      const blockEnd = $start.after(1);
-
-                      let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || updatedBlock);
-
-                      const containerPos = tr.mapping.map(blockStart);
-                      const specNode = (nodeWithMarks || updatedBlock).content.child(0);
-                      const cursorPos = containerPos + specNode.nodeSize;
-
-                      let selection = TextSelection.create(tr.doc, cursorPos);
-
-                      return tr.setSelection(selection);
-                  }
-
-                  const blockStart = $start.before(1);
-                  const blockEnd = $start.after(1);
-                  const currentBlock = $start.node(1);
-
-                  const fullText = currentBlock.textContent;
-                  const nodeText = fullText.slice(match[1].length + 1);
-
-                  const nodeBlock = NodeConverter.constructBulletListItem(nodeText, level, match[2]);
-
-                  const reconstructor = new NodeReconstructor();
-                  const nodeWithMarks = reconstructor.reconstructMarksInNode(nodeBlock);
-
-                  let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || nodeBlock);
-
-                  const containerPos = tr.mapping.map(blockStart);
-                  const specNode = (nodeWithMarks || nodeBlock).content.child(0);
-
-                  const cursorPos = containerPos + specNode.nodeSize;
-                  let selection = TextSelection.create(tr.doc, cursorPos);
-
-                  return tr.setSelection(selection);
-              }),
-              new InputRule(/^((?:(?:    )|\t)*)([+-])$/, (state, match, start, end) => {
-                  const $start = state.doc.resolve(start);
-                  const parent = $start.parent;
-                  if (!match[1]) {
-                      match[1] = "";
-                  }
-
-                  const level = findTabLevel(match[1]);
-
-                  if (parent.type.name === 'spec_block') {
-                      return null;
-                  }
-
-                  const notationParent = $start.node($start.depth - 1);
-                  if (notationParent && notationParent.type.name === 'notation_block' &&
-                      notationParent.attrs.type === 'tab_list' &&
-                      parent.type.name === 'tab_list_item') {
-
-                      const currentLevel = notationParent.attrs.level || 1;
-                      const newLevel = currentLevel + level;
-
-                      const nodeText = parent.textContent.slice(match[1].length + 1);
-
-                      if (nodeText.length === 0 || nodeText[0] !== ' ') {
-                          return null;
-                      }
-
-                      const updatedBlock = NodeConverter.constructBulletListItem(nodeText, newLevel, match[2]);
-
-                      const reconstructor = new NodeReconstructor();
-                      const nodeWithMarks = reconstructor.reconstructMarksInNode(updatedBlock);
-
-                      const blockStart = $start.before(1);
-                      const blockEnd = $start.after(1);
-
-                      let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || updatedBlock);
-
-                      const containerPos = tr.mapping.map(blockStart);
-                      const specNode = (nodeWithMarks || updatedBlock).content.child(0);
-                      const cursorPos = containerPos + specNode.nodeSize;
-
-                      let selection = TextSelection.create(tr.doc, cursorPos);
-
-                      return tr.setSelection(selection);
-                  }
-
-                  const blockStart = $start.before(1);
-                  const blockEnd = $start.after(1);
-                  const currentBlock = $start.node(1);
-
-                  const fullText = currentBlock.textContent;
-                  const nodeText = fullText.slice(match[1].length + 1);
-
-                  if (nodeText.length === 0 || nodeText[0] !== ' ') {
-                      return null;
-                  }
-
-                  const nodeBlock = NodeConverter.constructBulletListItem(nodeText, level, match[2]);
-
-                  const reconstructor = new NodeReconstructor();
-                  const nodeWithMarks = reconstructor.reconstructMarksInNode(nodeBlock);
-
-                  let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || nodeBlock);
-
-                  const containerPos = tr.mapping.map(blockStart);
-                  const specNode = (nodeWithMarks || nodeBlock).content.child(0);
-
-                  const cursorPos = containerPos + specNode.nodeSize;
-                  let selection = TextSelection.create(tr.doc, cursorPos);
-
-                  return tr.setSelection(selection);
-              }),
-              new InputRule(/^((?:(?:    )|\t)*)(\d+)\. $/, (state, match, start, end) => {
-                  const $start = state.doc.resolve(start);
-                  const parent = $start.parent;
-                  if (!match[1]) {
-                      match[1] = "";
-                  }
-
-                  const level = findTabLevel(match[1]);
-
-                  if (parent.type.name === 'spec_block') {
-                      return null;
-                  }
-
-                  const notationParent = $start.node($start.depth - 1);
-                  if (notationParent && notationParent.type.name === 'notation_block' &&
-                      notationParent.attrs.type === 'tab_list' &&
-                      parent.type.name === 'tab_list_item') {
-
-                      const currentLevel = notationParent.attrs.level || 1;
-                      const newLevel = currentLevel + level;
-
-                      const nodeText = parent.textContent.slice(match[1].length + match[2].length + 1);
-                      const updatedBlock = NodeConverter.constructOrderedListItem(nodeText, newLevel, parseInt(match[2]));
-
-                      const reconstructor = new NodeReconstructor();
-                      const nodeWithMarks = reconstructor.reconstructMarksInNode(updatedBlock);
-
-                      const blockStart = $start.before(1);
-                      const blockEnd = $start.after(1);
-
-                      let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || updatedBlock);
-
-                      const containerPos = tr.mapping.map(blockStart);
-                      const specNode = (nodeWithMarks || updatedBlock).content.child(0);
-                      const cursorPos = containerPos + specNode.nodeSize;
-
-                      let selection = TextSelection.create(tr.doc, cursorPos);
-
-                      return tr.setSelection(selection);
-                  }
-
-                  const blockStart = $start.before(1);
-                  const blockEnd = $start.after(1);
-                  const currentBlock = $start.node(1);
-
-                  const fullText = currentBlock.textContent;
-                  const nodeText = fullText.slice(match[1].length + match[2].length + 1);
-
-                  const nodeBlock = NodeConverter.constructOrderedListItem(nodeText, level, parseInt(match[2]));
-
-                  const reconstructor = new NodeReconstructor();
-                  const nodeWithMarks = reconstructor.reconstructMarksInNode(nodeBlock);
-
-                  let tr = state.tr.replaceWith(blockStart, blockEnd, nodeWithMarks || nodeBlock);
-
-                  const containerPos = tr.mapping.map(blockStart);
-                  const specNode = (nodeWithMarks || nodeBlock).content.child(0);
-
-                  const cursorPos = containerPos + specNode.nodeSize;
-                  let selection = TextSelection.create(tr.doc, cursorPos);
-
-                  return tr.setSelection(selection);
-              }),
-              /*new InputRule(/\*\*([^\*]+)\*\*$/, (state, match, start, end) => {
-                  const textContent = match[1];
-                  const textNode = markdownSchema.text(textContent);
-                  const strongBlock = NodeConverter.constructStrong(textNode);
-      
-                  let tr = state.tr.replaceWith(start, end, strongBlock);
-                  const containerPos = tr.mapping.map(start);
-                  const cursorPos = containerPos + strongBlock.content.child(0).nodeSize;
-                  return tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
-              }),
-              new InputRule(/\*([^\*]+)\*$/, (state, match, start, end) => {
-                  const textContent = match[1];
-                  const textNode = markdownSchema.text(textContent);
-                  const emBlock = NodeConverter.constructEm(textNode);
-      
-                  let tr = state.tr.replaceWith(start, end, emBlock);
-                  const containerPos = tr.mapping.map(start);
-                  const cursorPos = containerPos + emBlock.content.child(0).nodeSize;
-                  return tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
-              }),
-              new InputRule(/~~([^~]+)~~$/, (state, match, start, end) => {
-                  const textContent = match[1];
-                  const textNode = markdownSchema.text(textContent);
-                  const strikeBlock = NodeConverter.constructStrike(textNode);
-      
-                  let tr = state.tr.replaceWith(start, end, strikeBlock);
-                  const containerPos = tr.mapping.map(start);
-                  const cursorPos = containerPos + strikeBlock.content.child(0).nodeSize;
-                  return tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
-              }),
-              new InputRule(/==([^=]+)==$/, (state, match, start, end) => {
-                  const textContent = match[1];
-                  const textNode = markdownSchema.text(textContent);
-                  const highlightBlock = NodeConverter.constructHighlight(textNode);
-      
-                  let tr = state.tr.replaceWith(start, end, highlightBlock);
-                  const containerPos = tr.mapping.map(start);
-                  const cursorPos = containerPos + highlightBlock.content.child(0).nodeSize;
-                  return tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
-              }),
-              new InputRule(/__([^_]+)__$/, (state, match, start, end) => {
-                  const textContent = match[1];
-                  const textNode = markdownSchema.text(textContent);
-                  const underlineBlock = NodeConverter.constructUnderline(textNode);
-      
-                  let tr = state.tr.replaceWith(start, end, underlineBlock);
-                  const containerPos = tr.mapping.map(start);
-                  const cursorPos = containerPos + underlineBlock.content.child(0).nodeSize;
-                  return tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
-              }),
-              new InputRule(/`([^`]+)`$/, (state, match, start, end) => {
-                  const textContent = match[1];
-                  const textNode = markdownSchema.text(textContent);
-                  const codeBlock = NodeConverter.constructCode(textNode);
-      
-                  let tr = state.tr.replaceWith(start, end, codeBlock);
-                  const containerPos = tr.mapping.map(start);
-                  const cursorPos = containerPos + codeBlock.content.child(0).nodeSize;
-                  return tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
-              }),*/
-              /*(
-                  /^\s*([-+*])\s$/,
-                  markdownSchema.nodes.bullet_list,
-                  null,
-                  () => true
-              ),
-              wrappingInputRule(
-                  /^\s*(\d+)\.\s$/,
-                  markdownSchema.nodes.ordered_list,
-                  match => ({ order: +match[1] }),
-                  () => true
-              ),*/
-              new InputRule(/^```(\w*)\s$/, (state, match, start, end) => {
-                  const language = match[1] || "";
-                  return state.tr.replaceWith(
-                      start,
-                      end,
-                      markdownSchema.nodes.code_block.create(
-                          { params: language },
-                          language ? [] : [markdownSchema.text("")]
-                      )
-                  );
-              })
-          ]
-      });
-  }
-
   function inputPlugin() {
       return new Plugin({
           props: {
               handleTextInput(view, from, to, text) {
-                  const { state } = view;
+                  const { state, dispatch } = view;
                   const { selection } = state;
-                  const $from = selection.$from;
 
-                  if ($from.parent.type.name === 'spec_block') {
-                      return NodeInputter.handleInputInSpec(view, from, to, text);
-                  } else {
-                      return NodeInputter.handleInputInNormalNode(view, from, to, text);
+                  if (!selection.empty) {
+                      const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
+                      if (deleteTr) {
+                          const newState = state.apply(deleteTr);
+                          return NodeInputter.handleInputInNode(newState, dispatch, text, deleteTr);
+                      }
                   }
+
+                  return NodeInputter.handleInputInNode(state, dispatch, text);
               }
           }
       });
@@ -26442,34 +25534,365 @@
       });
   }
 
-  function copyPlugin() {
+  const searchPluginKey = new PluginKey('search');
+
+  class SearchState {
+      constructor(decorations = DecorationSet.empty, query = null, results = [], currentIndex = -1) {
+          this.decorations = decorations;
+          this.query = query;
+          this.results = results;
+          this.currentIndex = currentIndex;
+          this.isActive = !!query;
+          this.total = results.length;
+      }
+
+      static init() {
+          return new SearchState();
+      }
+
+      updateResults(results, query, doc) {
+          const decorations = this.createDecorations(results, 0, doc);
+          return new SearchState(
+              decorations,
+              query,
+              results,
+              results.length > 0 ? 0 : -1
+          );
+      }
+
+      clear() {
+          return SearchState.init();
+      }
+
+      next(doc) {
+          if (this.results.length === 0) return this;
+          const nextIndex = (this.currentIndex + 1) % this.results.length;
+          const decorations = this.createDecorations(this.results, nextIndex, doc);
+          return new SearchState(
+              decorations,
+              this.query,
+              this.results,
+              nextIndex
+          );
+      }
+
+      previous(doc) {
+          if (this.results.length === 0) return this;
+          const prevIndex = this.currentIndex > 0
+              ? this.currentIndex - 1
+              : this.results.length - 1;
+          const decorations = this.createDecorations(this.results, prevIndex, doc);
+          return new SearchState(
+              decorations,
+              this.query,
+              this.results,
+              prevIndex
+          );
+      }
+
+      createDecorations(results, currentIndex, doc) {
+          const decorations = results.map((result, index) => {
+              const isCurrent = index === currentIndex;
+              return Decoration.inline(result.from, result.to, {
+                  class: isCurrent ? 'search-match current-match' : 'search-match'
+              });
+          });
+
+          return DecorationSet.create(doc, decorations);
+      }
+
+      getCurrentResult() {
+          return this.results[this.currentIndex];
+      }
+
+      getInfo() {
+          return {
+              isActive: this.isActive,
+              query: this.query,
+              current: this.currentIndex + 1,
+              total: this.total,
+              hasResults: this.total > 0
+          };
+      }
+  }
+
+  function searchPlugin() {
+      return new Plugin({
+          key: searchPluginKey,
+          state: {
+              init: SearchState.init,
+              apply(tr, prev) {
+                  const action = tr.getMeta(searchPluginKey);
+
+                  if (tr.selectionSet && prev.isActive) {
+                      return prev.clear();
+                  }
+
+                  if (action?.type === 'FIND') {
+                      return prev.updateResults(action.results, action.query, tr.doc);
+                  }
+
+                  if (action?.type === 'CLEAR') {
+                      return prev.clear();
+                  }
+
+                  if (action?.type === 'NEXT') {
+                      return prev.next(tr.doc);
+                  }
+
+                  if (action?.type === 'PREVIOUS') {
+                      return prev.previous(tr.doc);
+                  }
+
+                  return prev;
+              }
+          },
+          props: {
+              decorations(state) {
+                  const searchState = searchPluginKey.getState(state);
+                  return searchState ? searchState.decorations : DecorationSet.empty;
+              }
+          }
+      });
+  }
+
+  const searchCommands = {
+      find(query, caseSensitive = false) {
+          return (state, dispatch) => {
+              if (!query || query.trim() === '') {
+                  return this.clearSearch()(state, dispatch);
+              }
+
+              const results = findInDocument(state.doc, query, caseSensitive);
+
+              if (dispatch) {
+                  dispatch(state.tr.setMeta(searchPluginKey, {
+                      type: 'FIND',
+                      results,
+                      query
+                  }));
+              }
+
+              return true;
+          };
+      },
+
+      findNext() {
+          return (state, dispatch) => {
+              const searchState = searchPluginKey.getState(state);
+              if (!searchState?.isActive || searchState.results.length === 0) {
+                  return false;
+              }
+
+              if (dispatch) {
+                  dispatch(state.tr.setMeta(searchPluginKey, { type: 'NEXT' }));
+              }
+
+              return true;
+          };
+      },
+
+      findPrevious() {
+          return (state, dispatch) => {
+              const searchState = searchPluginKey.getState(state);
+              if (!searchState?.isActive || searchState.results.length === 0) {
+                  return false;
+              }
+
+              if (dispatch) {
+                  dispatch(state.tr.setMeta(searchPluginKey, { type: 'PREVIOUS' }));
+              }
+
+              return true;
+          };
+      },
+
+      clearSearch() {
+          return (state, dispatch) => {
+              if (dispatch) {
+                  dispatch(state.tr.setMeta(searchPluginKey, { type: 'CLEAR' }));
+              }
+              return true;
+          };
+      },
+
+      getSearchInfo() {
+          return (state) => {
+              const searchState = searchPluginKey.getState(state);
+              return searchState ? searchState.getInfo() : {
+                  isActive: false,
+                  query: null,
+                  current: 0,
+                  total: 0,
+                  hasResults: false
+              };
+          };
+      },
+
+      getCurrentResult() {
+          return (state) => {
+              const searchState = searchPluginKey.getState(state);
+              return searchState.getCurrentResult();
+          }
+      }
+  };
+
+  function findInDocument(doc, query, caseSensitive = false) {
+      const results = [];
+      const searchText = caseSensitive ? query : query.toLowerCase();
+
+      doc.descendants((node, pos) => {
+          if (!node.isTextblock) return;
+
+          const blockText = caseSensitive ?
+              node.textContent :
+              node.textContent.toLowerCase();
+
+          let index = -1;
+          while ((index = blockText.indexOf(searchText, index + 1)) !== -1) {
+              const from = pos + 1 + index;
+              const to = from + query.length;
+
+              results.push({
+                  from,
+                  to,
+                  text: node.textContent.substring(index, index + query.length)
+              });
+          }
+      });
+
+      return results;
+  }
+
+  let sourceNodePos = null;
+
+  function clipboardPlugin() {
       return new Plugin({
           props: {
               handleDOMEvents: {
                   copy(view, e) {
-                      const { state } = view;
-                      const { selection, doc } = state;
-                      const { $from, $to } = selection;
+                      const copied = NodeSelector.copySelectionToClipboard(view, e);
+                      if (window.editorBridge && window.editorBridge.setClipboardText) {
+                          window.editorBridge.setClipboardText(copied);
+                      }
+                      return true;
+                  },
+                  cut(view, e) {
+                      const copied = NodeSelector.copySelectionToClipboard(view, e);
+                      if (!copied) return false;
 
-                      if ($from.pos === $to.pos) return false;
+                      if (window.editorBridge && window.editorBridge.setClipboardText) {
+                          window.editorBridge.setClipboardText(copied);
+                      }
 
-                      const fragment = doc.content.cut($from.pos, $to.pos);
-
-                      const tempDoc = state.schema.topNodeType.create({}, fragment);
-
-                      const markdownText = markdownSerializer.serialize(tempDoc);
-
-                      const cleanedText = markdownText.replace(/\n{3,}/g, '\n\n').trim();
-
-                      e.clipboardData.setData('text/plain', cleanedText);
-                      e.clipboardData.setData('text/markdown', cleanedText);
+                      const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
+                      if (deleteTr) {
+                          view.dispatch(deleteTr);
+                          return true;
+                      }
+                      return false;
+                  },
+                  paste(view, e) {
                       e.preventDefault();
 
-                      return true;
-                  }
+                      let clipboardText = "";
+
+                      if (e.clipboardData && e.clipboardData.getData) {
+                          clipboardText = e.clipboardData.getData('text/plain');
+                      }
+
+                      if (!clipboardText && window.editorBridge && window.editorBridge.getClipboardText) {
+                          clipboardText = window.editorBridge.getClipboardText();
+                      }
+
+                      if (!clipboardText) return false;
+
+                      const { state, dispatch } = view;
+                      const { selection } = state;
+
+                      if (!selection.empty) {
+                          const deleteTr = NodeSelector.createDeleteSelectionTransaction(view);
+                          if (deleteTr) {
+                              const newState = state.apply(deleteTr);
+
+                              if (clipboardText.length > 1) {
+                                  return NodeInputter.handlePasteInNode(view, newState, dispatch, clipboardText, deleteTr);
+                              }
+                              if (clipboardText.length === 1) {
+                                  return NodeInputter.handleInputInNode(newState, dispatch, clipboardText, deleteTr);
+                              }
+                              return false;
+                          }
+                      }
+
+                      if (clipboardText.length > 1) {
+                          return NodeInputter.handlePasteInNode(view, state, dispatch, clipboardText);
+                      }
+                      if (clipboardText.length === 1) {
+                          return NodeInputter.handleInputInNode(state, dispatch, clipboardText);
+                      }
+                      return false;
+                  },
+                  dragstart(view, e) {
+                      const { state } = view;
+                      const { selection } = state;
+                      const $from = selection.$from;
+
+                      sourceNodePos = $from.before();
+                  },
+                  drop(view, e) {
+                      setTimeout(() => {
+                          cleanupSpecMarks(view);
+
+                          if (sourceNodePos) {
+                              cleanupSourceNode(view, sourceNodePos);
+                              sourceNodePos = null;
+                          }
+                      }, 0);
+                  },
               }
           }
       });
+  }
+
+  function cleanupSpecMarks(view) {
+      const { state, dispatch } = view;
+      const { selection } = state;
+
+      let tr = state.tr;
+
+      const $pos = selection.$from;
+      const node = $pos.parent;
+      const nodePos = $pos.before();
+      const cursorOffset = $pos.parentOffset;
+
+      const paragraph = NodeConverter.constructParagraph(node.textContent);
+
+      const reconstructor = new NodeReconstructor();
+      const reconstructed = reconstructor.applyBlockRules([paragraph], 0);
+
+      tr = tr.replaceWith(nodePos, nodePos + node.nodeSize, reconstructed[0]);
+      tr.setSelection(selection.constructor.near(tr.doc.resolve(nodePos + cursorOffset + 1)));
+
+      dispatch(tr);
+  }
+
+  function cleanupSourceNode(view, nodePos) {
+      const { state, dispatch } = view;
+      const { doc } = state;
+
+      const node = doc.nodeAt(nodePos);
+      if (!node) return;
+
+      let tr = state.tr;
+
+      const paragraph = NodeConverter.constructParagraph(node.textContent);
+      const reconstructor = new NodeReconstructor();
+      const reconstructed = reconstructor.applyBlockRules([paragraph], 0);
+
+      tr = tr.replaceWith(nodePos, nodePos + node.nodeSize, reconstructed[0]);
+
+      dispatch(tr);
   }
 
   /*! js-yaml 4.1.0 https://github.com/nodeca/js-yaml @license MIT */
@@ -30382,6 +29805,8 @@
 
       rebuildTree() {
           let tr = this.view.state.tr;
+          tr.setMeta('addToHistory', false);
+
           let hasChanges = false;
 
           const reconstructor = new NodeReconstructor();
@@ -30396,16 +29821,12 @@
           changes.sort((a, b) => b.pos - a.pos).forEach((change) => {
               if (change.type === 'paragraph') {
                   const paragraph = change.node;
-                  paragraph.textContent;
 
-                  const blockResult = reconstructor.applyBlockRules([paragraph], change.pos);
-                  const reconstructedNode = blockResult.paragraphs[0];
+                  const reconstructed = reconstructor.applyBlockRules([paragraph], change.pos);
+                  const reconstructedNode = reconstructed[0];
 
-                  const markReconstruction = reconstructor.reconstructMarksInNode(reconstructedNode);
-                  const finalNode = markReconstruction || reconstructedNode;
-
-                  if (finalNode !== paragraph) {
-                      tr = tr.replaceWith(change.pos, change.pos + paragraph.nodeSize, finalNode);
+                  if (reconstructedNode !== paragraph) {
+                      tr = tr.replaceWith(change.pos, change.pos + paragraph.nodeSize, reconstructedNode);
                       hasChanges = true;
                   }
               }
@@ -30421,18 +29842,19 @@
               this.view.dispatch(this.view.state.tr.setSelection(newSelection));
           }
       }
+
       createPlugins() {
           return [
               history(),
+              clipboardPlugin(),
               keymapPlugin(this),
               dropCursor(),
               gapCursor(),
-              inputRulesPlugin(),
               blockNavigationPlugin(),
               inputPlugin(),
               disableInsertPlugin(),
               //hideSpecPlugin(),
-              copyPlugin(),
+              searchPlugin(),
           ];
       }
 
@@ -30547,7 +29969,6 @@
       updateFrontMatterKey(oldKey, newKey, row) {
           if (oldKey === newKey) return;
 
-          // Используем ту же валидацию
           const validateFieldName = (fieldName) => {
               if (!fieldName.trim()) {
                   return 'Имя поля не может быть пустым';
@@ -30609,6 +30030,7 @@
 
           setTimeout(() => okButton.focus(), 0);
       }
+
       updateFrontMatterValue(key, newValue) {
           if (this.frontMatter[key] === newValue) return;
 
@@ -30737,7 +30159,6 @@
                   return 'Имя поля не должно начинаться или заканчиваться пробелами';
               }
 
-              // Предупреждение для ключей, которые могут требовать кавычки в YAML
               const mayNeedQuotes = /[#&*!|>'"%@`-]|\s/;
               if (mayNeedQuotes.test(fieldName)) {
                   return 'Имя поля содержит символы, которые могут требовать кавычек в YAML. Это допустимо, но может усложнить чтение.';
@@ -30827,19 +30248,141 @@
           this.setNoteContent(newContent);
       }
 
+      find(query, caseSensitive = false) {
+          const command = searchCommands.find(query, caseSensitive);
+          const executed = command(this.view.state, this.view.dispatch);
+
+          if (executed) {
+              setTimeout(() => {
+                  const nextCommand = searchCommands.getCurrentResult();
+                  const currentResult = nextCommand(this.view.state);
+
+                  if (currentResult) {
+                      this.view.focus();
+
+                      const cursorPos = currentResult.from;
+
+                      const cursorElement = this.view.domAtPos(cursorPos).node;
+                      if (cursorElement.nodeType === Node.TEXT_NODE) {
+                          cursorElement.parentNode.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                          });
+                      } else {
+                          cursorElement.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                          });
+                      }
+                  }
+              }, 0);
+
+              return JSON.stringify(this.getSearchInfo());
+          }
+          return JSON.stringify(null);
+      }
+
+      findNext() {
+          const command = searchCommands.findNext();
+          const executed = command(this.view.state, this.view.dispatch);
+          if (executed) {
+              setTimeout(() => {
+                  const nextCommand = searchCommands.getCurrentResult();
+                  const currentResult = nextCommand(this.view.state);
+
+                  if (currentResult) {
+                      this.view.focus();
+
+                      const cursorPos = currentResult.from;
+
+                      const cursorElement = this.view.domAtPos(cursorPos).node;
+                      if (cursorElement.nodeType === Node.TEXT_NODE) {
+                          cursorElement.parentNode.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                          });
+                      } else {
+                          cursorElement.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                          });
+                      }
+                  }
+              }, 0);
+
+              return JSON.stringify(this.getSearchInfo());
+          }
+          return JSON.stringify(null);
+      }
+
+      findPrevious() {
+          const command = searchCommands.findPrevious();
+          const executed = command(this.view.state, this.view.dispatch);
+          if (executed) {
+              setTimeout(() => {
+                  const nextCommand = searchCommands.getCurrentResult();
+                  const currentResult = nextCommand(this.view.state);
+
+                  if (currentResult) {
+                      this.view.focus();
+
+                      const cursorPos = currentResult.from;
+
+                      const cursorElement = this.view.domAtPos(cursorPos).node;
+                      if (cursorElement.nodeType === Node.TEXT_NODE) {
+                          cursorElement.parentNode.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                          });
+                      } else {
+                          cursorElement.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                          });
+                      }
+                  }
+              }, 0);
+
+              return JSON.stringify(this.getSearchInfo());
+          }
+          return JSON.stringify(null);
+      }
+
+      clearSearch() {
+          const command = searchCommands.clearSearch();
+          const executed = command(this.view.state, this.view.dispatch);
+          return JSON.stringify(executed ? this.getSearchInfo() : null);
+      }
+
+      getSearchInfo() {
+          const command = searchCommands.getSearchInfo();
+          return command(this.view.state);
+      }
+
       setNoteContent(content) {
-          try {
-              const docContent = this.parseDoc(content);
-              this.frontMatter = docContent.frontMatter;
-              this.updateFrontMatterTable();
+          const docContent = this.parseDoc(content);
+          this.frontMatter = docContent.frontMatter;
+          this.updateFrontMatterTable();
 
-              const newDoc = this.createDocumentFromText(docContent.markdown);
-              const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
-              this.view.dispatch(tr);
+          const newDoc = this.createDocumentFromText(docContent.markdown);
+          const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
+          tr.setMeta('addToHistory', false);
 
-              this.rebuildTree();
-          } catch (error) {
-              console.log(`Error: ${error}`);
+          this.view.dispatch(tr);
+
+          this.rebuildTree();
+      }
+
+      insertSnippet(snippetContent) {
+          if (snippetContent) {
+              const { state, dispatch } = this.view;
+              NodeInputter.handlePasteInNode(this.view, state, dispatch, snippetContent);
           }
       }
 
@@ -30908,7 +30451,7 @@
       }
 
       getNoteContent() {
-          const frontMatter =  this.getFrontMatterYAML() !== "" ? "---\n" + this.getFrontMatterYAML() + "---\n\n" : "";
+          const frontMatter = this.getFrontMatterYAML() !== "" ? "---\n" + this.getFrontMatterYAML() + "---\n\n" : "";
           return frontMatter + this.getMarkdown();
       }
 

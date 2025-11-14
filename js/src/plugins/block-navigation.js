@@ -9,132 +9,63 @@ export function blockNavigationPlugin() {
             handleKeyDown: keydownHandler({
                 "ArrowDown": (state, dispatch, view) => {
                     const { $from } = state.selection;
+                    let currentOffset = $from.parentOffset;
                     const navInfo = getNavigationInfo(state);
                     const nextNode = getNeighbor(navInfo, 'next');
-                    let currentOffset = $from.parentOffset;
-                    if ($from.parent.type.name === 'spec_block') {
-                        currentOffset = 0;
-                    }
-                    
-                    let tr = state.tr;
 
-                    if (navInfo.targetNode.type.name === 'notation_block' && navInfo.targetNode.attrs.layout === 'col') {
-                        return false;
-                    }
+                    if (!nextNode) return false;
 
-                    if (nextNode) {
-                        if (nextNode.type.name === 'notation_block' && nextNode.attrs.layout === 'col') {
-                            return false;
+                    const nextNodePos = findNodePosition(state, nextNode);
+
+                    if ($from.parent.attrs.specOffset && nextNode.attrs.specOffset) {
+                        if ($from.parent.attrs.specOffset && currentOffset >= $from.parent.attrs.specOffset) {
+                            currentOffset -= $from.parent.attrs.specOffset;
                         }
-
-                        if (nextNode.type.name === 'notation_block' && nextNode.childCount >= 2) {
-                            const nextNodePos = findNodePosition(state, nextNode);
-                            if (nextNodePos !== -1) {
-                                const secondChildPos = nextNodePos + nextNode.child(0).nodeSize + 2;
-                                const $pos = state.doc.resolve(secondChildPos);
-
-                                const targetOffset = Math.min(currentOffset, $pos.parent.content.size, nextNode.nodeSize - 2);
-                                let targetPos = $pos.pos + targetOffset;
-
-                                const correctedSelection = correctCursorPos(tr, targetPos);
-                                if (correctedSelection) {
-                                    tr = tr.setSelection(correctedSelection);
-                                } else {
-                                    tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
-                                }
-                                
-                                dispatch(tr);
-                                return true;
-                            }
-                        } else {
-                            const nextNodePos = findNodePosition(state, nextNode);
-                            if (nextNodePos !== -1) {
-                                const $pos = state.doc.resolve(nextNodePos);
-                                const targetOffset = Math.min(currentOffset, $pos.parent.content.size, nextNode.nodeSize - 2);
-                                let targetPos = $pos.pos + targetOffset + 1;
-
-                                const correctedSelection = correctCursorPos(tr, targetPos);
-                                if (correctedSelection) {
-                                    tr = tr.setSelection(correctedSelection);
-                                } else {
-                                    tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
-                                }
-                                
-                                dispatch(tr);
-                                return true;
-                            }
+                        currentOffset += nextNode.attrs.specOffset;
+                    } else {
+                        if ($from.parent.attrs.specOffset && currentOffset >= $from.parent.attrs.specOffset) {
+                            currentOffset -= $from.parent.attrs.specOffset;
+                        }
+                        if (nextNode.attrs.specOffset) {
+                            currentOffset += nextNode.attrs.specOffset;
                         }
                     }
-                    return false;
+
+                    const newPos = nextNodePos + Math.min(currentOffset + 1, nextNode.nodeSize - 1);
+                    const tr = state.tr.setSelection(state.selection.constructor.near(state.tr.doc.resolve((newPos))));
+
+                    if (dispatch) dispatch(tr);
+                    return true;
                 },
                 "ArrowUp": (state, dispatch, view) => {
                     const { $from } = state.selection;
                     let currentOffset = $from.parentOffset;
-                    if ($from.parent.type.name === 'spec_block') {
-                        currentOffset = 0;
-                    }
                     const navInfo = getNavigationInfo(state);
                     const prevNode = getNeighbor(navInfo, 'previous');
-                    
-                    let tr = state.tr;
 
-                    if (navInfo.targetNode.type.name === 'notation_block' && navInfo.targetNode.attrs.layout === 'col') {
-                        return false;
-                    }
+                    if (!prevNode) return false;
 
-                    /*if (navInfo && navInfo.targetNode && navInfo.targetNode.type.name === 'notation_block' && !($from.parent.type.name === 'spec_block' && currentOffset === 0)) {
-                        const notationBlock = navInfo.targetNode;
-                        const notationPos = findNodePosition(state, notationBlock);
-                        if (notationPos !== -1) {
-                            let targetPos = notationPos + 2;
+                    const prevNodePos = findNodePosition(state, prevNode);
 
-                            const correctedSelection = correctCursorPosWithoutChanges(tr, targetPos);
-                            if (correctedSelection) {
-                                tr = tr.setSelection(correctedSelection);
-                            } else {
-                                tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
-                            }
-                            
-                            dispatch(tr);
-                            return true;
+                    if ($from.parent.attrs.specOffset && prevNode.attrs.specOffset) {
+                        if ($from.parent.attrs.specOffset && currentOffset >= $from.parent.attrs.specOffset) {
+                            currentOffset -= $from.parent.attrs.specOffset;
                         }
-                    }*/
-
-                    if (prevNode.type.name === 'notation_block' && prevNode.attrs.layout === 'col') {
-                        return false;
-                    }
-
-                    if (prevNode) {
-                        let targetPos;
-
-                        if (prevNode.type.name === 'notation_block' && prevNode.childCount >= 2) {
-                            const prevNodePos = findNodePosition(state, prevNode);
-                            if (prevNodePos !== -1) {
-                                const secondChildPos = prevNodePos + prevNode.child(0).nodeSize + 2;
-                                const $pos = state.doc.resolve(secondChildPos);
-                                targetPos = $pos.pos + Math.min(currentOffset, $pos.parent.content.size, prevNode.nodeSize - 2);
-                            }
-                        } else {
-                            const prevNodePos = findNodePosition(state, prevNode);
-                            if (prevNodePos !== -1) {
-                                const $pos = state.doc.resolve(prevNodePos);
-                                targetPos = $pos.pos + Math.min(currentOffset, $pos.parent.content.size, prevNode.nodeSize - 2) + 1;
-                            }
+                        currentOffset += prevNode.attrs.specOffset;
+                    } else {
+                        if ($from.parent.attrs.specOffset && currentOffset >= $from.parent.attrs.specOffset) {
+                            currentOffset -= $from.parent.attrs.specOffset;
                         }
-
-                        if (targetPos !== undefined) {
-                            const correctedSelection = correctCursorPos(tr, targetPos);
-                            if (correctedSelection) {
-                                tr = tr.setSelection(correctedSelection);
-                            } else {
-                                tr = tr.setSelection(TextSelection.create(tr.doc, targetPos));
-                            }
-                            
-                            dispatch(tr);
-                            return true;
+                        if (prevNode.attrs.specOffset) {
+                            currentOffset += prevNode.attrs.specOffset;
                         }
                     }
-                    return false;
+
+                    const newPos = prevNodePos + Math.min(currentOffset + 1, prevNode.nodeSize - 1);
+                    const tr = state.tr.setSelection(state.selection.constructor.near(state.tr.doc.resolve((newPos))));
+
+                    if (dispatch) dispatch(tr);
+                    return true;
                 },
             })
         }

@@ -37,6 +37,7 @@ public class SearchFieldController extends AbstractController
     private TextField searchResultsField;
 
     private Runnable onNext, onPrev;
+
     private java.util.function.Consumer<String> onQueryChanged;
 
     @FXML

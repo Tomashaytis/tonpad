@@ -1,5 +1,7 @@
 package org.example.tonpad.core.editor;
 
+import org.example.tonpad.core.editor.dto.SearchResult;
+
 import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 
@@ -9,6 +11,16 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Editor {
     void setNoteContent(String noteContent);
+
+    void insertSnippet(String snippetContent);
+
+    CompletableFuture<SearchResult> find(String query);
+
+    CompletableFuture<SearchResult> findNext();
+
+    CompletableFuture<SearchResult> findPrevious();
+
+    CompletableFuture<SearchResult> clearSearch();
 
     CompletableFuture<String> getNoteContent();
 
@@ -29,9 +41,4 @@ public interface Editor {
     URL getEditorCssSource();
 
     URL getEditorJsSource();
-
-    interface JsCallback {
-
-        void onResult(String result);
-    }
 }

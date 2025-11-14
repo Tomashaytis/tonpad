@@ -1,26 +1,26 @@
 import { TextSelection } from "prosemirror-state";
 
-export function findTabLevel(spaces) {
+export function findTabs(spaces) {
     if (!spaces) {
-        return 0;
+        return [];
     }
 
-    let level = 0;
     let index = 0;
+    const tabs = []
 
     while (index < spaces.length) {
         if (spaces.substring(index, index + 4) === "    ") {
-            level++;
+            tabs.push('    ');
             index += 4;
         } else if (spaces[index] === "\t") {
-            level++;
+            tabs.push('\t');
             index += 1;
         } else {
             index++;
         }
     }
 
-    return level;
+    return tabs;
 }
 
 export function correctCursorPos(tr, cursorPos) {
