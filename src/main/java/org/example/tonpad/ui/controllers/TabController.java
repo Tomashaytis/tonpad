@@ -12,8 +12,14 @@ import javafx.util.Duration;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
 import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
+import org.example.tonpad.core.service.crypto.EncryptionService;
+import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
+import org.example.tonpad.core.service.crypto.exception.DecryptionException;
+import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.editor.Editor;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +30,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TabController {
@@ -39,6 +45,8 @@ public class TabController {
 
     private final RegularFileService fileService;
 
+    private final VaultSession vaultSession;
+
     public void init(URI fileUri) {
         addNewTabButton();
         createInitialTab(fileUri);
@@ -48,12 +56,42 @@ public class TabController {
         try {
             Path filePath = Path.of(path);
 
-            String noteContent = Files.readString(filePath);
+            if(vaultSession.isOpendWithNoPassword())
+            {
+                EncryptionService encoder = new EncryptionServiceImpl();
+                if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
+                    String noteContent = Files.readString(filePath);
 
-            Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-            pathMap.put(currentTab, filePath);
-            replaceTabContent(currentTab, getTabName(filePath), noteContent);
-        } catch (Exception e) {
+                    Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+                    pathMap.put(currentTab, filePath);
+                    replaceTabContent(currentTab, getTabName(filePath), noteContent);
+                }
+                else
+                {
+                    showAlert();
+                }
+            }
+            else
+            {
+                try
+                {
+                    byte[] key = vaultSession.getMasterKeyIfPresent().map(k -> k.getEncoded()).orElse(null);
+                    EncryptionService encoder = new EncryptionServiceImpl(key);
+                    String resNoteContent = encoder.decrypt(Files.readString(filePath), null);
+
+                    Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+                    pathMap.put(currentTab, filePath);
+                    replaceTabContent(currentTab, getTabName(filePath), resNoteContent);
+                }
+                catch(DecryptionException e)
+                {
+                    showAlert();
+                    e.printStackTrace();
+                }
+                
+            }
+        }    
+        catch (Exception e) {
             createTemporaryTab("<h1>Error loading content</h1>" + Arrays.toString(e.getStackTrace()));
         }
     }
@@ -117,10 +155,10 @@ public class TabController {
         initTab(newTab, noteContent, content, webView);
 
         PauseTransition debounce = new PauseTransition(Duration.millis(1500));
-        debounce.setOnFinished(event -> saveToFile());
+        debounce.setOnFinished(event -> saveToFile(true));
 
         newTab.setOnCloseRequest(event -> {
-            saveToFile();
+            saveToFile(true);
             tabClose(newTab);
         });
         content.addEventFilter(KeyEvent.KEY_TYPED, event -> debounce.playFromStart());
@@ -132,10 +170,8 @@ public class TabController {
         AnchorPane.setLeftAnchor(webView, 0.0);
         AnchorPane.setRightAnchor(webView, 0.0);
         content.getChildren().add(webView);
-
         editorMap.put(tab, new EditorImpl(webView.getEngine(), false));
         editorMap.get(tab).setNoteContent(noteContent);
-
         tab.setContent(content);
         tab.setUserData(webView);
 
@@ -148,8 +184,15 @@ public class TabController {
 
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
-        
         initTab(tab, noteContent, content, webView);
+        PauseTransition debounce = new PauseTransition(Duration.millis(1500));
+        debounce.setOnFinished(event -> saveToFile(false));
+
+        tab.setOnCloseRequest(event -> {
+            saveToFile(false);
+            tabClose(tab);
+        });
+        content.addEventFilter(KeyEvent.KEY_TYPED, event -> debounce.playFromStart());
     }
 
     private String getTabName(Path filePath) {
@@ -158,13 +201,44 @@ public class TabController {
         return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
     }
 
+    private void showAlert()
+    {
+        javafx.stage.Window owner = (tabPane != null && tabPane.getScene() != null) ? tabPane.getScene().getWindow() : null;
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.ERROR,
+                "Пошел нахер отсюда, это не для тебя сделано, и не для таких как ты. Не ходи, не засирай заметки, никому ты тут не нужен, тебя не звали сюда. Тебе тут не рады. Уйди отсюда и больше никогда не приходи.",
+                javafx.scene.control.ButtonType.OK);
+        if (owner != null) alert.initOwner(owner);
+        alert.setTitle("Ошибка");
+        alert.setHeaderText(null);
+        ((javafx.scene.control.Label) alert.getDialogPane().lookup(".content.label")).setWrapText(true);
+        alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+        alert.showAndWait();
+}
+
     private void tabClose(Tab tab) {
     }
 
-    private void saveToFile() {
-        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-        Path path = pathMap.get(currentTab);
-        editorMap.get(currentTab).getNoteContent()
-                .thenAccept(noteContent -> fileService.writeFile(path, noteContent));
+    private void saveToFile(boolean isSpetialNote) {        
+        byte[] key = vaultSession.getMasterKeyIfPresent()
+                        .map(k -> k.getEncoded())
+                        .orElse(null);
+        
+        new Thread(() -> {
+            try {
+                Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+                Path path = pathMap.get(currentTab);
+                String noteContent = editorMap.get(currentTab).getNoteContent().get(3, TimeUnit.SECONDS);
+                if (vaultSession.isOpendWithNoPassword() || isSpetialNote)
+                    fileService.writeFile(path, noteContent);
+                else
+                {
+                    EncryptionService encoder = new EncryptionServiceImpl(key);
+                    fileService.writeFile(path, encoder.encrypt(noteContent, null));
+                }
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+        }).start();
     }
 }

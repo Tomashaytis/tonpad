@@ -38,6 +38,10 @@ public abstract class AbstractController {
         stage.getIcons().add(icon);
 
         scene.getStylesheets().add(
+                Objects.requireNonNull(getClass().getResource("/ui/css/themes/light.css")).toExternalForm()
+        );
+
+        scene.getStylesheets().add(
                 Objects.requireNonNull(getClass().getResource("/ui/css/base.css")).toExternalForm()
         );
 

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.collections.FXCollections?>
+<?import java.lang.String?>
+
+<VBox fx:id="settingsPanel"
+      xmlns="http://javafx.com/javafx/24.0.1"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.example.tonpad.ui.controllers.SettingsController"
+      prefWidth="360.0" spacing="0">
+
+    <!-- белый фон + тонкая рамка -->
+    <background>
+        <Background>
+            <fills>
+                <BackgroundFill>
+                    <fill><Color fx:value="#FFFFFF"/></fill>
+                </BackgroundFill>
+            </fills>
+        </Background>
+    </background>
+    <border>
+        <Border>
+            <strokes>
+                <BorderStroke>
+                    <topStroke><Color fx:value="#CCCCCC"/></topStroke>
+                    <leftStroke><Color fx:value="#CCCCCC"/></leftStroke>
+                    <bottomStroke><Color fx:value="#CCCCCC"/></bottomStroke>
+                </BorderStroke>
+            </strokes>
+        </Border>
+    </border>
+
+    <children>
+        <!-- заголовок -->
+        <HBox spacing="8">
+            <children>
+                <Label text="Settings"/>
+                <HBox HBox.hgrow="ALWAYS"/>
+                <Button fx:id="closeButton" text="×"/>
+            </children>
+            <padding>
+                <Insets top="8" right="8" bottom="8" left="12"/>
+            </padding>
+        </HBox>
+
+        <Separator/>
+
+        <VBox spacing="12" VBox.vgrow="ALWAYS">
+            <padding>
+                <Insets top="12" right="12" bottom="12" left="12"/>
+            </padding>
+
+            <VBox spacing="6">
+                <HBox spacing="8">
+                    <Button fx:id="changePasswordButton" text="Сменить пароль"/>
+                </HBox>
+            </VBox>
+
+            <VBox spacing="6">
+                <Label text="Тема"/>
+                <HBox spacing="8">
+                    <ChoiceBox fx:id="themeChoice" prefWidth="120.0">
+                        <items>
+                            <FXCollections fx:factory="observableArrayList">
+                                <String fx:value="Light"/>
+                                <String fx:value="Dark"/>
+                            </FXCollections>
+                        </items>
+                    </ChoiceBox>
+                </HBox>
+            </VBox>
+
+            <HBox spacing="8">
+                <HBox HBox.hgrow="ALWAYS"/>
+                <Button fx:id="saveButton" text="Сохранить"/>
+            </HBox>
+        </VBox>
+    </children>
+</VBox>

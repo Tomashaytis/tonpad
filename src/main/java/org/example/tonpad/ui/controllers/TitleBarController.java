@@ -1,10 +1,13 @@
 package org.example.tonpad.ui.controllers;
 
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.event.EventHandler;
+
 import org.springframework.stereotype.Component;
 
 
@@ -13,6 +16,9 @@ public class TitleBarController extends AbstractController {
 
     @FXML
     private HBox titleBarMainHBox;
+
+    @FXML
+    private Button settingsButton;
 
     @FXML
     private Button closeAppButton;
@@ -34,6 +40,10 @@ public class TitleBarController extends AbstractController {
         setupEventHandlers();
         mainVBox.getChildren().addFirst(titleBarMainHBox);
         setupDragHandlers();
+    }
+
+    public void bindSettingsButton(EventHandler<ActionEvent> event) {
+        this.settingsButton.setOnAction(event);
     }
 
     private void setupEventHandlers() {
