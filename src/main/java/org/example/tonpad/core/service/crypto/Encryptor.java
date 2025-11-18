@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import org.example.tonpad.core.service.crypto.exception.DecryptionException;
 import org.example.tonpad.core.service.crypto.exception.EncryptionException;
 
-public interface EncryptionService {
+public interface Encryptor {
     String encrypt(String text, String aad) throws EncryptionException;
     byte[] encrypt(byte[] text, byte[] aad) throws EncryptionException;
     String decrypt(String text, String aad) throws DecryptionException;

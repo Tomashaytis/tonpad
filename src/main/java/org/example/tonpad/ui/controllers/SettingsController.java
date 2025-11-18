@@ -85,7 +85,7 @@ public class SettingsController extends AbstractController {
                 log.info("[SET-PWD] session state before: unlocked={}, withKey={}, noPwd={}",
                         vaultSession.isUnlocked(), wasWithKey, wasNoPwd);
 
-                byte[] oldKeyOrNull = vaultSession.getMasterKeyIfPresent()
+                byte[] oldKeyOrNull = vaultSession.getKeyIfPresent()
                         .map(k -> k.getEncoded())
                         .orElse(null);
 
@@ -115,7 +115,7 @@ public class SettingsController extends AbstractController {
                 log.info("[RESET-PWD] session state before: unlocked={}, withKey={}, noPwd={}",
                         vaultSession.isUnlocked(), wasWithKey, wasNoPwd);
 
-                byte[] oldKey = vaultSession.getMasterKeyIfPresent()
+                byte[] oldKey = vaultSession.getKeyIfPresent()
                         .map(k -> k.getEncoded())
                         .orElse(null);
 

@@ -22,7 +22,7 @@ public class DefaultVaultSession implements VaultSession {
 
     private enum Mode { LOCKED, UNLOCKED_NO_KEY, UNLOCKED_WITH_KEY }
 
-    private final AtomicReference<SecretKey> masterKeyRef = new AtomicReference<>();
+    private final AtomicReference<SecretKey> keyRef = new AtomicReference<>();
     private volatile Mode mode = Mode.LOCKED;
 
     @Override
@@ -37,21 +37,21 @@ public class DefaultVaultSession implements VaultSession {
 
             switch (mode) {
                 case LOCKED -> {
-                    if (!masterKeyRef.compareAndSet(null, newKey)) {
+                    if (!keyRef.compareAndSet(null, newKey)) {
                         zeroKey(newKey);
                         throw new IllegalStateException("vault already unlocked");
                     }
                     mode = Mode.UNLOCKED_WITH_KEY;
                 }
                 case UNLOCKED_NO_KEY -> {
-                    SecretKey prev = masterKeyRef.getAndSet(newKey);
+                    SecretKey prev = keyRef.getAndSet(newKey);
                     if (prev != null) zeroKey(prev);
                     mode = Mode.UNLOCKED_WITH_KEY;
                 }
                 case UNLOCKED_WITH_KEY -> {
-                    SecretKey cur = masterKeyRef.get();
+                    SecretKey cur = keyRef.get();
                     if (cur == null) {
-                        if (!masterKeyRef.compareAndSet(null, newKey)) {
+                        if (!keyRef.compareAndSet(null, newKey)) {
                             zeroKey(newKey);
                             throw new IllegalStateException("vault already unlocked");
                         }
@@ -77,14 +77,14 @@ public class DefaultVaultSession implements VaultSession {
         if (mode == Mode.UNLOCKED_WITH_KEY) {
             return;
         }
-        SecretKey prev = masterKeyRef.getAndSet(null);
+        SecretKey prev = keyRef.getAndSet(null);
         if (prev != null) zeroKey(prev);
         mode = Mode.UNLOCKED_NO_KEY;
     }
 
     @Override
     public void lock() {
-        SecretKey key = masterKeyRef.getAndSet(null);
+        SecretKey key = keyRef.getAndSet(null);
         if (key != null) zeroKey(key);
         mode = Mode.LOCKED;
     }
@@ -105,14 +105,14 @@ public class DefaultVaultSession implements VaultSession {
     }
 
     @Override
-    public Optional<SecretKey> getMasterKeyIfPresent() {
-        return isProtectionEnabled() ? Optional.ofNullable(masterKeyRef.get()) : Optional.empty();
+    public Optional<SecretKey> getKeyIfPresent() {
+        return isProtectionEnabled() ? Optional.ofNullable(keyRef.get()) : Optional.empty();
     }
 
     @Override
-    public SecretKey requiredMasterKey() {
+    public SecretKey requiredKey() {
         if (!isProtectionEnabled()) throw new IllegalStateException("vault is not protected with password (or locked)");
-        return masterKeyRef.get();
+        return keyRef.get();
     }
 
     private void zeroKey(SecretKey key) {

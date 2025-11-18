@@ -8,10 +8,8 @@ import javax.crypto.spec.PBEKeySpec;
 
 import org.example.tonpad.core.service.crypto.DerivationService;
 import org.example.tonpad.core.service.crypto.exception.DerivationException;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -21,7 +19,6 @@ public class DerivationServiceImpl implements DerivationService {
     private static final byte[] SALT = hex("40e0bbd7ba19094abf81cc4b320fba1f");
     private static final int iterations = 500_000;
     private static final int KEY_LENGTH_BITS = 256;
-    private static final Random rnd = new SecureRandom();
 
     @Override
     public byte[] deriveKey(char[] password, byte[] salt, int iterations, int keyLenBits, String algorythm) throws DerivationException {
