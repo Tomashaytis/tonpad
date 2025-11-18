@@ -61,7 +61,7 @@ public class TabController {
 
         if(vaultSession.isOpendWithNoPassword())
         {
-            AesGcmEncryptor encoder = new AesGcmEncryptor();
+            Encryptor encoder = encryptorFactory.encryptorForKey();
             if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
                 String noteContent = fileService.readFile(filePath);
 
@@ -78,7 +78,7 @@ public class TabController {
             try
             {
                 byte[] key = vaultSession.getKeyIfPresent().map(k -> k.getEncoded()).orElse(null);
-                Encryptor encoder = new AesGcmEncryptor(key);
+                Encryptor encoder = encryptorFactory.encryptorForKey(key);
                 String resNoteContent = encoder.decrypt(fileService.readFile(filePath), null);
 
                 Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
