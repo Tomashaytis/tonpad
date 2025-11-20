@@ -109,7 +109,7 @@
             <StackPane fx:id="leftStackPane" prefHeight="150.0" prefWidth="200.0">
                <children>
                   <AnchorPane fx:id="fileTreePane" minWidth="180.0" styleClass="file-tree-panel" visible="false" />
-                  <AnchorPane fx:id="searchPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
+                  <AnchorPane fx:id="searchInFilesPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
                   <AnchorPane fx:id="bookmarksPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
                </children>
             </StackPane>

@@ -8,6 +8,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -36,8 +37,10 @@ public class SearchFieldController extends AbstractController
     @FXML
     private TextField searchResultsField;
 
+    @Setter
     private Runnable onNext, onPrev;
 
+    @Setter
     private java.util.function.Consumer<String> onQueryChanged;
 
     @FXML
@@ -76,21 +79,20 @@ public class SearchFieldController extends AbstractController
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/search-bar.fxml";
+        return "/ui/fxml/search-in-text-bar.fxml";
     }
-
-    public void setOnQueryChanged(java.util.function.Consumer<String> cb){ this.onQueryChanged = cb; }
-    public void setOnNext(Runnable r){ this.onNext = r; }
-    public void setOnPrev(Runnable r){ this.onPrev = r; }
 
     public void clearResults()
     {
         searchResultsField.setText("");
     }
+
     public void setResults(int current1based, int total){
         searchResultsField.setText(total <= 0 ? "" : (current1based + "/" + total));
     }
+
     public void setQuery(String q){ searchField.setText(q == null ? "" : q); }
+
     public String getQuery(){ return searchField.getText().trim(); }
 
     public void init(AnchorPane parent) {
