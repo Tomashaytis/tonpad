@@ -9,8 +9,14 @@ import netscape.javascript.JSObject;
 import org.example.tonpad.core.editor.Editor;
 import org.example.tonpad.core.editor.dto.SearchResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.tonpad.core.editor.event.FrontMatterChangeEvent;
+import org.example.tonpad.core.editor.listener.FrontMatterChangeListener;
+import org.yaml.snakeyaml.Yaml;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -21,7 +27,11 @@ public class EditorImpl implements Editor {
 
     private final WebEngine webEngine;
 
+    private final List<FrontMatterChangeListener> frontMatterListeners = new ArrayList<>();
+
     private volatile boolean isLoaded = false;
+
+    private final Yaml yaml = new Yaml();
 
     public EditorImpl(WebEngine webEngine, boolean enableDebugAlerts) {
         this.webEngine = webEngine;
@@ -59,6 +69,16 @@ public class EditorImpl implements Editor {
     public void setNoteContent(String noteContent) {
         String jsCode = String.format("editor.setNoteContent(%s);",
                 toJsString(noteContent));
+
+        executeJs(jsCode);
+    }
+
+    @Override
+    public void setFrontMatter(Map<String, String> frontMatter) {
+        String yamlContent = yaml.dump(frontMatter);
+
+        String jsCode = String.format("editor.setFrontMatter(%s);",
+                toJsString(yamlContent));
 
         executeJs(jsCode);
     }
@@ -143,6 +163,29 @@ public class EditorImpl implements Editor {
     @Override
     public URL getEditorJsSource() {
         return Objects.requireNonNull(getClass().getResource("/editor/editor.js"));
+    }
+
+    @Override
+    public void addFrontMatterChangeListener(FrontMatterChangeListener listener) {
+        frontMatterListeners.add(listener);
+    }
+
+    @Override
+    public void removeFrontMatterChangeListener(FrontMatterChangeListener listener) {
+        frontMatterListeners.remove(listener);
+    }
+
+    public void onFrontMatterChanged(String action, String oldKey, String oldValue, String newKey, String newValue) {
+        Platform.runLater(() -> {
+            FrontMatterChangeEvent event = new FrontMatterChangeEvent(action, oldKey, oldValue, newKey, newValue);
+            notifyFrontMatterListeners(event);
+        });
+    }
+
+    private void notifyFrontMatterListeners(FrontMatterChangeEvent event) {
+        for (FrontMatterChangeListener listener : frontMatterListeners) {
+            listener.onFrontMatterChanged(event);
+        }
     }
 
     private String toJsString(String input) {
