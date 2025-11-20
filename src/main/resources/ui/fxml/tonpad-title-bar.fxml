@@ -17,7 +17,7 @@
       <HBox fx:id="centralHeaderHBox" prefHeight="100.0" prefWidth="200.0" HBox.hgrow="ALWAYS" />
       <HBox fx:id="rightHeaderHBox" alignment="CENTER_RIGHT" prefHeight="100.0" prefWidth="200.0">
          <children>
-            <Button fx:id="refreshFilesButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
+            <Button fx:id="settingsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
                <padding>
                   <Insets right="3.0" />
                </padding>
@@ -38,7 +38,7 @@
             </Button>
             <Button fx:id="collapseAppButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="40.0" prefWidth="40.0" styleClass="app-button" textAlignment="CENTER">
                <tooltip>
-                  <Tooltip text="Show files tree">
+                  <Tooltip text="collapse">
                      <styleClass>
                         <String fx:value="custom-tooltip" />
                         <String fx:value="tooltip-right" />
@@ -51,7 +51,7 @@
             </Button>
             <Button fx:id="resizeAppButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="40.0" prefWidth="40.0" styleClass="app-button" textAlignment="CENTER">
                <tooltip>
-                  <Tooltip text="Show files tree">
+                  <Tooltip text="resize">
                      <styleClass>
                         <String fx:value="custom-tooltip" />
                         <String fx:value="tooltip-right" />
@@ -64,7 +64,7 @@
             </Button>
             <Button fx:id="closeAppButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="40.0" prefWidth="40.0" styleClass="close-button" textAlignment="CENTER">
                <tooltip>
-                  <Tooltip text="Show files tree">
+                  <Tooltip text="close">
                      <styleClass>
                         <String fx:value="custom-tooltip" />
                         <String fx:value="tooltip-right" />

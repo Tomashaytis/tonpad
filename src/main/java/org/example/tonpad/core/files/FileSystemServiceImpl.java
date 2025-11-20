@@ -4,7 +4,11 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.exceptions.CustomIOException;
-import org.example.tonpad.core.models.SortOptions;
+import org.example.tonpad.core.service.crypto.EncryptionService;
+import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
+import org.example.tonpad.core.service.crypto.exception.DecryptionException;
+import org.example.tonpad.core.session.VaultSession;
+import org.example.tonpad.core.sort.SortOptions;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -66,27 +70,15 @@ public class FileSystemServiceImpl implements FileSystemService {
 
     private final VaultPath vaultPath;
 
+    private final VaultSession vaultSession;
+
     public FileTree getFileTree(String path) {
         return getFileTree(Path.of(path));
     }
 
     public FileTree getFileTree(Path path) {
-        try (Stream<Path> elements = Files.list(path)) {
-            List<FileTree> subtrees = new ArrayList<>();
-
-            elements.forEach(el -> {
-                if (Files.isDirectory(el)) {
-                    subtrees.add(getFileTree(el));
-                } else {
-                    subtrees.add(new FileTree(Path.of(path.toString(), el.getFileName().toString()), null));
-                }
-            });
-
-            return new FileTree(path, subtrees);
-        } catch (IOException e) {
-            log.warn(DIR_READING_ERROR, e);
-            throw new CustomIOException(DIR_READING_ERROR, e);
-        }
+        SortOptions opt = SortOptions.defaults();
+        return getFileTreeSorted(path, opt);
     }
 
     public Optional<Path> findFileInDir(Path rootDir, String fileName) {
@@ -194,10 +186,12 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public Path rename(Path oldPath, Path newPath) {
-        if (!oldPath.toFile().renameTo(newPath.toFile())) {
+        if (checkAccess(oldPath)) {
+            if (!oldPath.toFile().renameTo(newPath.toFile())) {
             throw new CustomIOException(RENAME_ERROR);
+            }
         }
-
+        
         return newPath;
     }
 
@@ -206,11 +200,13 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public void delete(Path path) {
-        try {
-            Files.walkFileTree(path, visitor);
-        } catch (IOException e) {
-            log.warn(DELETE_ERROR, e);
-            throw new CustomIOException(DELETE_ERROR, e);
+        if (checkAccess(path)) {
+            try {
+                Files.walkFileTree(path, visitor);
+            } catch (IOException e) {
+                log.warn(DELETE_ERROR, e);
+                throw new CustomIOException(DELETE_ERROR, e);
+            }
         }
     }
 
@@ -253,8 +249,10 @@ public class FileSystemServiceImpl implements FileSystemService {
 
     public void copyFile(Path path)
     {
-        buffer.setCopyBuffer(List.of(path));
-        buffer.setCutMode(false);
+        if (checkAccess(path)) {
+            buffer.setCopyBuffer(List.of(path));
+            buffer.setCutMode(false);
+        }
     }
     public void copyFile(String path)
     {
@@ -263,8 +261,10 @@ public class FileSystemServiceImpl implements FileSystemService {
 
     public void cutFile(Path path)
     {
-        buffer.setCopyBuffer(List.of(path));
-        buffer.setCutMode(true);
+        if (checkAccess(path)) {
+            buffer.setCopyBuffer(List.of(path));
+            buffer.setCutMode(true);
+        }
     }
     public void cutFile(String path)
     {
@@ -427,14 +427,13 @@ public class FileSystemServiceImpl implements FileSystemService {
             }
         });
 
-        Comparator<Path> base;
-        switch (opt.key()) {
-            case NAME_ASC -> base = byName;
-            case NAME_DESC -> base = byName.reversed();
-            case CREATED_NEWEST -> base = byCreated.reversed().thenComparing(byName);
-            case CREATED_OLDEST -> base = byCreated.thenComparing(byName);
-            default -> base = Comparator.comparing(p -> p.getFileName().toString());
-        }
+        Comparator<Path> base = switch (opt.key()) {
+            case NAME_ASC -> byName;
+            case NAME_DESC -> byName.reversed();
+            case CREATED_NEWEST -> byCreated.reversed().thenComparing(byName);
+            case CREATED_OLDEST -> byCreated.thenComparing(byName);
+            default -> Comparator.comparing(p -> p.getFileName().toString());
+        };
 
         if(opt.foldersFirst()) {
             Comparator<Path> byIsDirDesc = Comparator.<Path, Integer>comparing(p -> Files.isDirectory(p) ? 1 : 0).reversed();
@@ -443,6 +442,57 @@ public class FileSystemServiceImpl implements FileSystemService {
         return base;
     }
 
+    private boolean checkAccess(Path path)
+    {
+        if (vaultSession.isOpendWithNoPassword())
+        {
+            EncryptionService encoder = new EncryptionServiceImpl();
+            if (encoder.isOpeningWithNoPasswordAllowed(path)) {
+                return true;
+            }
+            return false;
+        }
+        else
+        {
+            try
+            {
+                String noteContent = Files.readString(path);
+
+                byte[] key = vaultSession.getMasterKeyIfPresent()
+                        .map(k -> k.getEncoded())
+                        .orElse(null);
+                EncryptionService encoder = new EncryptionServiceImpl(key);
+                String resNoteContent = encoder.decrypt(noteContent, null);
+                return true;
+            }
+            catch(IOException e)
+            {
+                log.info("reading note exeption");
+                e.printStackTrace();
+            }
+            catch(DecryptionException e)
+            {
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                        javafx.scene.control.Alert.AlertType.ERROR,
+                        "Пошел нахер отсюда, это не для тебя сделано, и не для таких как ты. Не ходи, не засирай заметки, никому ты тут не нужен, тебя не звали сюда. Тебе тут не рады. Уйди отсюда и больше никогда не приходи.",
+                        javafx.scene.control.ButtonType.OK
+                );
+                var owner = javafx.stage.Window.getWindows().stream()
+                        .filter(javafx.stage.Window::isShowing)
+                        .findFirst().orElse(null);
+                if (owner != null) alert.initOwner(owner);
+                alert.setTitle("Ошибка");
+                alert.setHeaderText(null);
+
+                ((javafx.scene.control.Label) alert.getDialogPane().lookup(".content.label")).setWrapText(true);
+                alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+
+                alert.showAndWait();
+                e.printStackTrace();
+            }
+            return false;
+        }
+    }
 
     private static class RecursiveDeleteFileVisitor implements FileVisitor<Path> {
         @Override
