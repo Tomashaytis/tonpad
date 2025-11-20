@@ -147,7 +147,7 @@ public class EditorImpl implements Editor {
 
     private String toJsString(String input) {
         if (input == null) return "null";
-        return "`" + escapeForJsString(input) + "`";
+        return "'" + escapeForJsString(input) + "'";
     }
 
     private CompletableFuture<String> executeJs(String jsCode) {
@@ -213,6 +213,10 @@ public class EditorImpl implements Editor {
 
     private String escapeForJsString(String input) {
         return input
-                .replace("`", "\\`");
+                .replace("\\", "\\\\")
+                .replace("'", "\\'")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }
