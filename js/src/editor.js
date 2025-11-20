@@ -42,18 +42,6 @@ export class Editor {
                 spellcheck: "false",
                 'data-gramm': "false",
                 'data-gramm-editor': "false",
-                style: `
-                outline: none; 
-                min-height: 300px; 
-                padding: 15px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                font-size: 14px;
-                line-height: 1.6;
-                background: white;
-                white-space: pre-wrap;
-            `
             }
         });
 
@@ -270,6 +258,10 @@ export class Editor {
         delete this.frontMatter[oldKey];
         this.frontMatter[newKey] = value;
 
+        if (window.editorBridge && window.editorBridge.onFrontMatterChanged) {
+            window.editorBridge.onFrontMatterChanged('updateKey', oldKey, value, newKey, value);
+        }
+
         this.updateDocumentWithFrontMatter();
     }
 
@@ -306,9 +298,15 @@ export class Editor {
     }
 
     updateFrontMatterValue(key, newValue) {
-        if (this.frontMatter[key] === newValue) return;
+        const oldValue = this.frontMatter[key];
+        if (oldValue === newValue) return;
 
         this.frontMatter[key] = newValue;
+
+        if (window.editorBridge && window.editorBridge.onFrontMatterChanged) {
+            window.editorBridge.onFrontMatterChanged('updateValue', key, oldValue, key, newValue);
+        }
+
         this.updateDocumentWithFrontMatter();
     }
 
@@ -316,10 +314,15 @@ export class Editor {
         this.showConfirmDialog(
             `Удалить поле "${key}"?`,
             () => {
+                const oldValue = this.frontMatter[key];
                 delete this.frontMatter[key];
 
                 if (Object.keys(this.frontMatter).length === 0) {
                     this.frontMatter = {};
+                }
+
+                if (window.editorBridge && window.editorBridge.onFrontMatterChanged) {
+                    window.editorBridge.onFrontMatterChanged('delete', key, oldValue, null, null);
                 }
 
                 this.updateDocumentWithFrontMatter();
@@ -478,6 +481,11 @@ export class Editor {
             }
 
             this.frontMatter[fieldName] = fieldValue;
+
+            if (window.editorBridge && window.editorBridge.onFrontMatterChanged) {
+                window.editorBridge.onFrontMatterChanged('add', null, null, fieldName, fieldValue);
+            }
+
             this.updateDocumentWithFrontMatter();
             closeModal();
         };
@@ -651,6 +659,11 @@ export class Editor {
         this.view.dispatch(tr);
 
         this.rebuildTree();
+    }
+    
+    setFrontMatter(yamlString) {
+        this.frontMatter = this.parseYAML(yamlString);
+        this.updateFrontMatterTable();
     }
 
     insertSnippet(snippetContent) {
