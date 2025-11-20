@@ -1,3 +1,7 @@
+html, body {
+    height: 100%;
+}
+
 /* Стили для модального окна добавления поля */
 .frontmatter-add-modal {
     position: fixed;
@@ -181,17 +185,20 @@
 
 .frontmatter-table th:nth-child(1),
 .frontmatter-table td:nth-child(1) {
-    width: 30%; /* Ширина для ключей */
+    width: 30%;
+    /* Ширина для ключей */
 }
 
 .frontmatter-table th:nth-child(2),
 .frontmatter-table td:nth-child(2) {
-    width: 65%; /* Ширина для значений */
+    width: 65%;
+    /* Ширина для значений */
 }
 
 .frontmatter-table th:nth-child(3),
 .frontmatter-table td:nth-child(3) {
-    width: 20px; /* Ширина для кнопок */
+    width: 20px;
+    /* Ширина для кнопок */
     text-align: center;
 }
 
@@ -248,15 +255,24 @@
 .editor-container {
     display: flex;
     flex-direction: column;
+    height: 100%;
+}
+
+.editor {
+    height: 100%;
 }
 
 /* Базовые стили редактора */
 .markdown-editor {
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     height: 100%;
     line-height: 1.6;
     font-size: 16px;
     tab-size: 4;
+    outline: none;
+    padding: 15px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: white;
+    white-space: pre-wrap;
 }
 
 /* Notation block как заголовок */
@@ -366,8 +382,7 @@ h5 .heading-spec {
     line-height: 1.5;
 }
 
-h6
-h6 .heading,
+h6 h6 .heading,
 h6 .heading-spec {
     font-size: 16px;
     line-height: 1.5;
@@ -462,7 +477,7 @@ a:hover {
 }
 
 .tab:not(:has(~ :is(.tab, .marker)))::after {
-  display: none;
+    display: none;
 }
 
 /* Стили для списка */
