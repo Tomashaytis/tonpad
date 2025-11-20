@@ -36,7 +36,7 @@
                <children>
                   <Button fx:id="collapseDialogButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="40.0" prefWidth="40.0" styleClass="app-button" textAlignment="CENTER">
                      <tooltip>
-                        <Tooltip text="Show files tree">
+                        <Tooltip text="collapse">
                            <styleClass>
                               <String fx:value="custom-tooltip" />
                               <String fx:value="tooltip-right" />
@@ -49,7 +49,7 @@
                   </Button>
                   <Button fx:id="closeDialogButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="40.0" prefWidth="40.0" styleClass="close-button" textAlignment="CENTER">
                      <tooltip>
-                        <Tooltip text="Show files tree">
+                        <Tooltip text="close">
                            <styleClass>
                               <String fx:value="custom-tooltip" />
                               <String fx:value="tooltip-right" />

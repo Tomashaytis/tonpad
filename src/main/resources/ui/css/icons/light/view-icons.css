@@ -1,9 +1,9 @@
 /* view-icons.css - иконки для стилей просмотра, светлая тема */
 
 .reading-view-icon {
-    -fx-image: url(../icons/light/reading-view.png);
+    -fx-image: url(/ui/icons/light/reading-view.png);
 }
 
 .plain-view-icon {
-    -fx-image: url(../icons/light/plain-view.png);
+    -fx-image: url(/ui/icons/light/plain-view.png);
 }

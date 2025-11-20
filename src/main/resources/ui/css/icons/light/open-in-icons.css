@@ -1,17 +1,17 @@
 /* open-in-icons.css - иконки для открытия в другом фиде, светлая тема */
 
 .open-in-new-tab-icon {
-    -fx-image: url(../icons/light/open-in-new-tab.png);
+    -fx-image: url(/ui/icons/light/open-in-new-tab.png);
 }
 
 .open-in-new-window-icon {
-    -fx-image: url(../icons/light/open-in-new-window.png);
+    -fx-image: url(/ui/icons/light/open-in-new-window.png);
 }
 
 .open-in-explorer-icon {
-    -fx-image: url(../icons/light/open-in-explorer.png);
+    -fx-image: url(/ui/icons/light/open-in-explorer.png);
 }
 
 .open-in-notepad-icon {
-    -fx-image: url(../icons/light/open-in-notepad.png);
+    -fx-image: url(/ui/icons/light/open-in-notepad.png);
 }

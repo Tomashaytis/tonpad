@@ -1,13 +1,13 @@
 /* add-action-icons.css - иконки для операций добавления, светлая тема */
 
 .file-add-icon {
-    -fx-image: url(../icons/dark/file-add.png);
+    -fx-image: url(/ui/icons/light/file-add.png);
 }
 
 .folder-add-icon {
-    -fx-image: url(../icons/dark/folder-add.png);
+    -fx-image: url(/ui/icons/light/folder-add.png);
 }
 
 .collection-add-icon {
-    -fx-image: url(../icons/dark/collection-add.png);
+    -fx-image: url(/ui/icons/light/collection-add.png);
 }

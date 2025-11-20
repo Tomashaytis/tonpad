@@ -132,6 +132,10 @@
                            <Insets top="8" right="8"/>
                         </StackPane.margin>
                   </AnchorPane>
+                  <AnchorPane fx:id="settingsPane"
+                              visible="true"
+                              pickOnBounds="false"
+                              StackPane.alignment="TOP_RIGHT"/>
                </children>
             </StackPane>
             <VBox prefWidth="40.0">

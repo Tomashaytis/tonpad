@@ -1,13 +1,13 @@
 /* search-icons.css - иконки для операций поиска, тёмная тема */
 
 .search-icon {
-    -fx-image: url(../icons/dark/search.png);
+    -fx-image: url(/ui/icons/dark/search.png);
 }
 
 .file-search-icon {
-    -fx-image: url(../icons/dark/file-search.png);
+    -fx-image: url(/ui/icons/dark/file-search.png);
 }
 
 .folder-search-icon {
-    -fx-image: url(../icons/dark/folder-search.png);
+    -fx-image: url(/ui/icons/dark/folder-search.png);
 }
