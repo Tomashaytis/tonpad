@@ -3,10 +3,6 @@ package org.example.tonpad.core.files;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.exceptions.CustomIOException;
-import org.example.tonpad.core.exceptions.TonpadBaseException;
-import org.example.tonpad.core.service.crypto.EncryptionService;
-import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
-import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.sort.SortOptions;
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -88,7 +85,6 @@ public class FileSystemServiceImpl implements FileSystemService {
 
     public List<Path> findByNameContains(Path rootDir, String substring) {
         if (substring == null || substring.isBlank()) return List.of();
-        final String targetSubstring = substring.toLowerCase(java.util.Locale.ROOT);
 
         try (Stream<Path> elems = Files.walk(rootDir))
         {
@@ -177,10 +173,8 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public Path rename(Path oldPath, Path newPath) {
-        if (checkAccess(oldPath)) {
-            if (!oldPath.toFile().renameTo(newPath.toFile())) {
+        if (!oldPath.toFile().renameTo(newPath.toFile())) {
             throw new CustomIOException(RENAME_ERROR);
-            }
         }
         
         return newPath;
@@ -191,13 +185,11 @@ public class FileSystemServiceImpl implements FileSystemService {
     }
 
     public void delete(Path path) {
-        if (checkAccess(path)) {
-            try {
-                Files.walkFileTree(path, visitor);
-            } catch (IOException e) {
-                log.warn(DELETE_ERROR, e);
-                throw new CustomIOException(DELETE_ERROR, e);
-            }
+        try {
+            Files.walkFileTree(path, visitor);
+        } catch (IOException e) {
+            log.warn(DELETE_ERROR, e);
+            throw new CustomIOException(DELETE_ERROR, e);
         }
     }
 
@@ -238,24 +230,18 @@ public class FileSystemServiceImpl implements FileSystemService {
         }
     }
 
-    public void copyFile(Path path)
-    {
-        if (checkAccess(path)) {
-            buffer.setCopyBuffer(List.of(path));
-            buffer.setCutMode(false);
-        }
+    public void copyFile(Path path) {
+        buffer.setCopyBuffer(List.of(path));
+        buffer.setCutMode(false);
     }
     public void copyFile(String path)
     {
         copyFile(Path.of(path));
     }
 
-    public void cutFile(Path path)
-    {
-        if (checkAccess(path)) {
-            buffer.setCopyBuffer(List.of(path));
-            buffer.setCutMode(true);
-        }
+    public void cutFile(Path path) {
+        buffer.setCopyBuffer(List.of(path));
+        buffer.setCutMode(true);
     }
     public void cutFile(String path)
     {
@@ -267,13 +253,10 @@ public class FileSystemServiceImpl implements FileSystemService {
         pasteFile(Path.of(targetDir));
     }
 
-    public void pasteFile(Path targetDir)
-    {
+    public void pasteFile(Path targetDir) {
 
-        for(Path filePath: buffer.getCopyBuffer())
-        {
-            if (!buffer.isCutMode())
-            {
+        for(Path filePath: buffer.getCopyBuffer()) {
+            if (!buffer.isCutMode()) {
                 Path dst = uniqueDest(targetDir, filePath);
                 try {
                     FileSystemUtils.copyRecursively(filePath, dst);
@@ -281,9 +264,7 @@ public class FileSystemServiceImpl implements FileSystemService {
                     log.warn(FILE_COPY_ERROR);
                     throw new CustomIOException(FILE_COPY_ERROR, e);
                 }
-            }
-            else
-            {
+            } else {
                 try {
                     Path dst = targetDir.resolve(filePath.getFileName());
 
@@ -297,8 +278,7 @@ public class FileSystemServiceImpl implements FileSystemService {
         }
     }
 
-    public void showFileInExplorer(Path path)
-    {
+    public void showFileInExplorer(Path path) {
         var file = path.toFile();
         var os = System.getProperty("os.name").toLowerCase();
 
@@ -391,7 +371,6 @@ public class FileSystemServiceImpl implements FileSystemService {
             case NAME_DESC -> byName.reversed();
             case CREATED_NEWEST -> byCreated.reversed().thenComparing(byName);
             case CREATED_OLDEST -> byCreated.thenComparing(byName);
-            default -> Comparator.comparing(p -> p.getFileName().toString());
         };
 
         if(opt.foldersFirst()) {
@@ -399,36 +378,6 @@ public class FileSystemServiceImpl implements FileSystemService {
             base = byIsDirDesc.thenComparing(base);
         }
         return base;
-    }
-
-    private boolean checkAccess(Path path)
-    {
-        if (vaultSession.isOpendWithNoPassword())
-        {
-            EncryptionService encoder = new EncryptionServiceImpl();
-            if (encoder.isOpeningWithNoPasswordAllowed(path)) {
-                return true;
-            }
-            return false;
-        }
-        else
-        {
-            try
-            {
-                String noteContent = readFile(path);
-
-                byte[] key = vaultSession.getMasterKeyIfPresent()
-                        .map(k -> k.getEncoded())
-                        .orElse(null);
-                EncryptionService encoder = new EncryptionServiceImpl(key);
-                String resNoteContent = encoder.decrypt(noteContent, null);
-                return true;
-            }
-            catch(DecryptionException e)
-            {
-                throw new DecryptionException("Decryption error", e);
-            }
-        }
     }
 
     private static class RecursiveDeleteFileVisitor implements FileVisitor<Path> {

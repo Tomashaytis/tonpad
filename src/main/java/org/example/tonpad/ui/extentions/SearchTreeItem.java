@@ -3,19 +3,18 @@ package org.example.tonpad.ui.extentions;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TreeItem;
 
+public class SearchTreeItem extends TreeItem<String> {
 
-public class FileTreeItem extends TreeItem<String> {
+    private final boolean isFile;
 
-    private final boolean isDirectory;
-
-    public FileTreeItem(String name, boolean isDirectory) {
+    public SearchTreeItem(String name, boolean isFile) {
         super(name);
-        this.isDirectory = isDirectory;
+        this.isFile = isFile;
     }
 
     @Override
     public boolean isLeaf() {
-        return !isDirectory;
+        return !isFile;
     }
 
     @Override

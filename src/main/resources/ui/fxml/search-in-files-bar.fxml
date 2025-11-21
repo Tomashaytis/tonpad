@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.control.TreeView?>
 <?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -22,56 +19,22 @@
                 <TextField fx:id="searchField" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="184.0" promptText="Search some..." styleClass="search-field" HBox.hgrow="ALWAYS" />
             </children>
         </HBox>
-        <HBox fx:id="searchButtonsHBox" fillHeight="false" prefHeight="444.0" prefWidth="184.0" spacing="10.0" styleClass="search-buttons-panel" VBox.vgrow="ALWAYS">
+        <HBox fx:id="searchButtonsHBox" alignment="TOP_CENTER" fillHeight="false" prefHeight="27.0" prefWidth="215.0" spacing="10.0" styleClass="search-buttons-panel">
             <children>
-                <TextField fx:id="searchResultsField" alignment="CENTER" editable="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="69.0" styleClass="search-field">
+                <TextField fx:id="searchResultsField" alignment="CENTER" editable="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" styleClass="search-field" HBox.hgrow="ALWAYS">
                     <HBox.margin>
                         <Insets />
                     </HBox.margin>
                 </TextField>
-                <AnchorPane prefHeight="30.0" prefWidth="61.0" />
-                <Button fx:id="nextHitButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="↓">
-                    <graphic>
-                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="arrow-down-icon" />
-                    </graphic>
-                    <tooltip>
-                        <Tooltip text="Next match">
-                            <styleClass>
-                                <String fx:value="custom-tooltip" />
-                                <String fx:value="tooltip-right" />
-                            </styleClass>
-                        </Tooltip>
-                    </tooltip>
-                    <HBox.margin>
-                        <Insets top="4.0" />
-                    </HBox.margin>
-                    <padding>
-                        <Insets right="3.0" />
-                    </padding>
-                </Button>
-                <Button fx:id="prevHitButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="↑">
-                    <tooltip>
-                        <Tooltip text="Previous match">
-                            <styleClass>
-                                <String fx:value="custom-tooltip" />
-                                <String fx:value="tooltip-right" />
-                            </styleClass>
-                        </Tooltip>
-                    </tooltip>
-                    <graphic>
-                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="arrow-up-icon" />
-                    </graphic>
-                    <padding>
-                        <Insets right="3.0" />
-                    </padding>
-                    <HBox.margin>
-                        <Insets top="4.0" />
-                    </HBox.margin>
-                </Button>
             </children>
             <padding>
                 <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
             </padding>
         </HBox>
+      <HBox prefHeight="100.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+         <children>
+            <TreeView fx:id="searchTreeView" prefHeight="200.0" prefWidth="161.0" styleClass="file-tree-view" HBox.hgrow="ALWAYS" />
+         </children>
+      </HBox>
     </children>
 </VBox>

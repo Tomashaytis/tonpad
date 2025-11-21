@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.Key;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,11 +53,8 @@ public class TabController {
         createInitialTab(fileUri);
     }
 
-    public void openFileInCurrentTab(String path) {
-        Path filePath = Path.of(path);
-
-        if(vaultSession.isOpendWithNoPassword())
-        {
+    public void openFileInCurrentTab(Path filePath) {
+        if(vaultSession.isOpendWithNoPassword()) {
             EncryptionService encoder = new EncryptionServiceImpl();
             if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
                 String noteContent = fileService.readFile(filePath);
@@ -68,12 +66,9 @@ public class TabController {
             else {
                 throw new DecryptionException("Invalid password");
             }
-        }
-        else
-        {
-            try
-            {
-                byte[] key = vaultSession.getMasterKeyIfPresent().map(k -> k.getEncoded()).orElse(null);
+        } else {
+            try {
+                byte[] key = vaultSession.getMasterKeyIfPresent().map(Key::getEncoded).orElse(null);
                 EncryptionService encoder = new EncryptionServiceImpl(key);
                 String resNoteContent = encoder.decrypt(fileService.readFile(filePath), null);
 

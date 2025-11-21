@@ -20,6 +20,7 @@ import org.example.tonpad.ui.extentions.VaultPath;
 import org.example.tonpad.ui.service.ThemeService;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Path;
 import java.util.Objects;
 
 @Component
@@ -130,6 +131,7 @@ public class MainController extends AbstractController {
 
     private void setupEventHandlers() {
         fileTreeController.setFileOpenHandler(this::openFileInEditor);
+        searchInFilesController.setFileOpenHandler(this::openFileInEditor);
 
         showFilesButton.setOnAction(event -> togglePane(
                 leftStackPane, fileTreePane, showFilesButton, () -> {}, () -> {}
@@ -295,7 +297,7 @@ public class MainController extends AbstractController {
         }
     }
 
-    private void openFileInEditor(String path) {
+    private void openFileInEditor(Path path) {
         tabController.openFileInCurrentTab(path);
     }
 
