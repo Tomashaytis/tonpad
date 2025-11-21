@@ -4,7 +4,6 @@ import javafx.animation.PauseTransition;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.web.WebView;
@@ -18,7 +17,7 @@ import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
 import org.example.tonpad.core.service.crypto.EncryptionService;
 import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
-import org.example.tonpad.core.service.crypto.exception.DecryptionException;
+import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.editor.Editor;
 import org.springframework.stereotype.Component;
@@ -54,46 +53,37 @@ public class TabController {
     }
 
     public void openFileInCurrentTab(String path) {
-        try {
-            Path filePath = Path.of(path);
+        Path filePath = Path.of(path);
 
-            if(vaultSession.isOpendWithNoPassword())
-            {
-                EncryptionService encoder = new EncryptionServiceImpl();
-                if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
-                    String noteContent = Files.readString(filePath);
+        if(vaultSession.isOpendWithNoPassword())
+        {
+            EncryptionService encoder = new EncryptionServiceImpl();
+            if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
+                String noteContent = fileService.readFile(filePath);
 
-                    Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-                    pathMap.put(currentTab, filePath);
-                    replaceTabContent(currentTab, getTabName(filePath), noteContent);
-                }
-                else
-                {
-                    showAlert();
-                }
+                Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+                pathMap.put(currentTab, filePath);
+                replaceTabContent(currentTab, getTabName(filePath), noteContent);
             }
-            else
-            {
-                try
-                {
-                    byte[] key = vaultSession.getMasterKeyIfPresent().map(k -> k.getEncoded()).orElse(null);
-                    EncryptionService encoder = new EncryptionServiceImpl(key);
-                    String resNoteContent = encoder.decrypt(Files.readString(filePath), null);
-
-                    Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-                    pathMap.put(currentTab, filePath);
-                    replaceTabContent(currentTab, getTabName(filePath), resNoteContent);
-                }
-                catch(DecryptionException e)
-                {
-                    showAlert();
-                    e.printStackTrace();
-                }
-                
+            else {
+                throw new DecryptionException("Invalid password");
             }
-        }    
-        catch (Exception e) {
-            createTemporaryTab("<h1>Error loading content</h1>" + Arrays.toString(e.getStackTrace()));
+        }
+        else
+        {
+            try
+            {
+                byte[] key = vaultSession.getMasterKeyIfPresent().map(k -> k.getEncoded()).orElse(null);
+                EncryptionService encoder = new EncryptionServiceImpl(key);
+                String resNoteContent = encoder.decrypt(fileService.readFile(filePath), null);
+
+                Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+                pathMap.put(currentTab, filePath);
+                replaceTabContent(currentTab, getTabName(filePath), resNoteContent);
+            }
+            catch(DecryptionException e) {
+                throw new DecryptionException("Invalid password", e);
+            }
         }
     }
 
@@ -202,25 +192,10 @@ public class TabController {
         return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
     }
 
-    private void showAlert()
-    {
-        javafx.stage.Window owner = (tabPane != null && tabPane.getScene() != null) ? tabPane.getScene().getWindow() : null;
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                javafx.scene.control.Alert.AlertType.ERROR,
-                "Пошел нахер отсюда, это не для тебя сделано, и не для таких как ты. Не ходи, не засирай заметки, никому ты тут не нужен, тебя не звали сюда. Тебе тут не рады. Уйди отсюда и больше никогда не приходи.",
-                javafx.scene.control.ButtonType.OK);
-        if (owner != null) alert.initOwner(owner);
-        alert.setTitle("Ошибка");
-        alert.setHeaderText(null);
-        ((javafx.scene.control.Label) alert.getDialogPane().lookup(".content.label")).setWrapText(true);
-        alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-        alert.showAndWait();
-}
-
     private void tabClose(Tab tab) {
     }
 
-    private void saveToFile(boolean isSpetialNote) {        
+    private void saveToFile(boolean isSpetialNote) {
         byte[] key = vaultSession.getMasterKeyIfPresent()
                         .map(k -> k.getEncoded())
                         .orElse(null);

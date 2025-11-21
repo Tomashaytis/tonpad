@@ -16,6 +16,7 @@ import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.layout.AnchorPane;
@@ -473,29 +474,30 @@ public class FileTreeController extends AbstractController {
         return Files.isDirectory(here) ? here : (here.getParent() != null ? here.getParent() : Path.of(vaultPath.getVaultPath()));
     }
 
-    private void onCopyVaultPath() 
-    {
-        fileSystemService.copyVaultPath();
+    private void onCopyVaultPath() {
+        var cc = new javafx.scene.input.ClipboardContent();
+        cc.putString(vaultPath.getVaultPath());
+        Clipboard.getSystemClipboard().setContent(cc);
     }
 
     private void onCopyAbsPath(TreeItem<String> node) {
         if (node != null) {
-            fileSystemService.copyAbsFilePath(getFullPath(node));
+            var cc = new javafx.scene.input.ClipboardContent();
+            cc.putString(getFullPath(node));
+            Clipboard.getSystemClipboard().setContent(cc);
         }
     }
 
-    private void onCopyRelPath(TreeItem<String> node) 
-    {
-        if (node != null)
-        {
-            fileSystemService.copyRelFilePath(getRelativePath(node));
+    private void onCopyRelPath(TreeItem<String> node) {
+        if (node != null) {
+            var cc = new javafx.scene.input.ClipboardContent();
+            cc.putString(getRelativePath(node));
+            Clipboard.getSystemClipboard().setContent(cc);
         }
     }
 
-    private void onShowInExplorer(TreeItem<String> node) 
-    {
-        if (node != null)
-        {   
+    private void onShowInExplorer(TreeItem<String> node) {
+        if (node != null) {
             fileSystemService.showFileInExplorer(getFullPath(node));
         }
        

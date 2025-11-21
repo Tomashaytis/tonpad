@@ -7,11 +7,9 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
 import org.example.tonpad.core.service.crypto.DerivationService;
-import org.example.tonpad.core.service.crypto.exception.DerivationException;
-import org.springframework.stereotype.Component;
+import org.example.tonpad.core.exceptions.DerivationException;
 import org.springframework.stereotype.Service;
 
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -24,7 +22,7 @@ public class DerivationServiceImpl implements DerivationService {
     private static final Random rnd = new SecureRandom();
 
     @Override
-    public byte[] deriveKey(char[] password, byte[] salt, int iterations, int keyLenBits, String algorythm) throws DerivationException {
+    public byte[] deriveKey(char[] password, byte[] salt, int iterations, int keyLenBits, String algorythm) {
         try {
             byte[] kdfSalt = salt == null ? getSalt() : salt;
             PBEKeySpec spec = new PBEKeySpec(password, kdfSalt, iterations, keyLenBits);
@@ -34,17 +32,17 @@ public class DerivationServiceImpl implements DerivationService {
             return key;
         }
         catch (Exception e) {
-            throw new DerivationException(e);
+            throw new DerivationException("Error on key derivation", e);
         }
     }
 
     @Override
-    public byte[] deriveAuthHash(char[] password, byte[] salt, int iterations) throws DerivationException {
+    public byte[] deriveAuthHash(char[] password, byte[] salt, int iterations) {
         return deriveKey(password, salt, iterations, KEY_LENGTH_BITS, KDF);
     }
 
     @Override
-    public byte[] deriveAuthHash(char[] password) throws DerivationException {
+    public byte[] deriveAuthHash(char[] password) {
         return deriveAuthHash(password, getSalt(), defaultIterations());
     }
 

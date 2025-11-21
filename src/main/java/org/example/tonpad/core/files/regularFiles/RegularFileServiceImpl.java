@@ -27,7 +27,7 @@ public class RegularFileServiceImpl implements RegularFileService {
     }
 
     public void writeFile(Path path, String content) {
-        fileSystem.write(path, content);
+        fileSystem.writeFile(path, content);
     }
 
     public Path renameFile(Path path, String name) {

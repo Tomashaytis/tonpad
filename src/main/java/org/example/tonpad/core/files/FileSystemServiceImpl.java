@@ -1,23 +1,18 @@
 package org.example.tonpad.core.files;
 
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.exceptions.CustomIOException;
+import org.example.tonpad.core.exceptions.TonpadBaseException;
 import org.example.tonpad.core.service.crypto.EncryptionService;
 import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
-import org.example.tonpad.core.service.crypto.exception.DecryptionException;
+import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.sort.SortOptions;
-import org.example.tonpad.ui.extentions.VaultPath;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import javafx.scene.control.TreeItem;
-import javafx.scene.input.Clipboard;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
@@ -36,39 +31,35 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class FileSystemServiceImpl implements FileSystemService {
 
-    private final static String DIR_READING_ERROR = "Ошибка при чтении директории";
+    private final static String DIR_READING_ERROR = "Reading directory error";
 
-    private final static String DIR_ALREADY_EXISTS_ERROR = "Директория с таким названием уже существует";
+    private final static String DIR_ALREADY_EXISTS_ERROR = "Directory already exists";
 
-    private final static String DIR_CREATE_ERROR = "Ошибка при создании директории";
+    private final static String DIR_CREATE_ERROR = "Directory creation error";
 
-    private final static String FILE_READING_ERROR = "Ошибка при чтении файла";
+    private final static String FILE_READING_ERROR = "File reading error";
 
-    private final static String FILE_ALREADY_EXISTS_ERROR = "Файл с таким названием уже существует";
+    private final static String FILE_ALREADY_EXISTS_ERROR = "File already exists";
 
-    private final static String FILE_CREATE_ERROR = "Ошибка при создании файла";
+    private final static String FILE_CREATE_ERROR = "File creation error";
 
-    private final static String FILE_READ_ERROR = "Ошибка при чтении файла";
+    private final static String FILE_READ_ERROR = "File reading error";
 
-    private final static String FILE_WRITE_ERROR = "Ошибка при записи в файл";
+    private final static String FILE_WRITE_ERROR = "File write error";
 
-    private final static String FILE_SEARCH_ERROR = "Ошибка при поиске файла";
+    private final static String FILE_SEARCH_ERROR = "File search error";
 
-    private final static String FILE_COPY_ERROR = "Ошибка при копировании файла";
+    private final static String FILE_COPY_ERROR = "File copy error";
 
-    private final static String RENAME_ERROR = "При переименовании произошла ошибка";
+    private final static String RENAME_ERROR = "Rename error";
 
-    private final static String DELETE_ERROR = "При удалении произошла ошибка";
+    private final static String DELETE_ERROR = "Delete error";
 
-    private final static String FILE_OPENING_IN_EXPLORER_ERROR = "Ошибка при открытии файла в проводнике";
-
-    private static final Logger log = LoggerFactory.getLogger(FileSystemServiceImpl.class);
+    private final static String FILE_OPENING_IN_EXPLORER_ERROR = "Explorer opening error";
 
     private final RecursiveDeleteFileVisitor visitor = new RecursiveDeleteFileVisitor();
 
     private final Buffer buffer;
-
-    private final VaultPath vaultPath;
 
     private final VaultSession vaultSession;
 
@@ -168,11 +159,11 @@ public class FileSystemServiceImpl implements FileSystemService {
         }
     }
 
-    public void write(String path, String content) {
-        write(Path.of(path), content);
+    public void writeFile(String path, String content) {
+        writeFile(Path.of(path), content);
     }
 
-    public void write(Path path, String content) {
+    public void writeFile(Path path, String content) {
         try {
             Files.writeString(path, content);
         } catch (IOException e) {
@@ -305,38 +296,6 @@ public class FileSystemServiceImpl implements FileSystemService {
             }
         }
     }
-    
-
-    public void copyVaultPath()
-    {
-        var cc = new javafx.scene.input.ClipboardContent();
-        cc.putString(vaultPath.getVaultPath());
-        Clipboard.getSystemClipboard().setContent(cc);
-    }
-
-    public void copyAbsFilePath(String path)
-    {
-        var cc = new javafx.scene.input.ClipboardContent();
-        cc.putString(path);
-        Clipboard.getSystemClipboard().setContent(cc);
-    }
-
-    public void copyAbsFilePath(Path path)
-    {
-        copyAbsFilePath(path.toString());
-    }
-    
-    public void copyRelFilePath(Path path)
-    {
-        var cc = new javafx.scene.input.ClipboardContent();
-        cc.putString(path.toString());
-        Clipboard.getSystemClipboard().setContent(cc);
-    }
-
-    public void copyRelFilePath(String absPath)
-    {
-        copyRelFilePath(Path.of(absPath));
-    }
 
     public void showFileInExplorer(Path path)
     {
@@ -456,7 +415,7 @@ public class FileSystemServiceImpl implements FileSystemService {
         {
             try
             {
-                String noteContent = Files.readString(path);
+                String noteContent = readFile(path);
 
                 byte[] key = vaultSession.getMasterKeyIfPresent()
                         .map(k -> k.getEncoded())
@@ -465,38 +424,16 @@ public class FileSystemServiceImpl implements FileSystemService {
                 String resNoteContent = encoder.decrypt(noteContent, null);
                 return true;
             }
-            catch(IOException e)
-            {
-                log.info("reading note exeption");
-                e.printStackTrace();
-            }
             catch(DecryptionException e)
             {
-                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                        javafx.scene.control.Alert.AlertType.ERROR,
-                        "Пошел нахер отсюда, это не для тебя сделано, и не для таких как ты. Не ходи, не засирай заметки, никому ты тут не нужен, тебя не звали сюда. Тебе тут не рады. Уйди отсюда и больше никогда не приходи.",
-                        javafx.scene.control.ButtonType.OK
-                );
-                var owner = javafx.stage.Window.getWindows().stream()
-                        .filter(javafx.stage.Window::isShowing)
-                        .findFirst().orElse(null);
-                if (owner != null) alert.initOwner(owner);
-                alert.setTitle("Ошибка");
-                alert.setHeaderText(null);
-
-                ((javafx.scene.control.Label) alert.getDialogPane().lookup(".content.label")).setWrapText(true);
-                alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-
-                alert.showAndWait();
-                e.printStackTrace();
+                throw new DecryptionException("Decryption error", e);
             }
-            return false;
         }
     }
 
     private static class RecursiveDeleteFileVisitor implements FileVisitor<Path> {
         @Override
-        public @NotNull FileVisitResult preVisitDirectory(Path dir, @NotNull BasicFileAttributes attrs) throws IOException {
+        public @NotNull FileVisitResult preVisitDirectory(Path dir, @NotNull BasicFileAttributes attrs) {
             return FileVisitResult.CONTINUE;
         }
 
