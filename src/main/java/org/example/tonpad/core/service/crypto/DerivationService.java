@@ -1,6 +1,6 @@
 package org.example.tonpad.core.service.crypto;
 
-import org.example.tonpad.core.service.crypto.exception.DerivationException;
+import org.example.tonpad.core.exceptions.DerivationException;
 
 public interface DerivationService {
     byte[] deriveKey(char[] password, byte[] salt, int iterations, int keyLenBits, String algorythm) throws DerivationException;

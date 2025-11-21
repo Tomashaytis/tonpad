@@ -15,8 +15,8 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.example.tonpad.core.service.crypto.EncryptionService;
-import org.example.tonpad.core.service.crypto.exception.DecryptionException;
-import org.example.tonpad.core.service.crypto.exception.EncryptionException;
+import org.example.tonpad.core.exceptions.DecryptionException;
+import org.example.tonpad.core.exceptions.EncryptionException;
 
 import lombok.NonNull;
 
@@ -48,7 +48,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     }
 
     @Override
-    public String encrypt(String text, String aad) throws EncryptionException {
+    public String encrypt(String text, String aad) {
         byte[] plain = text.getBytes(StandardCharsets.UTF_8);
         byte[] aadBytes = aad == null ? null : aad.getBytes(StandardCharsets.UTF_8);
         byte[] wrapped = encrypt(plain, aadBytes);
@@ -56,7 +56,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     }
 
     @Override
-    public byte[] encrypt(byte[] text, byte[] aad) throws EncryptionException {
+    public byte[] encrypt(byte[] text, byte[] aad) {
         try {
             byte[] nonce = new byte[NONCE_LEN];
             rnd.nextBytes(nonce);
@@ -74,12 +74,12 @@ public class EncryptionServiceImpl implements EncryptionService {
             String wrapped = HEADER + base64;
             return wrapped.getBytes(StandardCharsets.UTF_8);
         } catch (Exception e) {
-            throw new EncryptionException(e);
+            throw new EncryptionException("Encryption error", e);
         }
     }
 
     @Override
-    public String decrypt(String text, String aad) throws DecryptionException {
+    public String decrypt(String text, String aad) {
         byte[] in = text.getBytes(StandardCharsets.UTF_8);
         byte[] aadBytes = aad == null ? null : aad.getBytes(StandardCharsets.UTF_8);
         byte[] out = decrypt(in, aadBytes);
@@ -87,7 +87,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     }
 
     @Override
-    public byte[] decrypt(byte[] text, byte[] aad) throws DecryptionException {
+    public byte[] decrypt(byte[] text, byte[] aad) {
         if (!startWith(text, HEADER_BYTES)) return text;
         try {
             String whole = new String(text, StandardCharsets.UTF_8);
@@ -106,7 +106,7 @@ public class EncryptionServiceImpl implements EncryptionService {
 
             return cipher.doFinal(cipherText);
         } catch (Exception e) {
-            throw new DecryptionException(e);
+            throw new DecryptionException("Decryption error", e);
         }
     }
 

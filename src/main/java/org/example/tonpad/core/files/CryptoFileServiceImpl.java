@@ -8,8 +8,8 @@ import java.util.stream.Stream;
 import org.example.tonpad.core.exceptions.CustomIOException;
 import org.example.tonpad.core.service.crypto.EncryptionService;
 import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
-import org.example.tonpad.core.service.crypto.exception.DecryptionException;
-import org.example.tonpad.core.service.crypto.exception.EncryptionException;
+import org.example.tonpad.core.exceptions.DecryptionException;
+import org.example.tonpad.core.exceptions.EncryptionException;
 import org.example.tonpad.core.session.VaultSession;
 import org.springframework.stereotype.Service;
 
@@ -103,7 +103,7 @@ public class CryptoFileServiceImpl implements CryptoFileService {
                         // Шифруем только открытые .md, поверх
                         if (isEnc) { skipped++; continue; }
                         String encrypted = encryptor.encrypt(data == null ? "" : data, null);
-                        fileSystemService.write(file, encrypted);
+                        fileSystemService.writeFile(file, encrypted);
                         changed++;
                     } else {
                         // Перешифрование только наших .md, уже зашифрованных
@@ -111,7 +111,7 @@ public class CryptoFileServiceImpl implements CryptoFileService {
                         if (decryptor == null) { skipped++; continue; }
                         String plain = decryptor.decrypt(data, null);
                         String reenc = encryptor.encrypt(plain == null ? "" : plain, null);
-                        fileSystemService.write(file, reenc);
+                        fileSystemService.writeFile(file, reenc);
                         changed++;
                     }
                 } catch (DecryptionException e) {
@@ -153,7 +153,7 @@ public class CryptoFileServiceImpl implements CryptoFileService {
                     if (!looksEncrypted(data)) { skipped++; continue; }
 
                     String decrypted = decryptor.decrypt(data, null);
-                    fileSystemService.write(file, decrypted);
+                    fileSystemService.writeFile(file, decrypted);
                     changed++;
                 } catch (DecryptionException e) {
                     skipped++;
@@ -185,7 +185,7 @@ public class CryptoFileServiceImpl implements CryptoFileService {
                     if (looksEncrypted(data)) { skipped++; continue; }
 
                     String encrypted = encryptor.encrypt(data == null ? "" : data, null);
-                    fileSystemService.write(file, encrypted);
+                    fileSystemService.writeFile(file, encrypted);
                     changed++;
                 } catch (EncryptionException e) {
                     errors++;
