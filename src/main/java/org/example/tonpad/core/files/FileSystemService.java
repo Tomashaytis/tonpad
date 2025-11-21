@@ -34,9 +34,9 @@ public interface FileSystemService {
 
     String readFile(Path path);
 
-    void write(String path, String content);
+    void writeFile(String path, String content);
 
-    void write(Path path, String content);
+    void writeFile(Path path, String content);
 
     Path rename(String oldPath, String newPath);
 
@@ -65,16 +65,6 @@ public interface FileSystemService {
     void pasteFile(String path);
 
     void pasteFile(Path path);
-
-    void copyVaultPath();
-
-    void copyAbsFilePath(String path);
-
-    void copyAbsFilePath(Path path);
-
-    void copyRelFilePath(String path);
-
-    void copyRelFilePath(Path path);
 
     void showFileInExplorer(String path);
 

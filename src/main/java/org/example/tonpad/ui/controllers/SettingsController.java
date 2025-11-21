@@ -1,13 +1,11 @@
 package org.example.tonpad.ui.controllers;
 
 import java.nio.file.Path;
-import java.util.function.Consumer;
 
 import org.example.tonpad.core.exceptions.CustomIOException;
 import org.example.tonpad.core.files.CryptoFileService;
-import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.service.crypto.DerivationService;
-import org.example.tonpad.core.service.crypto.exception.DerivationException;
+import org.example.tonpad.core.exceptions.DerivationException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.example.tonpad.ui.service.ThemeService;
@@ -19,7 +17,6 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import javafx.scene.Scene;

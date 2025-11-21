@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.example.tonpad.core.files.RecentVaultService;
 import org.example.tonpad.core.service.VaultService;
-import org.example.tonpad.core.service.crypto.exception.DerivationException;
+import org.example.tonpad.core.exceptions.DerivationException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.ui.extentions.VaultPath;
 import org.springframework.beans.factory.ObjectProvider;
@@ -101,7 +101,7 @@ public class QuickStartDialogController extends AbstractController {
     }
 
     private void setupRecentVaultsList() {
-        recentVaultsListView.setPlaceholder(new Label("no recent vaults"));
+        recentVaultsListView.setPlaceholder(new Label("No recent vaults"));
         recentVaultsListView.setItems(recentVaults);
         recentVaultsListView.setCellFactory(lv -> new ListCell<>() {
             @Override
@@ -309,7 +309,7 @@ public class QuickStartDialogController extends AbstractController {
     
     private boolean confirmToRemoveBrokenRecent(String path) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("path not found");
+        alert.setTitle("Path not found");
         alert.setHeaderText("Vault path is not accessible");
         alert.setContentText("Remove from Recent?\n\n" + path);
         return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;

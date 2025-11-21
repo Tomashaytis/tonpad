@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import javax.crypto.SecretKey;
 
-import org.example.tonpad.core.service.crypto.exception.DerivationException;
+import org.example.tonpad.core.exceptions.DerivationException;
 
 public interface VaultSession {
     void unlock(char[] password) throws DerivationException;

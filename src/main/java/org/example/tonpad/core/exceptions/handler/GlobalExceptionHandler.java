@@ -70,8 +70,7 @@ public class GlobalExceptionHandler implements Thread.UncaughtExceptionHandler {
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Ошибка");
-            alert.setHeaderText(exception.getClass().getSimpleName());
-            alert.setContentText(exception.getMessage());
+            alert.setHeaderText(exception.getMessage());
 
             alert.showAndWait();
         });
