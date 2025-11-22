@@ -24,7 +24,6 @@ public class CryptoFileServiceImpl implements CryptoFileService {
     private final FileSystemService fileSystemService;
     private final VaultSession vaultSession;
     private final EncryptorFactory encryptorFactory;
-    private final EncryptorFactory encryptorFactory;
 
     // Разрешенные расширения для обработки (allow-list)
     private static final Set<String> ALLOWED_EXT = Set.of(
@@ -78,7 +77,6 @@ public class CryptoFileServiceImpl implements CryptoFileService {
     // Наш формат шифрования определяется заголовком
     private static boolean looksEncrypted(String data) {
         return data != null && data.startsWith(AesGcmEncryptor.HEADER);
-        return data != null && data.startsWith(AesGcmEncryptor.HEADER);
     }
 
     @Override
@@ -89,8 +87,6 @@ public class CryptoFileServiceImpl implements CryptoFileService {
         log.info("[REENCRYPT] start: root='{}', withKey={}, noPwd={}, oldKeyPresent={}, newKeyLen={}",
                 root, withKeyMode, noPwdMode, (oldKeyOrNull != null), (newKey == null ? 0 : newKey.length));
 
-        Encryptor decryptor = (oldKeyOrNull != null) ? encryptorFactory.encryptorForKey(oldKeyOrNull) : null;
-        Encryptor encryptor = encryptorFactory.encryptorForKey(newKey);
         Encryptor decryptor = (oldKeyOrNull != null) ? encryptorFactory.encryptorForKey(oldKeyOrNull) : null;
         Encryptor encryptor = encryptorFactory.encryptorForKey(newKey);
 
@@ -147,7 +143,6 @@ public class CryptoFileServiceImpl implements CryptoFileService {
             return;
         }
         Encryptor decryptor = encryptorFactory.encryptorForKey(oldKey);
-        Encryptor decryptor = encryptorFactory.encryptorForKey(oldKey);
 
         long total = 0, filteredOut = 0, changed = 0, skipped = 0, errors = 0;
         try (Stream<Path> files = Files.walk(root)) {
@@ -179,7 +174,6 @@ public class CryptoFileServiceImpl implements CryptoFileService {
     @Override
     public void encryptFiles(byte[] newKey, Path root) {
         log.info("[ENCRYPT] start: root='{}', keyLen={}", root, newKey == null ? 0 : newKey.length);
-        Encryptor encryptor = encryptorFactory.encryptorForKey(newKey);
         Encryptor encryptor = encryptorFactory.encryptorForKey(newKey);
 
         long total = 0, filteredOut = 0, changed = 0, skipped = 0, errors = 0;
