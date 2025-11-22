@@ -9,10 +9,51 @@
 
 .action-button:hover {
     -fx-background-color: -color-button-hover;
-    -fx-background-size: 1px;
 }
 
 .action-button:pressed {
     -fx-background-color: -color-button-pressed;
-    -fx-background-size: 1px;
+}
+
+/* Стили для контекстного меню */
+.context-menu {
+    -fx-background-color: -color-actions-panel;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-border-color: -color-border;
+    -fx-border-width: 1px;
+    -fx-padding: 5px;
+    -fx-padding-left: -5px;
+}
+
+/* Стили для пунктов меню */
+.menu-item {
+    -fx-background-color: -color-background; 
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-min-height: 25px;
+    -fx-pref-height: 25px;
+}
+
+.menu-item .label {
+    -fx-text-fill: -color-main-text;
+}
+
+.menu-item:hover {
+    -fx-background-color: -color-button-hover;
+}
+
+.menu-item:pressed {
+    -fx-background-color: -color-button-pressed;
+}
+
+.menu-item:focused {
+    -fx-background-color: -color-button-hover;
+    -fx-background-radius: 8px;
+}
+
+/* Стили для разделителей */
+.separator-menu-item .line {
+    -fx-border-color: -color-border;
+    -fx-border-width: 0.5px;
 }

@@ -41,7 +41,6 @@
     -fx-background-color: -color-note-panel;
 }
 
-
 /* Стилизация панели с инструментами дерева файлов */
 .file-tools-panel {
     -fx-alignment: top-center;
