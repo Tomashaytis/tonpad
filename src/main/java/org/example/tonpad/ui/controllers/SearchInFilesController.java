@@ -16,8 +16,8 @@ import lombok.Setter;
 import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.FileTree;
-import org.example.tonpad.core.service.crypto.EncryptionService;
-import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
+import org.example.tonpad.core.service.crypto.Encryptor;
+import org.example.tonpad.core.service.crypto.Impl.AesGcmEncryptor;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.ui.extentions.SearchResultCell;
 import org.example.tonpad.ui.extentions.VaultPath;
@@ -137,7 +137,7 @@ public class SearchInFilesController extends AbstractController {
     public String openFile(Path filePath) {
         if(vaultSession.isOpendWithNoPassword())
         {
-            EncryptionService encoder = new EncryptionServiceImpl();
+            Encryptor encoder = new AesGcmEncryptor();
             if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
                 return fileService.readFile(filePath);
             }
@@ -149,8 +149,8 @@ public class SearchInFilesController extends AbstractController {
         {
             try
             {
-                byte[] key = vaultSession.getMasterKeyIfPresent().map(Key::getEncoded).orElse(null);
-                EncryptionService encoder = new EncryptionServiceImpl(key);
+                byte[] key = vaultSession.getKeyIfPresent().map(Key::getEncoded).orElse(null);
+                Encryptor encoder = new AesGcmEncryptor(key);
                 return encoder.decrypt(fileService.readFile(filePath), null);
             }
             catch(DecryptionException e) {

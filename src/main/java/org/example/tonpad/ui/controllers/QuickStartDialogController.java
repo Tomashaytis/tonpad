@@ -170,7 +170,6 @@ public class QuickStartDialogController extends AbstractController {
         }
     }
 
-
     private void setupEventHandlers() {
         closeDialogButton.setOnAction(e -> stage.close());
         collapseDialogButton.setOnAction(e -> stage.setIconified(true));
