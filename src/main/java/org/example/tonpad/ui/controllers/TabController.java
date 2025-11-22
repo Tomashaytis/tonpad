@@ -23,7 +23,6 @@ import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.editor.Editor;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -93,7 +92,7 @@ public class TabController {
 
     public void clearAllTabs() {
     tabPane.getTabs().stream()
-            .filter(t -> !t.isDisable())   // не трогаем плюс-таб
+            .filter(t -> !t.isDisable())
             .toList()
             .forEach(this::tabClose);
     }
@@ -182,12 +181,10 @@ public class TabController {
 private void addTabToPane(Tab tab) {
     int size = tabPane.getTabs().size();
 
-    int index = size; // по умолчанию добавляем в конец
+    int index = size;
 
     if (size > 0) {
         Tab last = tabPane.getTabs().get(size - 1);
-        // если последний таб — это плюс (disable = true),
-        // вставляем перед ним
         if (last.isDisable()) {
             index = size - 1;
         }
@@ -204,9 +201,7 @@ private void addTabToPane(Tab tab) {
 
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
-        // initTab(tab, noteContent, content, webView);
         initTabContent(tab, noteContent, content, webView);
-        // addTabToPane(tab);
         PauseTransition debounce = new PauseTransition(Duration.millis(1500));
         debounce.setOnFinished(event -> saveToFile(false));
 
