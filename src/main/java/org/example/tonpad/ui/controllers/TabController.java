@@ -197,6 +197,9 @@ public class TabController {
     }
 
     private void tabClose(Tab tab) {
+        if (tab.getTabPane() != null) {
+            tab.getTabPane().getTabs().remove(tab);
+        }
     }
 
     private void saveToFile(boolean isSpetialNote) {
