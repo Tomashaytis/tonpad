@@ -4,8 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.exceptions.CustomIOException;
 import org.example.tonpad.core.exceptions.TonpadBaseException;
-import org.example.tonpad.core.service.crypto.EncryptionService;
-import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
+import org.example.tonpad.core.service.crypto.Encryptor;
+import org.example.tonpad.core.service.crypto.EncryptorFactory;
+import org.example.tonpad.core.service.crypto.Impl.AesGcmEncryptor;
 import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.sort.SortOptions;
@@ -62,6 +63,8 @@ public class FileSystemServiceImpl implements FileSystemService {
     private final Buffer buffer;
 
     private final VaultSession vaultSession;
+
+    private final EncryptorFactory encryptorFactory;
 
     public FileTree getFileTree(String path) {
         return getFileTree(Path.of(path));
@@ -405,7 +408,7 @@ public class FileSystemServiceImpl implements FileSystemService {
     {
         if (vaultSession.isOpendWithNoPassword())
         {
-            EncryptionService encoder = new EncryptionServiceImpl();
+            Encryptor encoder = encryptorFactory.encryptorForKey();
             if (encoder.isOpeningWithNoPasswordAllowed(path)) {
                 return true;
             }
@@ -417,10 +420,10 @@ public class FileSystemServiceImpl implements FileSystemService {
             {
                 String noteContent = readFile(path);
 
-                byte[] key = vaultSession.getMasterKeyIfPresent()
+                byte[] key = vaultSession.getKeyIfPresent()
                         .map(k -> k.getEncoded())
                         .orElse(null);
-                EncryptionService encoder = new EncryptionServiceImpl(key);
+                Encryptor encoder = encryptorFactory.encryptorForKey(key);
                 String resNoteContent = encoder.decrypt(noteContent, null);
                 return true;
             }

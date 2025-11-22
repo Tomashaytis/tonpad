@@ -15,8 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
-import org.example.tonpad.core.service.crypto.EncryptionService;
-import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
+import org.example.tonpad.core.service.crypto.Encryptor;
+import org.example.tonpad.core.service.crypto.EncryptorFactory;
+import org.example.tonpad.core.service.crypto.Impl.AesGcmEncryptor;
 import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.editor.Editor;
@@ -47,6 +48,8 @@ public class TabController {
 
     private final VaultSession vaultSession;
 
+    private final EncryptorFactory encryptorFactory;
+
     public void init(URI fileUri) {
         addNewTabButton();
         createInitialTab(fileUri);
@@ -57,7 +60,7 @@ public class TabController {
 
         if(vaultSession.isOpendWithNoPassword())
         {
-            EncryptionService encoder = new EncryptionServiceImpl();
+            AesGcmEncryptor encoder = new AesGcmEncryptor();
             if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
                 String noteContent = fileService.readFile(filePath);
 
@@ -73,8 +76,8 @@ public class TabController {
         {
             try
             {
-                byte[] key = vaultSession.getMasterKeyIfPresent().map(k -> k.getEncoded()).orElse(null);
-                EncryptionService encoder = new EncryptionServiceImpl(key);
+                byte[] key = vaultSession.getKeyIfPresent().map(k -> k.getEncoded()).orElse(null);
+                Encryptor encoder = new AesGcmEncryptor(key);
                 String resNoteContent = encoder.decrypt(fileService.readFile(filePath), null);
 
                 Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
@@ -196,7 +199,7 @@ public class TabController {
     }
 
     private void saveToFile(boolean isSpetialNote) {
-        byte[] key = vaultSession.getMasterKeyIfPresent()
+        byte[] key = vaultSession.getKeyIfPresent()
                         .map(k -> k.getEncoded())
                         .orElse(null);
         
@@ -209,7 +212,7 @@ public class TabController {
                     fileService.writeFile(path, noteContent);
                 else
                 {
-                    EncryptionService encoder = new EncryptionServiceImpl(key);
+                    Encryptor encoder = encryptorFactory.encryptorForKey(key);
                     fileService.writeFile(path, encoder.encrypt(noteContent, null));
                 }
             } catch (Exception e) {

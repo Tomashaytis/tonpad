@@ -57,7 +57,7 @@
 
             <VBox spacing="6">
                 <HBox spacing="8">
-                    <Button fx:id="changePasswordButton" text="Сменить пароль"/>
+                    <Button fx:id="changePasswordButton" text="Change privacy"/>
                 </HBox>
             </VBox>
 
@@ -74,11 +74,6 @@
                     </ChoiceBox>
                 </HBox>
             </VBox>
-
-            <HBox spacing="8">
-                <HBox HBox.hgrow="ALWAYS"/>
-                <Button fx:id="saveButton" text="Сохранить"/>
-            </HBox>
         </VBox>
     </children>
 </VBox>

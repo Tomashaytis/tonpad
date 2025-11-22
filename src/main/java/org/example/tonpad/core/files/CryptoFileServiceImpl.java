@@ -6,8 +6,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.example.tonpad.core.exceptions.CustomIOException;
-import org.example.tonpad.core.service.crypto.EncryptionService;
-import org.example.tonpad.core.service.crypto.Impl.EncryptionServiceImpl;
+import org.example.tonpad.core.service.crypto.Encryptor;
+import org.example.tonpad.core.service.crypto.EncryptorFactory;
+import org.example.tonpad.core.service.crypto.Impl.AesGcmEncryptor;
 import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.exceptions.EncryptionException;
 import org.example.tonpad.core.session.VaultSession;
@@ -22,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CryptoFileServiceImpl implements CryptoFileService {
     private final FileSystemService fileSystemService;
     private final VaultSession vaultSession;
+    private final EncryptorFactory encryptorFactory;
 
     // Разрешенные расширения для обработки (allow-list)
     private static final Set<String> ALLOWED_EXT = Set.of(
@@ -74,7 +76,7 @@ public class CryptoFileServiceImpl implements CryptoFileService {
 
     // Наш формат шифрования определяется заголовком
     private static boolean looksEncrypted(String data) {
-        return data != null && data.startsWith(EncryptionServiceImpl.HEADER);
+        return data != null && data.startsWith(AesGcmEncryptor.HEADER);
     }
 
     @Override
@@ -85,8 +87,8 @@ public class CryptoFileServiceImpl implements CryptoFileService {
         log.info("[REENCRYPT] start: root='{}', withKey={}, noPwd={}, oldKeyPresent={}, newKeyLen={}",
                 root, withKeyMode, noPwdMode, (oldKeyOrNull != null), (newKey == null ? 0 : newKey.length));
 
-        EncryptionService decryptor = (oldKeyOrNull != null) ? new EncryptionServiceImpl(oldKeyOrNull) : null;
-        EncryptionService encryptor = new EncryptionServiceImpl(newKey);
+        Encryptor decryptor = (oldKeyOrNull != null) ? encryptorFactory.encryptorForKey(oldKeyOrNull) : null;
+        Encryptor encryptor = encryptorFactory.encryptorForKey(newKey);
 
         long total = 0, filteredOut = 0, skipped = 0, changed = 0, errors = 0;
 
@@ -140,7 +142,7 @@ public class CryptoFileServiceImpl implements CryptoFileService {
             log.info("[DECRYPT] no key -> nothing to decrypt");
             return;
         }
-        EncryptionService decryptor = new EncryptionServiceImpl(oldKey);
+        Encryptor decryptor = encryptorFactory.encryptorForKey(oldKey);
 
         long total = 0, filteredOut = 0, changed = 0, skipped = 0, errors = 0;
         try (Stream<Path> files = Files.walk(root)) {
@@ -172,7 +174,7 @@ public class CryptoFileServiceImpl implements CryptoFileService {
     @Override
     public void encryptFiles(byte[] newKey, Path root) {
         log.info("[ENCRYPT] start: root='{}', keyLen={}", root, newKey == null ? 0 : newKey.length);
-        EncryptionService encryptor = new EncryptionServiceImpl(newKey);
+        Encryptor encryptor = encryptorFactory.encryptorForKey(newKey);
 
         long total = 0, filteredOut = 0, changed = 0, skipped = 0, errors = 0;
         try (Stream<Path> files = Files.walk(root)) {
