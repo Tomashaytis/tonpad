@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox fx:id="searchBarVBox" prefHeight="400.0" prefWidth="184.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.SearchInFilesController">
+    <children>
+        <HBox fx:id="searchFieldHBox" styleClass="search-field">
+            <children>
+                <ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true" styleClass="search-icon">
+                    <HBox.margin>
+                        <Insets />
+                    </HBox.margin>
+                </ImageView>
+                <TextField fx:id="searchField" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="184.0" promptText="Search some..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+            </children>
+        </HBox>
+        <HBox fx:id="searchButtonsHBox" alignment="TOP_CENTER" fillHeight="false" prefHeight="27.0" prefWidth="215.0" spacing="10.0" styleClass="search-buttons-panel">
+            <children>
+                <TextField fx:id="searchResultsField" alignment="CENTER" editable="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" styleClass="search-field" HBox.hgrow="ALWAYS">
+                    <HBox.margin>
+                        <Insets />
+                    </HBox.margin>
+                </TextField>
+            </children>
+            <padding>
+                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+            </padding>
+        </HBox>
+      <HBox prefHeight="100.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+         <children>
+            <TreeView fx:id="searchTreeView" prefHeight="200.0" prefWidth="161.0" styleClass="file-tree-view" HBox.hgrow="ALWAYS" />
+         </children>
+      </HBox>
+    </children>
+</VBox>

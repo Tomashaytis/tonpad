@@ -20,6 +20,7 @@ import org.example.tonpad.ui.extentions.VaultPath;
 import org.example.tonpad.ui.service.ThemeService;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Path;
 import java.util.Objects;
 
 @Component
@@ -54,7 +55,7 @@ public class MainController extends AbstractController {
     private AnchorPane fileTreePane;
 
     @FXML
-    private AnchorPane searchPane;
+    private AnchorPane searchInFilesPane;
 
     @FXML
     private AnchorPane bookmarksPane;
@@ -86,6 +87,8 @@ public class MainController extends AbstractController {
 
     private final SearchInTextController searchInTextController;
 
+    private final SearchInFilesController searchInFilesController;
+
     private final FileTreeController fileTreeController;
 
     private final SearchInFileTreeController searchInFileTreeController;
@@ -107,6 +110,7 @@ public class MainController extends AbstractController {
 
     private void setupControllers() {
         fileTreeController.init(fileTreePane);
+        searchInFilesController.init(searchInFilesPane);
 
         tabController.setTabPane(tabPane);
         try {
@@ -114,7 +118,6 @@ public class MainController extends AbstractController {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
 
         searchInTextController.setTabPane(tabPane);
         searchInTextController.setEditorMap(tabController.getEditorMap());
@@ -128,12 +131,21 @@ public class MainController extends AbstractController {
 
     private void setupEventHandlers() {
         fileTreeController.setFileOpenHandler(this::openFileInEditor);
+        searchInFilesController.setFileOpenHandler(this::openFileInEditor);
 
         showFilesButton.setOnAction(event -> togglePane(
                 leftStackPane, fileTreePane, showFilesButton, () -> {}, () -> {}
         ));
 
-        showSearchButton.setOnAction(e -> this.showSearchInFileTreeOverlay());
+        showSearchButton.setOnAction(event -> togglePane(
+                leftStackPane, searchInFilesPane, showSearchButton, () -> {}, () -> {}
+        ));
+
+        setSearchShortCut(
+                new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN),
+                () -> showPane(leftStackPane, searchInTextPane, searchInTextController::showSearchBar),
+                () -> hidePane(leftStackPane, searchInTextPane, searchInTextController::hideSearchBar)
+        );
 
         titleBarController.bindSettingsButton(e -> settingsController.toggle());
 
@@ -161,7 +173,7 @@ public class MainController extends AbstractController {
             fileTreePane.setVisible(false);
             showFilesButton.getStyleClass().remove("toggled-icon-button");
         }
-        if (searchPane.isVisible()) searchPane.setVisible(false);
+        if (searchInFilesPane.isVisible()) searchInFilesPane.setVisible(false);
         if (bookmarksPane.isVisible()) bookmarksPane.setVisible(false);
         settingsController.hide();
     }
@@ -251,6 +263,17 @@ public class MainController extends AbstractController {
         }
     }
 
+    private void setSearchShortCut(KeyCodeCombination openKeyComb, Runnable show, Runnable hide) {
+        if (tabPane.getScene() != null) {
+            attachAccelerator(tabPane.getScene(), openKeyComb, show);
+            tabPane.sceneProperty().addListener((obs, oldS, newS) -> {
+                if (newS != null) {
+                    attachAccelerator(newS, openKeyComb, show);
+                }
+            });
+        }
+    }
+
     private void showPane(StackPane stackPane, AnchorPane anchorPane, Runnable show) {
         if (!anchorPane.isVisible()) {
             for (Node child : stackPane.getChildren()) {
@@ -274,7 +297,7 @@ public class MainController extends AbstractController {
         }
     }
 
-    private void openFileInEditor(String path) {
+    private void openFileInEditor(Path path) {
         tabController.openFileInCurrentTab(path);
     }
 

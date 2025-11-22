@@ -1,6 +1,5 @@
 package org.example.tonpad.ui.controllers;
 
-import javafx.concurrent.Worker;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
@@ -19,8 +18,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-public class SearchInFileTreeController
-{
+public class SearchInFileTreeController {
 
     @Setter
     private TabPane tabPane;
@@ -35,8 +33,6 @@ public class SearchInFileTreeController
     private final FileSystemService fileSystemService;
 
     private final VaultPath vaultPath;
-
-    private int currentIndex = -1;
 
     public void init(AnchorPane parent) {
         if (!parent.getChildren().contains(searchFieldController.getSearchBarVBox())) {
@@ -73,8 +69,6 @@ public class SearchInFileTreeController
     }
 
     public void runSearch() {
-        currentIndex = -1;
-
         String query = searchFieldController.getQuery();
         if(query.isEmpty()) {
             fileTreeController.setHitsMap(new HashMap<>());
@@ -86,7 +80,7 @@ public class SearchInFileTreeController
         fileTreeController.setHitsMap(runFileTreeSearch(query));
         fileTreeController.refreshTree();
 
-        searchFieldController.setResults(currentIndex + 1, hitsMap.size());
+        searchFieldController.setResults(0, hitsMap.size());
     }
 
     private Map<String, List<SearchService.Hit>> runFileTreeSearch(String query) {

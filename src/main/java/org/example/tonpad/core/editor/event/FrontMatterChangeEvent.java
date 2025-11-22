@@ -1,8 +1,5 @@
 package org.example.tonpad.core.editor.event;
 
-import lombok.Getter;
-
-@Getter
 public record FrontMatterChangeEvent(String action, String oldKey, String oldValue, String newKey, String newValue) {
 
     public String getAffectedKey() {

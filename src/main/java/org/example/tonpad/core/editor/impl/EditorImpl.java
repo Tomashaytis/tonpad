@@ -65,7 +65,6 @@ public class EditorImpl implements Editor {
         this.webEngine.load(getEditorHtmlSource().toExternalForm());
     }
 
-    @Override
     public void setNoteContent(String noteContent) {
         String jsCode = String.format("editor.setNoteContent(%s);",
                 toJsString(noteContent));
@@ -73,7 +72,6 @@ public class EditorImpl implements Editor {
         executeJs(jsCode);
     }
 
-    @Override
     public void setFrontMatter(Map<String, String> frontMatter) {
         String yamlContent = yaml.dump(frontMatter);
 
@@ -83,7 +81,6 @@ public class EditorImpl implements Editor {
         executeJs(jsCode);
     }
 
-    @Override
     public void insertSnippet(String snippetContent) {
         String jsCode = String.format("editor.insertSnippet(%s);",
                 toJsString(snippetContent));
@@ -91,7 +88,6 @@ public class EditorImpl implements Editor {
         executeJs(jsCode);
     }
 
-    @Override
     public CompletableFuture<SearchResult> find(String query) {
         String jsCode = String.format("editor.find(%s);",
                 toJsString(query));
@@ -99,78 +95,63 @@ public class EditorImpl implements Editor {
         return executeJs(jsCode).thenApply(this::parseSearchResult);
     }
 
-    @Override
     public CompletableFuture<SearchResult> findNext() {
         return executeJs("editor.findNext();").thenApply(this::parseSearchResult);
     }
 
-    @Override
     public CompletableFuture<SearchResult> findPrevious() {
         return executeJs("editor.findPrevious();").thenApply(this::parseSearchResult);
     }
 
-    @Override
     public CompletableFuture<SearchResult> clearSearch() {
         return executeJs("editor.clearSearch();").thenApply(this::parseSearchResult);
     }
 
-    @Override
     public CompletableFuture<String> getNoteContent() {
         return executeJs("editor.getNoteContent();");
     }
 
-    @Override
     public CompletableFuture<String> getFrontMatter(boolean jsonFormat) {
         String jsCode = jsonFormat ? "editor.getFrontMatterJSON();" : "editor.getFrontMatterYAML();";
         return executeJs(jsCode);
     }
 
-    @Override
     public CompletableFuture<String> getDoc() {
         return executeJs("editor.getDoc();");
     }
 
-    @Override
     public CompletableFuture<String> getHtml() {
         return executeJs("editor.getHTML();");
     }
 
-    @Override
     public CompletableFuture<String> getMarkdown() {
         return executeJs("editor.getMarkdown();");
     }
 
-    @Override
     public void focus() {
         executeJs("editor.focus();");
     }
 
-    @Override
     public void destroy() {
         executeJs("editor.destroy();");
     }
 
-    @Override
     public URL getEditorHtmlSource() {
         return Objects.requireNonNull(getClass().getResource("/editor/editor.html"));
     }
 
-    @Override
     public URL getEditorCssSource() {
         return Objects.requireNonNull(getClass().getResource("/editor/editor.css"));
     }
 
-    @Override
     public URL getEditorJsSource() {
         return Objects.requireNonNull(getClass().getResource("/editor/editor.js"));
     }
 
-    @Override
     public void addFrontMatterChangeListener(FrontMatterChangeListener listener) {
         frontMatterListeners.add(listener);
     }
 
-    @Override
     public void removeFrontMatterChangeListener(FrontMatterChangeListener listener) {
         frontMatterListeners.remove(listener);
     }
