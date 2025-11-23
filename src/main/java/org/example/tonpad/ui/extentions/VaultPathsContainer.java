@@ -1,6 +1,5 @@
 package org.example.tonpad.ui.extentions;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
 
@@ -10,11 +9,9 @@ import java.nio.file.Path;
 @Getter
 public class VaultPathsContainer {
 
-    @Getter(AccessLevel.PRIVATE)
-    private final String NOTES_DIR_NAME = "notes";
+    private final static String NOTES_DIR_NAME = "notes";
 
-    @Getter(AccessLevel.PRIVATE)
-    private final String SNIPPETS_DIR_NAME = "snippets";
+    private final static String SNIPPETS_DIR_NAME = "snippets";
 
     private Path vaultPath;
 
