@@ -1,13 +1,11 @@
 package org.example.tonpad.ui.controllers;
 
-import java.nio.file.Path;
-
 import org.example.tonpad.core.exceptions.CustomIOException;
 import org.example.tonpad.core.files.CryptoFileService;
 import org.example.tonpad.core.service.crypto.DerivationService;
 import org.example.tonpad.core.exceptions.DerivationException;
 import org.example.tonpad.core.session.VaultSession;
-import org.example.tonpad.ui.extentions.VaultPath;
+import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.example.tonpad.ui.service.ThemeService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
@@ -47,7 +45,7 @@ public class SettingsController extends AbstractController {
     private final CryptoFileService cryptoFileService;
     private final DerivationService derivationService;
     private final VaultSession vaultSession;
-    private final VaultPath vaultPath;
+    private final VaultPathsContainer vaultPathsContainer;
 
     private static final double OFFSET = 12.0;
 
@@ -88,9 +86,9 @@ public class SettingsController extends AbstractController {
 
                 byte[] newKey = derivationService.deriveAuthHash(pwd);
                 log.info("[SET-PWD] derive newKey ok, oldKeyPresent={}, root='{}'",
-                        oldKeyOrNull != null, vaultPath.getVaultPath());
+                        oldKeyOrNull != null, vaultPathsContainer.getVaultPath());
 
-                cryptoFileService.reEncryptFiles(oldKeyOrNull, newKey, Path.of(vaultPath.getVaultPath()));
+                cryptoFileService.reEncryptFiles(oldKeyOrNull, newKey, vaultPathsContainer.getVaultPath());
 
                 // Переводим сессию в режим с паролем:
                 vaultSession.lock();
@@ -119,7 +117,7 @@ public class SettingsController extends AbstractController {
                 if (oldKey == null) {
                     log.info("[RESET-PWD] no key present -> nothing to decrypt");
                 } else {
-                    cryptoFileService.decryptFiles(oldKey, Path.of(vaultPath.getVaultPath()));
+                    cryptoFileService.decryptFiles(oldKey, vaultPathsContainer.getVaultPath());
                 }
 
                 vaultSession.lock();

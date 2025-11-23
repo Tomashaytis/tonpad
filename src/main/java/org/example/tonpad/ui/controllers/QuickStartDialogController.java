@@ -22,7 +22,7 @@ import org.example.tonpad.core.files.RecentVaultService;
 import org.example.tonpad.core.service.VaultService;
 import org.example.tonpad.core.exceptions.DerivationException;
 import org.example.tonpad.core.session.VaultSession;
-import org.example.tonpad.ui.extentions.VaultPath;
+import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
@@ -69,7 +69,7 @@ public class QuickStartDialogController extends AbstractController {
 
     private final ObservableList<String> recentVaults = FXCollections.observableArrayList();
 
-    private final VaultPath vaultPath;
+    private final VaultPathsContainer vaultPathsContainer;
 
     private final VaultSession vaultSession;
 
@@ -80,7 +80,7 @@ public class QuickStartDialogController extends AbstractController {
     private double yOffset = 0;
 
     @Setter
-    private Consumer<String> createVaultHandler;
+    private Consumer<Path> createVaultHandler;
 
     public void init() {
         this.stage = new Stage();
@@ -136,8 +136,9 @@ public class QuickStartDialogController extends AbstractController {
         }
         vaultSession.lock();
 
-        vaultService.checkVaultInitialization(Path.of(path));
-        vaultPath.setVaultPath(path);
+        Path vaultPath = Path.of(path);
+        vaultService.checkVaultInitialization(vaultPath);
+        vaultPathsContainer.setVaultPath(vaultPath);
         recentVaultService.setFirstRecent(recentVaults, path);
 
         AtomicBoolean confirm = new AtomicBoolean(false);
@@ -165,7 +166,7 @@ public class QuickStartDialogController extends AbstractController {
 
         if (createVaultHandler != null) {
             recentVaultService.setFirstRecent(recentVaults, path);
-            createVaultHandler.accept(path);
+            createVaultHandler.accept(vaultPath);
             hide();
         }
     }
@@ -206,7 +207,7 @@ public class QuickStartDialogController extends AbstractController {
         dlg.showModal(stage, 
         pwd -> {
             try {
-                vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
+                vaultPathsContainer.setVaultPath(selectedDirectory.getAbsolutePath());
                 vaultService.initVault(selectedDirectory.toPath());
                 vaultSession.unlock(pwd);    
                 confirm.set(true);
@@ -219,7 +220,7 @@ public class QuickStartDialogController extends AbstractController {
         }, 
         () -> {
             try {
-                vaultPath.setVaultPath(selectedDirectory.getAbsolutePath());
+                vaultPathsContainer.setVaultPath(selectedDirectory.getAbsolutePath());
                 vaultService.initVault(selectedDirectory.toPath());
                 vaultSession.openWithoutPassword();
                 confirm.set(true);
@@ -231,8 +232,8 @@ public class QuickStartDialogController extends AbstractController {
             }
         });
         if(!confirm.get()) return;
-        createVaultHandler.accept(vaultPath.getVaultPath());
-        recentVaultService.setFirstRecent(recentVaults, vaultPath.getVaultPath());
+        createVaultHandler.accept(vaultPathsContainer.getVaultPath());
+        recentVaultService.setFirstRecent(recentVaults, vaultPathsContainer.getVaultPath().toString());
         hide();
     }
 
@@ -266,8 +267,9 @@ public class QuickStartDialogController extends AbstractController {
         vaultSession.lock();
 
         String path = selectedDirectory.getAbsolutePath();
-        vaultService.checkVaultInitialization(Path.of(path));
-        vaultPath.setVaultPath(path);
+        Path vaultPath = Path.of(path);
+        vaultService.checkVaultInitialization(vaultPath);
+        vaultPathsContainer.setVaultPath(vaultPath);
         recentVaultService.setFirstRecent(recentVaults, path);
 
         AtomicBoolean confirm = new AtomicBoolean(false);
@@ -294,7 +296,7 @@ public class QuickStartDialogController extends AbstractController {
         if (!confirm.get()) return;
 
         if (createVaultHandler != null) {
-            createVaultHandler.accept(vaultPath.getVaultPath());
+            createVaultHandler.accept(vaultPathsContainer.getVaultPath());
             hide();
         }
     }

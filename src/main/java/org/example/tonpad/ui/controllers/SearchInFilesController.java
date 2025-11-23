@@ -20,7 +20,7 @@ import org.example.tonpad.core.service.crypto.Encryptor;
 import org.example.tonpad.core.service.crypto.Impl.AesGcmEncryptor;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.ui.extentions.SearchResultCell;
-import org.example.tonpad.ui.extentions.VaultPath;
+import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.example.tonpad.ui.extentions.SearchTreeItem;
 import org.springframework.stereotype.Component;
 
@@ -71,9 +71,7 @@ public class SearchInFilesController extends AbstractController {
 
     private volatile boolean searchCancelled = false;
 
-    private final VaultPath vaultPath;
-
-    private Path rootPath;
+    private final VaultPathsContainer vaultPathsContainer;
 
     private TreeItem<String> rootItem;
 
@@ -159,7 +157,7 @@ public class SearchInFilesController extends AbstractController {
         }
     }
     private void performSearch(String query) {
-        FileTree fileTree = fileService.getFileTree(rootPath);
+        FileTree fileTree = fileService.getFileTree(vaultPathsContainer.getNotesPath());
 
         List<SearchTreeItem> mdFiles = collectMdFiles(fileTree);
         SearchTreeItem root = new SearchTreeItem("", true);
@@ -173,7 +171,7 @@ public class SearchInFilesController extends AbstractController {
             if (searchCancelled) break;
 
             String filePath = fileItem.getValue();
-            Path fullPath = rootPath.resolve(filePath);
+            Path fullPath = vaultPathsContainer.getNotesPath().resolve(filePath);
 
             SearchTreeItem fileNode = new SearchTreeItem(filePath, true);
             boolean hasMatches = false;
@@ -264,7 +262,6 @@ public class SearchInFilesController extends AbstractController {
         AnchorPane.setRightAnchor(searchBarVBox, 0.0);
 
         focus();
-        rootPath = Path.of(vaultPath.getVaultPath()).resolve("notes");
 
         searchTreeView.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
 
@@ -289,7 +286,7 @@ public class SearchInFilesController extends AbstractController {
         if (node.getChildren() == null) {
             String fileName = node.getPath().getFileName().toString();
             if (fileName.toLowerCase().endsWith(".md")) {
-                Path relativePath = rootPath.relativize(node.getPath());
+                Path relativePath = vaultPathsContainer.getNotesPath().relativize(node.getPath());
                 SearchTreeItem item = new SearchTreeItem(relativePath.toString(), true);
                 result.add(item);
             }
@@ -305,9 +302,9 @@ public class SearchInFilesController extends AbstractController {
             Path filePath;
 
             if (target.isLeaf()) {
-                filePath = rootPath.resolve(target.getParent().getValue());
+                filePath = vaultPathsContainer.getNotesPath().resolve(target.getParent().getValue());
             } else {
-                filePath = rootPath.resolve(target.getValue());
+                filePath = vaultPathsContainer.getNotesPath().resolve(target.getValue());
             }
 
             if (fileOpenHandler != null) {

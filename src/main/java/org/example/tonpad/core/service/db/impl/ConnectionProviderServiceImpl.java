@@ -3,7 +3,7 @@ package org.example.tonpad.core.service.db.impl;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.service.db.ConnectionProviderService;
-import org.example.tonpad.ui.extentions.VaultPath;
+import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.jooq.Configuration;
 import org.jooq.ConnectionProvider;
 import org.jooq.DSLContext;
@@ -26,9 +26,9 @@ public class ConnectionProviderServiceImpl implements ConnectionProviderService 
 
     private static final String DRIVER_STRING = "jdbc:sqlite:";
 
-    private final Map<String, DSLContext> contextMap = new HashMap<>();
+    private final Map<Path, DSLContext> contextMap = new HashMap<>();
 
-    private final VaultPath path;
+    private final VaultPathsContainer path;
 
     @Override
     public DSLContext getDSLContext() {
@@ -36,13 +36,13 @@ public class ConnectionProviderServiceImpl implements ConnectionProviderService 
     }
 
     @Override
-    public DSLContext getDSLContext(String vaultPath) {
+    public DSLContext getDSLContext(Path vaultPath) {
         return contextMap.computeIfAbsent(vaultPath, key -> createDSLContext());
     }
 
     private DSLContext createDSLContext() {
         HikariDataSource ds = new HikariDataSource();
-        ds.setJdbcUrl(DRIVER_STRING + Path.of(path.getVaultPath(), DATABASE_NAME));
+        ds.setJdbcUrl(DRIVER_STRING + path.getVaultPath().resolve(DATABASE_NAME));
         ds.setDriverClassName("org.sqlite.JDBC");
 
         ConnectionProvider connectionProvider = new DataSourceConnectionProvider(ds);

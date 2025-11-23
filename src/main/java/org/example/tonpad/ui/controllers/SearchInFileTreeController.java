@@ -9,9 +9,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.service.SearchService;
-import org.example.tonpad.ui.extentions.VaultPath;
+import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,7 @@ public class SearchInFileTreeController {
 
     private final FileSystemService fileSystemService;
 
-    private final VaultPath vaultPath;
+    private final VaultPathsContainer vaultPathsContainer;
 
     public void init(AnchorPane parent) {
         if (!parent.getChildren().contains(searchFieldController.getSearchBarVBox())) {
@@ -88,8 +89,8 @@ public class SearchInFileTreeController {
         if (query == null || query.isBlank()) return map;
 
         final String needle = query.toLowerCase(java.util.Locale.ROOT);
-        final String rootAbs = vaultPath.getVaultPath();
-        final java.nio.file.Path rootPath = java.nio.file.Paths.get(rootAbs);
+        final Path rootPath = vaultPathsContainer.getVaultPath();
+        final String rootAbs = rootPath.toString();
         final String rootName = rootPath.getFileName() != null ? rootPath.getFileName().toString() : rootAbs;
 
         fileSystemService.findByNameContains(rootAbs, query).stream()

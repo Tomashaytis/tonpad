@@ -24,7 +24,7 @@ import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.core.sort.SortKey;
 import org.example.tonpad.core.sort.SortOptions;
 import org.example.tonpad.ui.extentions.FileTreeItem;
-import org.example.tonpad.ui.extentions.VaultPath;
+import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
@@ -88,9 +88,7 @@ public class FileTreeController extends AbstractController {
 
     private final Buffer buffer;
 
-    private final VaultPath vaultPath;
-
-    private Path rootPath;
+    private final VaultPathsContainer vaultPathsContainer;
 
     private static final javafx.css.PseudoClass MATCHED = javafx.css.PseudoClass.getPseudoClass("matched");
 
@@ -116,7 +114,6 @@ public class FileTreeController extends AbstractController {
         AnchorPane.setBottomAnchor(fileTreeVBox, 0.0);
         AnchorPane.setLeftAnchor(fileTreeVBox, 0.0);
         AnchorPane.setRightAnchor(fileTreeVBox, 0.0);
-        rootPath = Path.of(vaultPath.getVaultPath()).resolve("notes");
 
         setupEventHandlers();
         setupFileTree();
@@ -213,7 +210,7 @@ public class FileTreeController extends AbstractController {
     }
 
     private void selectItem(Path path, boolean rename) {
-        Path relativePath = rootPath.relativize(path);
+        Path relativePath = vaultPathsContainer.getNotesPath().relativize(path);
         TreeItem<String> item = findTreeItemByPath(rootItem, relativePath);
 
         if (item != null) {
@@ -246,7 +243,7 @@ public class FileTreeController extends AbstractController {
     public void refreshTree() {
         saveAllExpandedStates();
         SortOptions opt = new SortOptions(sortKey, cbFoldersFirst.isSelected(), cbRelevantOnly.isSelected());
-        FileTree fileTree = fileSystemService.getFileTreeSorted(rootPath, opt);
+        FileTree fileTree = fileSystemService.getFileTreeSorted(vaultPathsContainer.getNotesPath(), opt);
         TreeItem<String> newRoot = convertFileTreeToTreeItem(fileTree);
 
         fileTreeView.setRoot(newRoot);
@@ -306,7 +303,7 @@ public class FileTreeController extends AbstractController {
 
     private Path getFullPath(TreeItem<String> item) {
         if (item == null) {
-            return rootPath;
+            return vaultPathsContainer.getNotesPath();
         }
 
         List<String> pathSegments = new ArrayList<>();
@@ -317,7 +314,7 @@ public class FileTreeController extends AbstractController {
             current = current.getParent();
         }
 
-        Path result = rootPath;
+        Path result = vaultPathsContainer.getNotesPath();
         for (String segment : pathSegments) {
             result = result.resolve(segment);
         }
@@ -351,7 +348,7 @@ public class FileTreeController extends AbstractController {
     }
 
     private void setupFileTree() {
-        FileTree fileTree = fileSystemService.getFileTree(rootPath);
+        FileTree fileTree = fileSystemService.getFileTree(vaultPathsContainer.getNotesPath());
 
         rootItem = convertFileTreeToTreeItem(fileTree);
 
@@ -475,14 +472,14 @@ public class FileTreeController extends AbstractController {
     }
 
     private Path resolveTargetDirForPaste(TreeItem<String> node) {
-        if (node == null) return rootPath;
+        if (node == null) return vaultPathsContainer.getNotesPath();
         Path here = getFullPath(node);
-        return Files.isDirectory(here) ? here : (here.getParent() != null ? here.getParent() : rootPath);
+        return Files.isDirectory(here) ? here : (here.getParent() != null ? here.getParent() : vaultPathsContainer.getNotesPath());
     }
 
     private void onCopyVaultPath() {
         var cc = new ClipboardContent();
-        cc.putString(rootPath.toString());
+        cc.putString(vaultPathsContainer.getNotesPath().toString());
         Clipboard.getSystemClipboard().setContent(cc);
     }
 
@@ -750,7 +747,7 @@ public class FileTreeController extends AbstractController {
         Path targetPath;
 
         if (selectedItem == null) {
-            targetPath = rootPath;
+            targetPath = vaultPathsContainer.getNotesPath();
         } else {
             Path selectedPath = getFullPath(selectedItem);
 
@@ -777,7 +774,7 @@ public class FileTreeController extends AbstractController {
         Path targetPath;
 
         if (selectedItem == null) {
-            targetPath = rootPath;
+            targetPath = vaultPathsContainer.getNotesPath();
         } else {
             Path selectedPath = getFullPath(selectedItem);
 

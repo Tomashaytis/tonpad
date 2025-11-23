@@ -8,7 +8,7 @@ import org.example.tonpad.ui.controllers.FileTreeController;
 import org.example.tonpad.ui.controllers.MainController;
 import org.example.tonpad.ui.controllers.QuickStartDialogController;
 import org.example.tonpad.ui.controllers.TabController;
-import org.example.tonpad.ui.extentions.VaultPath;
+import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.example.tonpad.ui.controllers.TestFieldController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -29,7 +29,7 @@ public class TonpadApplication extends Application {
     private MainController mainController;
 
     @Autowired
-    private VaultPath vaultPath;
+    private VaultPathsContainer vaultPathsContainer;
 
     @Autowired
     private QuickStartDialogController quickStartDialogController;
@@ -60,7 +60,7 @@ public class TonpadApplication extends Application {
         quickStartDialogController.setCreateVaultHandler(selectedPath -> {
             quickStartDialogController.hide();
 
-            vaultPath.setVaultPath(selectedPath);
+            vaultPathsContainer.setVaultPath(selectedPath);
 
             if (!initialized) {
                 mainController.init(primaryStage);
