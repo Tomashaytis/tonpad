@@ -14,14 +14,14 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.example.tonpad.core.service.crypto.EncryptionService;
+import org.example.tonpad.core.service.crypto.Encryptor;
 import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.exceptions.EncryptionException;
 
 import lombok.NonNull;
 
 //Пароль пользователя прогони через эту хрень PBKDF2 (salt, iterations) -> AESключ 256 бит
-public class EncryptionServiceImpl implements EncryptionService {
+public class AesGcmEncryptor implements Encryptor {
 
     private static final String KEY_LENGTH_ERROR = "key must be only 16/24/32 bytes length";
 
@@ -37,12 +37,12 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     private final SecretKey key;
 
-    public EncryptionServiceImpl()
+    public AesGcmEncryptor()
     {
         this.key = null;
     }
 
-    public EncryptionServiceImpl(@NonNull byte[] key) {
+    public AesGcmEncryptor(@NonNull byte[] key) {
         if (key.length != 16 && key.length != 24 && key.length != 32) throw new IllegalArgumentException(KEY_LENGTH_ERROR);
         this.key = new SecretKeySpec(key, ALGORYTHM);
     }
@@ -114,12 +114,12 @@ public class EncryptionServiceImpl implements EncryptionService {
     public boolean isOpeningWithNoPasswordAllowed(Path path)
     {
         try {
-            if ((Files.readString(path).startsWith(HEADER)))
+            if ((Files.newInputStream(path).readNBytes(HEADER_BYTES.length).equals(HEADER_BYTES)))
             {
                 return false;
             }
             return true;
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }

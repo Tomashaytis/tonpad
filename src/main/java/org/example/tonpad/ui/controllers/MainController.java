@@ -16,7 +16,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import lombok.RequiredArgsConstructor;
-import org.example.tonpad.ui.extentions.VaultPath;
+import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.example.tonpad.ui.service.ThemeService;
 import org.springframework.stereotype.Component;
 
@@ -95,7 +95,7 @@ public class MainController extends AbstractController {
 
     private final SettingsController settingsController;
 
-    private final VaultPath vaultPath;
+    private final VaultPathsContainer vaultPathsContainer;
 
     private final ThemeService themeService;
 

@@ -25,9 +25,9 @@
 
                 <HBox spacing="10" GridPane.rowIndex="1" GridPane.columnIndex="1">
                     <children>
-                        <Button fx:id="okButton" text="OK" defaultButton="true"/>
-                        <Button fx:id="enterWithoutButton" text="Enter without password"/>
-                        <Button fx:id="cancelButton" text="Cancel" cancelButton="true"/>
+                        <Button fx:id="okButton" text="Enter" defaultButton="true"/>
+                        <Button fx:id="enterWithoutButton" text="Guest mode"/>
+                        <!--Button fx:id="cancelButton" text="Cancel" cancelButton="true"/-->
                     </children>
                 </HBox>
             </children>
