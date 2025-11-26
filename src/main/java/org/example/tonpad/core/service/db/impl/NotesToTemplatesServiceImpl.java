@@ -23,7 +23,7 @@ public class NotesToTemplatesServiceImpl implements NotesToTemplatesService {
 
     @Override
     public NotesToTemplatesRecord getById(int id) {
-        return repository.getById(id).orElseThrow(() -> new ObjectNotFoundException("Произошла ошибка"));
+        return repository.getById(id).orElseThrow(() -> new ObjectNotFoundException("Object not found"));
     }
 
     @Override

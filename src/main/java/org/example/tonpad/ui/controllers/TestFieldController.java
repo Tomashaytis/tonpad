@@ -8,6 +8,7 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import netscape.javascript.JSException;
 import org.example.tonpad.core.editor.Editor;
 import org.example.tonpad.core.editor.impl.EditorImpl;
@@ -19,14 +20,13 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Time;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class TestFieldController extends AbstractController {
 
     @FXML
@@ -68,11 +68,11 @@ public class TestFieldController extends AbstractController {
         new Thread(() -> {
             try {
                 String note = editor.getNoteContent().get(3, TimeUnit.SECONDS);
-                System.out.println("Содержимое: " + note);
+                log.debug("Content: {}", note);
             } catch (TimeoutException e) {
-                System.out.println("Таймаут получения содержимого");
+                log.debug("Timeout of obtaining content");
             } catch (Exception e) {
-                System.out.println("Ошибка: " + e.getMessage());
+                log.debug("Error: {}", e.getMessage());
             }
         }).start();
 
@@ -84,6 +84,7 @@ public class TestFieldController extends AbstractController {
         content.getChildren().add(webView);
         mainVBox.getChildren().add(content);
     }
+
     public String getMarkdownFromEditor() {
         if (webEngine != null) {
             try {
