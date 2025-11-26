@@ -60,7 +60,7 @@ public class VaultServiceImpl implements VaultService {
                 }
             }
         } catch (Exception e) {
-            throw new CustomIOException("Произошла ошибка при инициализации волта");
+            throw new CustomIOException("Vault could not be initialized");
         }
 
         checkVaultInitialization(path);
@@ -94,7 +94,7 @@ public class VaultServiceImpl implements VaultService {
                 );
             }
         } catch (Exception e) {
-            throw new CustomIOException("Произошла ошибка при валидации волта");
+            throw new CustomIOException("Vault is not initialized");
         }
     }
 

@@ -31,14 +31,14 @@ public class TemplatesServiceImpl implements TemplatesService {
 
     @Override
     public TemplateRecord getById(int id) {
-        TemplateRecord template = templatesRepository.getById(id).orElseThrow(() -> new ObjectNotFoundException("Произошла ошибка"));
+        TemplateRecord template = templatesRepository.getById(id).orElseThrow(() -> new ObjectNotFoundException("Object not found"));
         template.setFields(fieldsRepository.getByTemplateId(id));
         return template;
     }
 
     @Override
     public TemplateRecord getByName(String name) {
-        TemplateRecord template = templatesRepository.getByName(name).orElseThrow(() -> new ObjectNotFoundException("Произошла ошибка"));
+        TemplateRecord template = templatesRepository.getByName(name).orElseThrow(() -> new ObjectNotFoundException("Object not found"));
         template.setFields(fieldsRepository.getByTemplateId(template.getId()));
         return template;
     }
