@@ -1,7 +1,6 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.core;
 
 import javafx.animation.PauseTransition;
-import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.input.KeyEvent;
@@ -17,7 +16,6 @@ import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
 import org.example.tonpad.core.service.crypto.Encryptor;
 import org.example.tonpad.core.service.crypto.EncryptorFactory;
-import org.example.tonpad.core.service.crypto.Impl.AesGcmEncryptor;
 import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.editor.Editor;
@@ -27,7 +25,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Key;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +40,11 @@ public class TabController {
     @Getter
     private final Map<Tab, Editor> editorMap = new ConcurrentHashMap<>();
 
-    private final Map<Tab, Path> pathMap = new ConcurrentHashMap<>();
+    @Getter
+    private final Map<Path, Tab> pathMap = new ConcurrentHashMap<>();
+
+    @Getter
+    private final Map<Tab, Path> inversePathMap = new ConcurrentHashMap<>();
 
     private final RegularFileService fileService;
 
@@ -52,12 +53,10 @@ public class TabController {
     private final EncryptorFactory encryptorFactory;
 
     public void init(URI fileUri) {
-        addNewTabButton();
         createInitialTab(fileUri);
     }
 
-    public void openFileInCurrentTab(Path filePath) {
-       // Path filePath = Path.of(path);
+    public void openFileInTab(Path filePath, boolean openInCurrent) {
         String noteContent;
         if(vaultSession.isOpendWithNoPassword())
         {
@@ -73,7 +72,7 @@ public class TabController {
         {
             try
             {
-                byte[] key = vaultSession.getKeyIfPresent().map(k -> k.getEncoded()).orElse(null);
+                byte[] key = vaultSession.getKeyIfPresent().map(Key::getEncoded).orElse(null);
                 Encryptor encoder = encryptorFactory.encryptorForKey(key);
                 noteContent = encoder.decrypt(fileService.readFile(filePath), null);
             }
@@ -83,7 +82,7 @@ public class TabController {
         }
         Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
 
-        if (!pathMap.containsKey(currentTab)) {
+        if (!editorMap.containsKey(currentTab) || openInCurrent) {
             replaceTabContent(currentTab, getTabName(filePath), noteContent, filePath);
         } else {
             createTabWithContent(getTabName(filePath), noteContent, filePath);
@@ -97,48 +96,44 @@ public class TabController {
             .forEach(this::tabClose);
     }
 
+    public void renameTab(Path oldPath, Path newPath) {
+        if (pathMap.containsKey(oldPath)) {
+            Tab tab = pathMap.get(oldPath);
+
+            pathMap.remove(oldPath);
+            pathMap.put(newPath, tab);
+            inversePathMap.remove(tab);
+            inversePathMap.put(tab, newPath);
+
+            String title = getTabName(newPath);
+            tab.setText(title);
+        }
+    }
+
+    public void clearTab(Path path) {
+        if (pathMap.containsKey(path)) {
+            Tab tab = pathMap.get(path);
+            tabClose(tab);
+        }
+    }
+
     private void createInitialTab(URI fileUri) {
         try {
             Path filePath = Path.of(fileUri);
             String noteContent = Files.readString(filePath);
             createTabWithContent(getTabName(filePath), noteContent, filePath);
         } catch (Exception e) {
-            createTemporaryTab("<h1>Error loading content</h1>");
+            createErrorTab();
         }
     }
 
-    private void addNewTabButton() {
-        Tab addTab = new Tab();
-        addTab.setClosable(false);
-        addTab.setDisable(true);
-
-        Label plusLabel = new Label("+");
-        plusLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-        addTab.setGraphic(plusLabel);
-
-        tabPane.getTabs().add(addTab);
-
-//        plusLabel.setOnMouseClicked(event -> createNewTab());
-
-        addTab.setOnSelectionChanged(event -> {
-            if (addTab.isSelected()) {
-//                createNewTab();
-                tabPane.getSelectionModel().selectPrevious();
-            }
-        });
-    }
-
-//    private void createNewTab() {
-//        createTabWithContent("New Tab " + (tabPane.getTabs().size()), "<h1>New Tab Content</h1>");
-//    }
-
-    private void createTemporaryTab(String noteContent) {
+    private void createErrorTab() {
         Tab newTab = new Tab("New Tab");
 
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
 
-        initTabContent(newTab, noteContent, content, webView);
+        initTabContent(newTab, "<h1>Error loading content</h1>", content, webView);
         addTabToPane(newTab);
 
         newTab.setOnCloseRequest(event -> tabClose(newTab));
@@ -149,7 +144,8 @@ public class TabController {
 
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
-        pathMap.put(newTab, path);
+        pathMap.put(path, newTab);
+        inversePathMap.put(newTab, path);
         initTabContent(newTab, noteContent, content, webView);
         addTabToPane(newTab);
 
@@ -178,26 +174,27 @@ public class TabController {
         tab.setUserData(webView);
     }
 
-private void addTabToPane(Tab tab) {
-    int size = tabPane.getTabs().size();
+    private void addTabToPane(Tab tab) {
+        int size = tabPane.getTabs().size();
 
-    int index = size;
+        int index = size;
 
-    if (size > 0) {
-        Tab last = tabPane.getTabs().get(size - 1);
-        if (last.isDisable()) {
-            index = size - 1;
+        if (size > 0) {
+            Tab last = tabPane.getTabs().get(size - 1);
+            if (last.isDisable()) {
+                index = size - 1;
+            }
         }
-    }
 
-    tabPane.getTabs().add(index, tab);
-    tabPane.getSelectionModel().select(tab);
-}
+        tabPane.getTabs().add(index, tab);
+        tabPane.getSelectionModel().select(tab);
+    }
 
 
     private void replaceTabContent(Tab tab, String title, String noteContent, Path path) {
         tab.setText(title);
-        pathMap.put(tab, path);
+        pathMap.put(path, tab);
+        inversePathMap.put(tab, path);
 
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
@@ -226,17 +223,17 @@ private void addTabToPane(Tab tab) {
         }
     }
 
-    private void saveToFile(boolean isSpetialNote) {
+    private void saveToFile(boolean isSpecialNote) {
         byte[] key = vaultSession.getKeyIfPresent()
-                        .map(k -> k.getEncoded())
+                        .map(Key::getEncoded)
                         .orElse(null);
         
         new Thread(() -> {
             try {
                 Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-                Path path = pathMap.get(currentTab);
+                Path path = inversePathMap.get(currentTab);
                 String noteContent = editorMap.get(currentTab).getNoteContent().get(3, TimeUnit.SECONDS);
-                if (vaultSession.isOpendWithNoPassword() || isSpetialNote)
+                if (vaultSession.isOpendWithNoPassword() || isSpecialNote)
                     fileService.writeFile(path, noteContent);
                 else
                 {

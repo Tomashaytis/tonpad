@@ -10,7 +10,7 @@
 <VBox fx:id="settingsPanel"
       xmlns="http://javafx.com/javafx/24.0.1"
       xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="org.example.tonpad.ui.controllers.SettingsController"
+      fx:controller="org.example.tonpad.ui.controllers.settings.SettingsController"
       prefWidth="360.0" spacing="0">
 
     <!-- белый фон + тонкая рамка -->

@@ -12,6 +12,14 @@
     -fx-image: url(/ui/icons/light/copy-file.png);
 }
 
+.cut-file-icon{
+    -fx-image: url(/ui/icons/light/cut-file.png);
+}
+
+.paste-file-icon{
+    -fx-image: url(/ui/icons/light/paste-file.png);
+}
+
 .copy-path-icon {
     -fx-image: url(/ui/icons/light/copy-path.png);
 }

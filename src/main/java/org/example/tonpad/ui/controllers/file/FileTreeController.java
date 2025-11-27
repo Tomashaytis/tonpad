@@ -1,15 +1,15 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.file;
 
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import org.example.tonpad.core.exceptions.IllegalInputException;
 import org.example.tonpad.core.exceptions.TonpadBaseException;
 import org.example.tonpad.core.files.Buffer;
 import org.example.tonpad.core.files.FileSystemService;
@@ -24,6 +25,9 @@ import org.example.tonpad.core.files.FileTree;
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.core.sort.SortKey;
 import org.example.tonpad.core.sort.SortOptions;
+import org.example.tonpad.ui.controllers.AbstractController;
+import org.example.tonpad.ui.controllers.dialog.QuickStartDialogController;
+import org.example.tonpad.ui.controllers.action.SelectFileActionController;
 import org.example.tonpad.ui.extentions.FileTreeItem;
 import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.springframework.stereotype.Component;
@@ -35,6 +39,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -49,16 +54,10 @@ public class FileTreeController extends AbstractController {
     private VBox fileTreeVBox;
 
     @FXML
-    private HBox fileTreeToolsHBox;
-
-    @FXML
     private Button addNoteButton;
 
     @FXML
     private Button addDirectoryButton;
-
-    @FXML
-    private Button addCollectionButton;
 
     @FXML
     private Button refreshFilesButton;
@@ -74,10 +73,13 @@ public class FileTreeController extends AbstractController {
 
     @FXML
     private ContextMenu sortMenu;
+
     @FXML
     private ToggleGroup sortToggleGroup;
+
     @FXML
     private RadioMenuItem miNameAsc, miNameDesc, miCreatedNewest, miCreatedOldest;
+
     @FXML
     private CheckBox cbFoldersFirst, cbRelevantOnly;
     
@@ -102,12 +104,22 @@ public class FileTreeController extends AbstractController {
     private final BooleanProperty programmaticEdit = new SimpleBooleanProperty(false);
 
     @Setter
-    private Consumer<Path> fileOpenHandler;
+    private BiConsumer<Path, Boolean> noteOpenHandler;
+
+    @Setter
+    private BiConsumer<Path, Path> noteRenameHandler;
+
+    @Setter
+    private Consumer<Path> noteCloseHandler;
 
     @Setter
     private Map<String, List<SearchService.Hit>> hitsMap = Collections.emptyMap();
 
     private final Map<String, Boolean> expandedState = new HashMap<>();
+
+    private final SelectFileActionController selectFileActionController;
+
+    ContextMenu actionMenu;
 
     public void init(AnchorPane parent) {
         parent.getChildren().add(fileTreeVBox);
@@ -145,7 +157,7 @@ public class FileTreeController extends AbstractController {
 
         sortFilesButton.setOnAction(e -> {
             if (sortMenu == null) {
-                throw new IllegalStateException("sortMenu is null");
+                throw new IllegalInputException("sortMenu is null");
             }
             if (sortMenu.isShowing()) sortMenu.hide();
             else sortMenu.show(sortFilesButton, javafx.geometry.Side.BOTTOM, 0, 0);
@@ -170,42 +182,31 @@ public class FileTreeController extends AbstractController {
         miCreatedOldest.setOnAction(e -> onSortPicked(SortKey.CREATED_OLDEST));
         
         addNoteButton.setOnAction(e -> {
-            Path newFilePath = addNote();
-            refreshTree();
-            selectItem(newFilePath, true);
-            fileOpenHandler.accept(newFilePath);
+            onAddNote();
         });
         
         addDirectoryButton.setOnAction(e -> {
-            Path newDirPath = addDir();
-            refreshTree();
-            selectItem(newDirPath, true);
+            onAddDirectory();
         });
         
         applySortOptions();
     }
 
-    private void onSortPicked(SortKey picked)
-    {
+    private void onSortPicked(SortKey picked) {
         if(sortKey != picked) sortKey = picked;
         applySortOptions();
         if(sortMenu != null && sortMenu.isShowing()) sortMenu.hide();
     }
-
-    private void onSortFlagsChanged()
-    {
-    }
     
-    private void applySortOptions()
-    {
+    private void applySortOptions() {
         refreshTree();        
     }
 
     private void onOpenFile(TreeItem<String> target) {
         if (target != null && target.isLeaf()) {
             Path filePath = getFullPath(target);
-            if (fileOpenHandler != null) {
-                fileOpenHandler.accept(filePath);
+            if (noteOpenHandler != null) {
+                noteOpenHandler.accept(filePath, false);
             }
         }
     }
@@ -297,7 +298,16 @@ public class FileTreeController extends AbstractController {
         var parts = new ArrayList<String>();
         for (TreeItem<String> cur = item; cur != null; cur = cur.getParent()) {
             if (cur.getValue() == null || cur.getValue().isEmpty()) break;
-            parts.add(0, cur.getValue());
+            parts.addFirst(cur.getValue());
+        }
+        return String.join("/", parts).replace('\\','/');
+    }
+
+    private String getVaultRelativePath(TreeItem<String> item) {
+        var parts = new ArrayList<String>();
+        for (TreeItem<String> cur = item; cur != null && cur.getParent() != null; cur = cur.getParent()) {
+            if (cur.getValue() == null || cur.getValue().isEmpty()) break;
+            parts.addFirst(cur.getValue());
         }
         return String.join("/", parts).replace('\\','/');
     }
@@ -356,13 +366,16 @@ public class FileTreeController extends AbstractController {
         fileTreeView.setRoot(rootItem);
         fileTreeView.setShowRoot(false);
 
+        buildContextMenu();
+        fileTreeView.setContextMenu(actionMenu);
+
         rootItem.setExpanded(true);
 
         fileTreeView.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> onFileSelected(newValue)
         );
 
-        
+
         fileTreeView.setEditable(true);
         fileTreeView.setCellFactory(tv -> new EditableFileCell());
 
@@ -376,15 +389,47 @@ public class FileTreeController extends AbstractController {
         });
         fileTreeView.setOnEditCommit(ev -> programmaticEdit.set(false));
         fileTreeView.setOnEditCancel(ev -> programmaticEdit.set(false));
-        fileTreeView.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
 
+        fileTreeView.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
             if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
                 var ti = fileTreeView.getSelectionModel().getSelectedItem();
-                if (ti != null && ti.isLeaf())
-                    onOpenFile(ti);
+                onOpenFile(ti);
                 e.consume();
+            } else if ((e.getButton() == MouseButton.PRIMARY || e.getButton() == MouseButton.SECONDARY) &&
+                    e.getClickCount() == 1) {
+                if (e.getTarget() == fileTreeView ||
+                        (e.getTarget() instanceof TreeCell && ((TreeCell<?>) e.getTarget()).getItem() == null)) {
+                    fileTreeView.getSelectionModel().clearSelection();
+                }
             }
         });
+
+        actionMenu.setOnShowing(e -> {
+            if (selectedItem != null) {
+                updateMenuItemsState();
+            } else {
+                updateEmptyAreaMenuItemsState();
+            }
+        });
+    }
+
+    private void updateEmptyAreaMenuItemsState() {
+        boolean hasClipboard = buffer != null && buffer.getCopyBuffer() != null && !buffer.getCopyBuffer().isEmpty();
+
+        selectFileActionController.getOpenInCurrentTabMenuItem().setDisable(true);
+        selectFileActionController.getPasteMenuItem().setDisable(!hasClipboard);
+
+        selectFileActionController.getCopyMenuItem().setDisable(true);
+        selectFileActionController.getCutMenuItem().setDisable(true);
+        selectFileActionController.getCopyAbsolutePathMenuItem().setDisable(true);
+        selectFileActionController.getCopyRelativePathMenuItem().setDisable(true);
+        selectFileActionController.getShowInNotepadMenuItem().setDisable(true);
+        selectFileActionController.getRenameMenuItem().setDisable(true);
+        selectFileActionController.getRemoveMenuItem().setDisable(true);
+
+        selectFileActionController.getNewNoteMenuItem().setDisable(true);
+        selectFileActionController.getNewFolderMenuItem().setDisable(true);
+        selectFileActionController.getCopyVaultPathMenuItem().setDisable(false);
     }
 
     private boolean canPasteInto(TreeItem<String> ti) {
@@ -395,87 +440,154 @@ public class FileTreeController extends AbstractController {
         return parent != null && Files.isDirectory(parent);
     }
 
-    private ContextMenu buildContextMenu(TreeCell<String> cell)
-    {
-        MenuItem copy = new MenuItem("Copy (Ctrl+C)");
-        copy.setOnAction(e -> onCopy(cell.getTreeItem()));
-
-        MenuItem cut = new MenuItem("Cut (Ctrl+X)");
-        cut.setOnAction(e -> onCut(cell.getTreeItem()));
-
-        MenuItem paste = new MenuItem("Paste (Ctrl+V)");
-        paste.setOnAction(e -> onPaste(cell.getTreeItem()));
-
-        MenuItem copyTonpadUrl = new MenuItem("Copy vault path");
-        copyTonpadUrl.setOnAction(e -> onCopyVaultPath());
-
-        MenuItem copyAbsPath = new MenuItem("Copy absolute path");
-        copyAbsPath.setOnAction(e -> onCopyAbsPath(cell.getTreeItem()));
-
-        MenuItem copyRelPath = new MenuItem("Copy relative path");
-        copyRelPath.setOnAction(e -> onCopyRelPath(cell.getTreeItem()));
-
-        MenuItem showInExplorer = new MenuItem("Show in explorer");
-        showInExplorer.setOnAction(e -> onShowInExplorer(cell.getTreeItem()));
-
-        MenuItem rename = new MenuItem("Rename (F2)");
-        rename.setOnAction(e ->
-        {
-            onRename(cell.getTreeItem());}
-        );
-
-        MenuItem del = new MenuItem("Delete");
-        del.setOnAction(e -> confirmAndDeleteForItem(cell.getTreeItem()));
-
-        return new ContextMenu(
-            copy,
-            cut,
-            paste,
-            new SeparatorMenuItem(),
-            copyTonpadUrl,
-            copyAbsPath,
-            copyRelPath,
-            new SeparatorMenuItem(),
-            showInExplorer,
-            new SeparatorMenuItem(),
-            rename,
-            del
-        );
+    private void buildContextMenu() {
+        actionMenu = selectFileActionController.createContextMenu();
+        setupMenuButtonHandlers();
     }
 
-    private void onCopy(TreeItem<String> node) 
-    {
+    private void setupMenuButtonHandlers() {
+        selectFileActionController.getOpenInCurrentTabMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onOpenInNewTab(selectedItem);
+        });
+
+        selectFileActionController.getNewNoteMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onAddNote();
+        });
+
+        selectFileActionController.getNewFolderMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onAddDirectory();
+        });
+
+        selectFileActionController.getCopyMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onCopy(selectedItem);
+        });
+
+        selectFileActionController.getCutMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onCut(selectedItem);
+        });
+
+        selectFileActionController.getPasteMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onPaste(selectedItem);
+        });
+
+        selectFileActionController.getCopyVaultPathMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onCopyVaultPath();
+        });
+
+        selectFileActionController.getCopyAbsolutePathMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onCopyAbsPath(selectedItem);
+        });
+
+        selectFileActionController.getCopyRelativePathMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onCopyRelPath(selectedItem);
+        });
+
+        selectFileActionController.getShowInNotepadMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onShowInNotepad(selectedItem);
+        });
+
+        selectFileActionController.getShowInExplorerMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onShowInExplorer(selectedItem);
+        });
+
+        selectFileActionController.getRenameMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onRename(selectedItem);
+        });
+
+        selectFileActionController.getRemoveMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            confirmAndDeleteForItem(selectedItem);
+        });
+    }
+
+    private void updateMenuItemsState() {
+        TreeItem<String> treeItem = selectedItem;
+        boolean canPasteHere = canPasteInto(treeItem);
+        boolean hasClipboard = buffer != null && buffer.getCopyBuffer() != null && !buffer.getCopyBuffer().isEmpty();
+
+        selectFileActionController.getPasteMenuItem().setDisable(!(canPasteHere && hasClipboard));
+
+        boolean isRoot = treeItem != null && treeItem.getParent() == null;
+        selectFileActionController.getRenameMenuItem().setDisable(isRoot);
+        selectFileActionController.getRemoveMenuItem().setDisable(isRoot);
+
+        boolean isDirectory = !treeItem.isLeaf();
+        selectFileActionController.getNewNoteMenuItem().setDisable(!isDirectory);
+        selectFileActionController.getNewFolderMenuItem().setDisable(!isDirectory);
+
+        boolean isMdFile = fileSystemService.isMarkdownFile(treeItem.getValue());
+        selectFileActionController.getOpenInCurrentTabMenuItem().setDisable(!isMdFile);
+        selectFileActionController.getShowInNotepadMenuItem().setDisable(!isMdFile);
+
+        selectFileActionController.getCopyVaultPathMenuItem().setDisable(true);
+        selectFileActionController.getCopyAbsolutePathMenuItem().setDisable(false);
+        selectFileActionController.getCopyRelativePathMenuItem().setDisable(false);
+
+        selectFileActionController.getCopyMenuItem().setDisable(false);
+        selectFileActionController.getCutMenuItem().setDisable(false);
+    }
+
+    private void onOpenInNewTab(TreeItem<String> target) {
+        if (target != null && target.isLeaf()) {
+            Path filePath = getFullPath(target);
+            if (noteOpenHandler != null) {
+                noteOpenHandler.accept(filePath, true);
+            }
+        }
+    }
+
+    private void onAddNote() {
+        Path newFilePath = addNote();
+        refreshTree();
+        selectItem(newFilePath, true);
+        noteOpenHandler.accept(newFilePath, false);
+    }
+
+    private void onAddDirectory() {
+        Path newDirPath = addDir();
+        refreshTree();
+        selectItem(newDirPath, true);
+    }
+
+    private void onCopy(TreeItem<String> node) {
         if (node != null) {
             fileSystemService.copyFile(getFullPath(node));
         }
     }
-    private void onCut(TreeItem<String> node) 
-    {
+
+    private void onCut(TreeItem<String> node) {
         if (node != null) {
             fileSystemService.cutFile(getFullPath(node));
         }
     }
-    private void onPaste(TreeItem<String> target) 
-    {
-        if(target != null)
-        {
-            if(Files.isDirectory(getFullPath(target)))
-            {
-                fileSystemService.pasteFile(getFullPath(target));
-                refreshTree();
-            }
-            else
-            {
-                fileSystemService.pasteFile(getFullPath(target.getParent()));
-                refreshTree();
-            }
-        }
-    }
 
-    private Path resolveTargetDirForPaste(TreeItem<String> node) {
-        if (node == null) return vaultPathsContainer.getNotesPath();
-        Path here = getFullPath(node);
-        return Files.isDirectory(here) ? here : (here.getParent() != null ? here.getParent() : vaultPathsContainer.getNotesPath());
+    private void onPaste(TreeItem<String> target) {
+        Path targetPath;
+
+        if (target != null) {
+            if (Files.isDirectory(getFullPath(target))) {
+                targetPath = getFullPath(target);
+            } else {
+                targetPath = getFullPath(target.getParent());
+            }
+        } else {
+            targetPath = vaultPathsContainer.getNotesPath();
+        }
+
+        fileSystemService.pasteFile(targetPath);
+        refreshTree();
     }
 
     private void onCopyVaultPath() {
@@ -495,16 +607,23 @@ public class FileTreeController extends AbstractController {
     private void onCopyRelPath(TreeItem<String> node) {
         if (node != null) {
             var cc = new ClipboardContent();
-            cc.putString(getRelativePath(node));
+            cc.putString(getVaultRelativePath(node));
             Clipboard.getSystemClipboard().setContent(cc);
+        }
+    }
+
+    private void onShowInNotepad(TreeItem<String> node) {
+        if (node != null) {
+            fileSystemService.showFileInNotepad(getFullPath(node));
         }
     }
 
     private void onShowInExplorer(TreeItem<String> node) {
         if (node != null) {
             fileSystemService.showFileInExplorer(getFullPath(node));
+        } else {
+            fileSystemService.showFileInExplorer(vaultPathsContainer.getNotesPath());
         }
-       
     }
 
     private void onRename(TreeItem<String> node) {
@@ -520,7 +639,7 @@ public class FileTreeController extends AbstractController {
     }
 
     private final class EditableFileCell extends TreeCell<String> {
-        private ContextMenu menu;
+
         private TextField editor;
 
         public EditableFileCell() {
@@ -539,7 +658,6 @@ public class FileTreeController extends AbstractController {
                 setGraphic(null);
                 setStyle("");
                 getStyleClass().remove("matched");
-                setContextMenu(null);
                 return;
             }
 
@@ -560,21 +678,6 @@ public class FileTreeController extends AbstractController {
                     setGraphic(buildHighlightedName(item, ranges));
                     pseudoClassStateChanged(MATCHED, true);
                 }
-
-                if (menu == null) menu = buildContextMenu(this);
-
-                boolean isRoot = getTreeItem() != null && getTreeItem().getParent() == null;
-                for (MenuItem mi : menu.getItems()) {
-                    String id = mi.getId();
-                    if (id == null) continue;
-                    if (id.equals("ctxRename") || id.equals("ctxDel")) mi.setDisable(isRoot);
-                    if (id.equals("ctxPaste")) {
-                        boolean canPasteHere = canPasteInto(getTreeItem());
-                        boolean hasClipboard = buffer != null && buffer.getCopyBuffer() != null && !buffer.getCopyBuffer().isEmpty();
-                        mi.setDisable(!(canPasteHere && hasClipboard));
-                    }
-                }
-                setContextMenu(menu);
             }
         }
 
@@ -681,6 +784,7 @@ public class FileTreeController extends AbstractController {
 
         refreshTree();
         selectItem(newAbs, false);
+        noteRenameHandler.accept(oldAbs, newAbs);
     }
 
     private static String norm(String s) {
@@ -690,7 +794,7 @@ public class FileTreeController extends AbstractController {
         return s;
     }
 
-    private javafx.scene.Node buildHighlightedName(String name, List<SearchService.Hit> hits) {
+    private Node buildHighlightedName(String name, List<SearchService.Hit> hits) {
         var flow = new TextFlow();
         int i = 0, n = name.length();
         for (var h : hits) {
@@ -700,7 +804,7 @@ public class FileTreeController extends AbstractController {
 
             if (i < s) flow.getChildren().add(new Text(name.substring(i, s)));
             var t = new Text(name.substring(s, e));
-            t.getStyleClass().add("filetree-hit");
+            t.getStyleClass().add("file-tree-hit");
             flow.getChildren().add(t);
             i = e;
         }
@@ -731,7 +835,7 @@ public class FileTreeController extends AbstractController {
             }
         }
 
-        return  treeItem;
+        return treeItem;
     }
 
     private Path addNote() {
@@ -815,8 +919,10 @@ public class FileTreeController extends AbstractController {
     }
 
     private void confirmAndDeleteForItem(TreeItem<String> node) {
-        if (node == null) return;
-        if (node.getParent() == null) return;
+        if (node == null)
+            return;
+        if (node.getParent() == null)
+            return;
 
         var owner = fileTreeVBox.getScene() != null ? fileTreeVBox.getScene().getWindow() : null;
 
@@ -831,8 +937,11 @@ public class FileTreeController extends AbstractController {
         var res = alert.showAndWait();
         if (res.isEmpty() || res.get() != ButtonType.OK) return;
 
-        fileSystemService.delete(getFullPath(node));
+        Path fullPath = getFullPath(node);
+
+        fileSystemService.delete(fullPath);
         refreshTree();
+        noteCloseHandler.accept(fullPath);
     }
 
     private void deleteSelected() {

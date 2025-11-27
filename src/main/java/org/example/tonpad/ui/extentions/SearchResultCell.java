@@ -3,7 +3,6 @@ package org.example.tonpad.ui.extentions;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.scene.control.TreeCell;
-import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,14 +53,13 @@ public class SearchResultCell extends TreeCell<String> {
         int lastIndex = 0;
 
         for (TextRange range : matches) {
-            // Текст до совпадения
             if (range.start > lastIndex) {
                 Text before = new Text(text.substring(lastIndex, range.start));
                 textFlow.getChildren().add(before);
             }
 
             Text highlight = new Text(text.substring(range.start, range.end));
-            highlight.getStyleClass().add("filetree-hit");
+            highlight.getStyleClass().add("file-tree-hit");
             textFlow.getChildren().add(highlight);
 
             lastIndex = range.end;
@@ -75,12 +73,6 @@ public class SearchResultCell extends TreeCell<String> {
         return textFlow;
     }
 
-    private static class TextRange {
-        final int start;
-        final int end;
-        TextRange(int start, int end) {
-            this.start = start;
-            this.end = end;
-        }
+    private record TextRange(int start, int end) {
     }
 }

@@ -1,15 +1,20 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.search;
 
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -19,6 +24,7 @@ import org.example.tonpad.core.files.FileTree;
 import org.example.tonpad.core.service.crypto.Encryptor;
 import org.example.tonpad.core.service.crypto.Impl.AesGcmEncryptor;
 import org.example.tonpad.core.session.VaultSession;
+import org.example.tonpad.ui.controllers.AbstractController;
 import org.example.tonpad.ui.extentions.SearchResultCell;
 import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.example.tonpad.ui.extentions.SearchTreeItem;
@@ -29,7 +35,7 @@ import java.security.Key;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 @Component
 @RequiredArgsConstructor
@@ -60,28 +66,24 @@ public class SearchInFilesController extends AbstractController {
     private Runnable onCancel;
 
     @Setter
-    private Consumer<Path> fileOpenHandler;
+    private BiConsumer<Path, Boolean> fileOpenHandler;
 
     @Setter
     private java.util.function.Consumer<String> onQueryChanged;
 
     private Thread searchThread;
 
-    private final FileSystemService fileService;
+    private final FileSystemService fileSystemService;
 
     private volatile boolean searchCancelled = false;
 
     private final VaultPathsContainer vaultPathsContainer;
 
-    private TreeItem<String> rootItem;
-
-    private TreeItem<String> selectedItem;
-
     private final VaultSession vaultSession;
 
     @FXML
     private void initialize() {
-        var debounce = new javafx.animation.PauseTransition(javafx.util.Duration.millis(500));
+        var debounce = new PauseTransition(Duration.millis(500));
         searchField.textProperty().addListener((o, ov, nv) -> {
             debounce.stop();
             debounce.setOnFinished(e -> {
@@ -93,21 +95,66 @@ public class SearchInFilesController extends AbstractController {
             debounce.playFromStart();
         });
 
-        searchField.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, e -> {
+        searchField.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
             var code = e.getCode();
-            if (code == javafx.scene.input.KeyCode.ENTER) {
+            if (code == KeyCode.ENTER) {
                 e.consume();
                 startSearch();
-            } else if (code == javafx.scene.input.KeyCode.ESCAPE) {
+            } else if (code == KeyCode.ESCAPE) {
                 e.consume();
                 cancelSearch();
             }
         });
     }
 
+    public void init(AnchorPane parent) {
+        parent.getChildren().add(searchBarVBox);
+
+        AnchorPane.setTopAnchor(searchBarVBox, 0.0);
+        AnchorPane.setBottomAnchor(searchBarVBox, 0.0);
+        AnchorPane.setLeftAnchor(searchBarVBox, 0.0);
+        AnchorPane.setRightAnchor(searchBarVBox, 0.0);
+
+        focus();
+
+        searchTreeView.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+
+            if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
+                var ti = searchTreeView.getSelectionModel().getSelectedItem();
+                onOpenFile(ti);
+                e.consume();
+            } else if ((e.getButton() == MouseButton.PRIMARY || e.getButton() == MouseButton.SECONDARY) &&
+                    e.getClickCount() == 1) {
+                if (e.getTarget() == searchTreeView ||
+                        (e.getTarget() instanceof TreeCell && ((TreeCell<?>) e.getTarget()).getItem() == null)) {
+                    searchTreeView.getSelectionModel().clearSelection();
+                }
+            }
+        });
+    }
+
+    private void onOpenFile(TreeItem<String> target) {
+        if (target != null) {
+            Path filePath;
+
+            if (target.isLeaf()) {
+                filePath = vaultPathsContainer.getNotesPath().resolve(target.getParent().getValue());
+            } else {
+                filePath = vaultPathsContainer.getNotesPath().resolve(target.getValue());
+            }
+
+            if (fileOpenHandler != null) {
+                fileOpenHandler.accept(filePath, false);
+            }
+        }
+    }
+
     public void startSearch() {
         String query = searchField.getText().trim();
-        if (query.isEmpty()) return;
+        if (query.isEmpty()) {
+            clearResults();
+            return;
+        }
 
         if (onSearchStarted != null) {
             onSearchStarted.run();
@@ -137,7 +184,7 @@ public class SearchInFilesController extends AbstractController {
         {
             Encryptor encoder = new AesGcmEncryptor();
             if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
-                return fileService.readFile(filePath);
+                return fileSystemService.readFile(filePath);
             }
             else {
                 throw new DecryptionException("Invalid password");
@@ -149,7 +196,7 @@ public class SearchInFilesController extends AbstractController {
             {
                 byte[] key = vaultSession.getKeyIfPresent().map(Key::getEncoded).orElse(null);
                 Encryptor encoder = new AesGcmEncryptor(key);
-                return encoder.decrypt(fileService.readFile(filePath), null);
+                return encoder.decrypt(fileSystemService.readFile(filePath), null);
             }
             catch(DecryptionException e) {
                 throw new DecryptionException("Invalid password", e);
@@ -157,7 +204,7 @@ public class SearchInFilesController extends AbstractController {
         }
     }
     private void performSearch(String query) {
-        FileTree fileTree = fileService.getFileTree(vaultPathsContainer.getNotesPath());
+        FileTree fileTree = fileSystemService.getFileTree(vaultPathsContainer.getNotesPath());
 
         List<SearchTreeItem> mdFiles = collectMdFiles(fileTree);
         SearchTreeItem root = new SearchTreeItem("", true);
@@ -175,7 +222,6 @@ public class SearchInFilesController extends AbstractController {
 
             SearchTreeItem fileNode = new SearchTreeItem(filePath, true);
             boolean hasMatches = false;
-            int fileMatches = 0;
 
             String fileContent = openFile(fullPath);
             List<String> lines = Arrays.asList(fileContent.split("\n"));
@@ -190,7 +236,6 @@ public class SearchInFilesController extends AbstractController {
                     );
                     fileNode.getChildren().add(matchItem);
                     hasMatches = true;
-                    fileMatches++;
                     totalMatches++;
                 }
             }
@@ -253,27 +298,6 @@ public class SearchInFilesController extends AbstractController {
         return searchField.getText().trim();
     }
 
-    public void init(AnchorPane parent) {
-        parent.getChildren().add(searchBarVBox);
-
-        AnchorPane.setTopAnchor(searchBarVBox, 0.0);
-        AnchorPane.setBottomAnchor(searchBarVBox, 0.0);
-        AnchorPane.setLeftAnchor(searchBarVBox, 0.0);
-        AnchorPane.setRightAnchor(searchBarVBox, 0.0);
-
-        focus();
-
-        searchTreeView.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
-
-            if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
-                var ti = searchTreeView.getSelectionModel().getSelectedItem();
-                if (ti != null && ti.isLeaf())
-                    onOpenFile(ti);
-                e.consume();
-            }
-        });
-    }
-
     private List<SearchTreeItem> collectMdFiles(FileTree fileTree) {
         List<SearchTreeItem> mdFiles = new ArrayList<>();
         collectMdFilesRecursive(fileTree, mdFiles);
@@ -285,7 +309,7 @@ public class SearchInFilesController extends AbstractController {
 
         if (node.getChildren() == null) {
             String fileName = node.getPath().getFileName().toString();
-            if (fileName.toLowerCase().endsWith(".md")) {
+            if (fileSystemService.isMarkdownFile(fileName)) {
                 Path relativePath = vaultPathsContainer.getNotesPath().relativize(node.getPath());
                 SearchTreeItem item = new SearchTreeItem(relativePath.toString(), true);
                 result.add(item);
@@ -293,22 +317,6 @@ public class SearchInFilesController extends AbstractController {
         } else {
             for (FileTree child : node.getChildren()) {
                 collectMdFilesRecursive(child, result);
-            }
-        }
-    }
-
-    private void onOpenFile(TreeItem<String> target) {
-        if (target != null && target.isLeaf()) {
-            Path filePath;
-
-            if (target.isLeaf()) {
-                filePath = vaultPathsContainer.getNotesPath().resolve(target.getParent().getValue());
-            } else {
-                filePath = vaultPathsContainer.getNotesPath().resolve(target.getValue());
-            }
-
-            if (fileOpenHandler != null) {
-                fileOpenHandler.accept(filePath);
             }
         }
     }

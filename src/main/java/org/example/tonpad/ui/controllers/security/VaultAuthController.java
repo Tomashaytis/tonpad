@@ -1,11 +1,13 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.security;
+
+import org.example.tonpad.ui.controllers.AbstractController;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
@@ -23,53 +25,65 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class VaultSetPasswordController extends AbstractController {
-    @FXML private HBox vaultSetPasswordRoot;
-    @FXML private PasswordField passwordField;
-    @FXML private Button setPasswordButton;
-    @FXML private Button continueWithoutButton;
-    // @FXML private Button cancelButton;
+public class VaultAuthController extends AbstractController {
 
-    private final String CREATE_NOT_ENCTYPTED_MESSAGE = "You are gonna work with NO password.\nThe vault is not encrypted.\nAll your notes you work with will NOT be encrypted.\nIf you wanna protect yourself,\nyou can start working with password (look for it in settings)";
-    private final String CREATE_NOT_ENCTYPTED_HEADER = "You created vault with NO password. Vault is not encrypted.";
+    @FXML
+    private HBox vaultAuthRoot;
+
+    @FXML
+    private PasswordField passwordField;
+
+    @FXML
+    private Button okButton;
+    @FXML
+    private Button cancelButton;
+
+    @FXML
+    private Button enterWithoutButton;
+
+    private final String EMPTY_PASSWORD_MESSAGE = "If you want to work with password, input something.\nyour input is empty. passwort must not be empty. input something that is not empty.\nOr enter in so called guest mode";
+
     private final String INFO_TITLE = "Info";
-    private final String CREATE_ENCTYPTED_MESSAGE = "You are gonna work with password.\nThe vault is ENCRYPTED.\nAll your notes you work with will be ENCRYPTED.\nYou can work with notes only working in this app,\nor you can decrypt all notes and work with not encrypted vault by\nswitching to the Guest mode in settings. \nThen all your notes will be immediately decrypted and will be stored in open state.";
-    private final String CREATE_ENCTYPTED_HEADER = "You created vault with password. Vault is ENCRYPTED. All your notes are ENCRYPTED";
-    private final String EMPTY_PASSWORD_MESSAGE = "If you want to work with password, input something.\nyour input is empty. passwort must not be empty. input something that is not empty\nOr cdreate not encrypted one";
+
     private final String EMPTY_PASSWORD_HEADER = "password may not be empty";
 
     private final String GUEST_MODE_MESSAGE = "you are going to work in so called guest mode. \nAll the notes you work with won't be encrypted\n and u can not access encrypted notes as well. good luck.";
+
     private final String GUEST_MODE_HEADER = "Guest mode is active NOW";
+
     private final String PASSWORD_MODE_MESSAGE = "you are going to work with encrypted vault. \nAll the notes you work with will be encrypted immediately. \nYou can access not encrypted files, \nbut if you work with them they will be encrypted. \nyou can not access notes encrypted with password different from yours.";
+
     private final String PASSWORD_MODE_HEADER = "You work in encrypted vault.\nYour data is... probably safe";
 
     private Stage stage;
 
-    public void showModal(Stage stageOwner, Consumer<char[]> onSetPassword, Runnable onContinueWithout) {
+    public void showModal(Stage owner, Consumer<char[]> onPassword, Runnable onWithoutPwd, Runnable onCancel) {
         stage = new Stage(StageStyle.UTILITY);
-        stage.initOwner(stageOwner);
+        stage.initOwner(owner);
         stage.initModality(Modality.WINDOW_MODAL);
 
-
-        var scene = new Scene(vaultSetPasswordRoot);
+        var scene = new Scene(vaultAuthRoot);
         stage.setScene(scene);
         stage.setResizable(false);
-        stage.setTitle("set vault password");
+        stage.setTitle("input vault password");
         stage.showingProperty().addListener((obs, was, is) -> {
             if(is) passwordField.requestFocus();
         });
-
-        setPasswordButton.setOnAction(e -> {
+        
+        okButton.setOnAction(e -> {
             final String text = passwordField.getText();
-            if(text == null || text.isEmpty()) {
+            if(text == null || text.isEmpty()) 
+            {
+                // if(onCancel != null) //onCancel.run();
                 showAlert(EMPTY_PASSWORD_MESSAGE, Alert.AlertType.INFORMATION, EMPTY_PASSWORD_HEADER, INFO_TITLE);
+                //stage.close();
                 return;
             }
             char[] pwd = text.toCharArray();
             try {
-                if (onSetPassword != null) {
-                    showAlert(CREATE_ENCTYPTED_MESSAGE, Alert.AlertType.INFORMATION, CREATE_ENCTYPTED_HEADER, INFO_TITLE);
-                    onSetPassword.accept(pwd);
+                if(onPassword != null) {
+                    showAlert(PASSWORD_MODE_MESSAGE, Alert.AlertType.INFORMATION, PASSWORD_MODE_HEADER, INFO_TITLE);
+                    onPassword.accept(pwd);
                 }
             }
             finally {
@@ -78,14 +92,23 @@ public class VaultSetPasswordController extends AbstractController {
             }
             stage.close();
         });
-
-        continueWithoutButton.setOnAction(e -> {
-            showAlert(CREATE_NOT_ENCTYPTED_MESSAGE, Alert.AlertType.INFORMATION, CREATE_NOT_ENCTYPTED_HEADER, INFO_TITLE);
-            if(onContinueWithout != null) onContinueWithout.run();
+        enterWithoutButton.setOnAction(e -> {
+            showAlert(GUEST_MODE_MESSAGE, Alert.AlertType.INFORMATION, GUEST_MODE_HEADER, INFO_TITLE);
+            if(onWithoutPwd != null) onWithoutPwd.run();
             stage.close();
         });
+        // cancelButton.setOnAction(e -> {
+        //     if(onCancel != null) onCancel.run();
+        //     stage.close();
+        // });
 
-        // cancelButton.setOnAction(e -> stage.close());
+        // scene.setOnKeyPressed(k -> {
+        //     switch ((k.getCode())) {
+        //         case ENTER -> okButton.fire();
+        //         case ESCAPE -> cancelButton.fire();
+        //         default -> {}
+        //     }
+        // });
 
         stage.showAndWait();
     }
@@ -106,8 +129,9 @@ public class VaultSetPasswordController extends AbstractController {
         alert.showAndWait();
     }
 
+
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/vault-set-password.fxml";
+        return "/ui/fxml/vault-auth.fxml";
     }
 }

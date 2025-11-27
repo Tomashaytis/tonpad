@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.core;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -8,6 +8,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.event.EventHandler;
 
+import org.example.tonpad.ui.controllers.AbstractController;
 import org.springframework.stereotype.Component;
 
 

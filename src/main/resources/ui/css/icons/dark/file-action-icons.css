@@ -12,6 +12,14 @@
     -fx-image: url(/ui/icons/dark/copy-file.png);
 }
 
+.cut-file-icon{
+    -fx-image: url(/ui/icons/dark/cut-file.png);
+}
+
+.paste-file-icon{
+    -fx-image: url(/ui/icons/dark/paste-file.png);
+}
+
 .copy-path-icon {
     -fx-image: url(/ui/icons/dark/copy-path.png);
 }

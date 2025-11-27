@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.dialog;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -22,6 +22,9 @@ import org.example.tonpad.core.files.RecentVaultService;
 import org.example.tonpad.core.service.VaultService;
 import org.example.tonpad.core.exceptions.DerivationException;
 import org.example.tonpad.core.session.VaultSession;
+import org.example.tonpad.ui.controllers.AbstractController;
+import org.example.tonpad.ui.controllers.security.VaultAuthController;
+import org.example.tonpad.ui.controllers.security.VaultSetPasswordController;
 import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;

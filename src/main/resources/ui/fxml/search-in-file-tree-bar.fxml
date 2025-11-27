@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox fx:id="searchBarVBox" prefWidth="184.0" xmlns="http://javafx.com/javafx/24.0.1"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.example.tonpad.ui.controllers.search.SearchInFileTreeController">
+    <children>
+        <HBox fx:id="searchFieldHBox" styleClass="search-field" VBox.vgrow="NEVER">
+            <children>
+                <ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true"
+                           styleClass="search-icon">
+                    <HBox.margin>
+                        <Insets />
+                    </HBox.margin>
+                </ImageView>
+                <TextField fx:id="searchField" maxHeight="30.0" maxWidth="184.0" minHeight="30.0"
+                           minWidth="184.0" prefHeight="30.0" prefWidth="184.0"
+                           promptText="Search files..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+            </children>
+        </HBox>
+    </children>
+</VBox>
