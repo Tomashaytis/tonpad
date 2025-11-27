@@ -8,6 +8,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.event.EventHandler;
 
+import org.example.tonpad.ui.controllers.AbstractController;
 import org.springframework.stereotype.Component;
 
 

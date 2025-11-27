@@ -54,14 +54,13 @@ public class SearchResultCell extends TreeCell<String> {
         int lastIndex = 0;
 
         for (TextRange range : matches) {
-            // Текст до совпадения
             if (range.start > lastIndex) {
                 Text before = new Text(text.substring(lastIndex, range.start));
                 textFlow.getChildren().add(before);
             }
 
             Text highlight = new Text(text.substring(range.start, range.end));
-            highlight.getStyleClass().add("filetree-hit");
+            highlight.getStyleClass().add("file-tree-hit");
             textFlow.getChildren().add(highlight);
 
             lastIndex = range.end;

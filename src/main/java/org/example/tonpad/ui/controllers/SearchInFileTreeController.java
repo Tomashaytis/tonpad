@@ -1,33 +1,34 @@
 package org.example.tonpad.ui.controllers;
 
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
+import javafx.animation.PauseTransition;
+import javafx.fxml.FXML;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.web.WebView;
+import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.service.SearchService;
+import org.example.tonpad.ui.controllers.AbstractController;
+import org.example.tonpad.ui.controllers.FileTreeController;
 import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
-public class SearchInFileTreeController {
-
-    @Setter
-    private TabPane tabPane;
+public class SearchInFileTreeController extends AbstractController {
 
     @Getter
-    private final Map<String, List<SearchService.Hit>> hitsMap = new HashMap<>();
+    @FXML
+    private VBox searchBarVBox;
 
-    private final SearchFieldController searchFieldController;
+    @FXML
+    private TextField searchField;
 
     private final FileTreeController fileTreeController;
 
@@ -35,95 +36,114 @@ public class SearchInFileTreeController {
 
     private final VaultPathsContainer vaultPathsContainer;
 
+    public SearchInFileTreeController(FileTreeController fileTreeController,
+                                      FileSystemService fileSystemService,
+                                      VaultPathsContainer vaultPathsContainer) {
+        this.fileTreeController = fileTreeController;
+        this.fileSystemService = fileSystemService;
+        this.vaultPathsContainer = vaultPathsContainer;
+    }
+
+    @FXML
+    private void initialize() {
+        var debounce = new PauseTransition(Duration.millis(400));
+        searchField.textProperty().addListener((o, ov, nv) -> {
+            debounce.stop();
+            debounce.setOnFinished(e -> runSearch());
+            debounce.playFromStart();
+        });
+    }
+
     public void init(AnchorPane parent) {
-        if (!parent.getChildren().contains(searchFieldController.getSearchBarVBox())) {
-            searchFieldController.init(parent);
-        }
-        searchFieldController.setOnQueryChanged(q -> runSearch());
-//        searchFieldController.setOnNext(this::selectNextHit);
-//        searchFieldController.setOnPrev(this::selectPrevHit);
+        parent.getChildren().add(searchBarVBox);
+        AnchorPane.setTopAnchor(searchBarVBox, 0.0);
+        AnchorPane.setLeftAnchor(searchBarVBox, 0.0);
     }
 
     public void showSearchBar() {
-        searchFieldController.focus();
+        focus();
         runSearch();
     }
 
     public void hideSearchBar() {
         fileTreeController.setHitsMap(new HashMap<>());
         fileTreeController.refreshTree();
-        hitsMap.clear();
-        searchFieldController.clearResults();
-    }
-
-    private WebView getActiveWebView() {
-        Tab tab = tabPane.getSelectionModel().getSelectedItem();
-        return (tab != null && tab.getUserData() instanceof WebView wv) ? wv : null;
+        setQuery("");
     }
 
     public void activateSearchBar() {
-        searchFieldController.setOnQueryChanged(q -> runSearch());
-        searchFieldController.setOnNext(null);
-        searchFieldController.setOnPrev(null);
-
         showSearchBar();
     }
 
     public void runSearch() {
-        String query = searchFieldController.getQuery();
-        if(query.isEmpty()) {
+        String query = getQuery();
+        if (query.isEmpty()) {
             fileTreeController.setHitsMap(new HashMap<>());
-            hitsMap.clear();
             fileTreeController.refreshTree();
-            searchFieldController.clearResults();
             return;
         }
-        fileTreeController.setHitsMap(runFileTreeSearch(query));
-        fileTreeController.refreshTree();
 
-        searchFieldController.setResults(0, hitsMap.size());
+        Map<String, List<SearchService.Hit>> searchResults = runFileTreeSearch(query);
+        fileTreeController.setHitsMap(searchResults);
+        fileTreeController.refreshTree();
     }
 
     private Map<String, List<SearchService.Hit>> runFileTreeSearch(String query) {
         Map<String, List<SearchService.Hit>> map = new HashMap<>();
         if (query == null || query.isBlank()) return map;
 
-        final String needle = query.toLowerCase(java.util.Locale.ROOT);
-        final Path rootPath = vaultPathsContainer.getVaultPath();
+        final String needle = query.toLowerCase();
+        final Path rootPath = vaultPathsContainer.getNotesPath();
         final String rootAbs = rootPath.toString();
         final String rootName = rootPath.getFileName() != null ? rootPath.getFileName().toString() : rootAbs;
 
         fileSystemService.findByNameContains(rootAbs, query).stream()
                 .map(rel -> {
                     String fileName = rel.getFileName() == null ? "" : rel.getFileName().toString();
-                    String hay = fileName.toLowerCase(java.util.Locale.ROOT);
+                    String hay = fileName.toLowerCase();
                     int from = 0, idx;
-                    var hits = new java.util.ArrayList<SearchService.Hit>();
+                    var hits = new ArrayList<SearchService.Hit>();
                     while ((idx = hay.indexOf(needle, from)) >= 0) {
                         hits.add(new SearchService.Hit(idx, idx + needle.length()));
-                        from = idx + needle.length(); // перекрытия → idx+1
+                        from = idx + needle.length();
                     }
-                    // ключ в формате <rootName>/<rel>
-                    String relStr = rel.toString().replace('\\','/');
+                    String relStr = rel.toString().replace('\\', '/');
                     String key = relStr.isEmpty() ? rootName : (rootName + "/" + relStr);
-                    return java.util.Map.entry(key, hits);
+                    return Map.entry(key, hits);
                 })
                 .filter(e -> !e.getValue().isEmpty())
                 .forEach(e -> map.put(e.getKey(), e.getValue()));
 
-        {
-            String hay = rootName.toLowerCase(java.util.Locale.ROOT);
-            int from = 0, idx;
-            var hits = new java.util.ArrayList<SearchService.Hit>();
-            while ((idx = hay.indexOf(needle, from)) >= 0) {
-                hits.add(new SearchService.Hit(idx, idx + needle.length()));
-                from = idx + needle.length();
-            }
-            if (!hits.isEmpty()) {
-                map.put(rootName, hits);
-            }
+        // Поиск в корневом имени
+        String hay = rootName.toLowerCase();
+        int from = 0, idx;
+        var hits = new ArrayList<SearchService.Hit>();
+        while ((idx = hay.indexOf(needle, from)) >= 0) {
+            hits.add(new SearchService.Hit(idx, idx + needle.length()));
+            from = idx + needle.length();
+        }
+        if (!hits.isEmpty()) {
+            map.put(rootName, hits);
         }
 
         return map;
+    }
+
+    public void focus() {
+        searchField.requestFocus();
+        searchField.selectAll();
+    }
+
+    public void setQuery(String q) {
+        searchField.setText(q == null ? "" : q);
+    }
+
+    public String getQuery() {
+        return searchField.getText().trim();
+    }
+
+    @Override
+    protected String getFxmlSource() {
+        return "/ui/fxml/search-in-file-tree-bar.fxml";
     }
 }

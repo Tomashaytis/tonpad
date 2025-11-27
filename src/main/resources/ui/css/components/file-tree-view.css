@@ -35,7 +35,7 @@
     -fx-background-color: #fff8b0;
 }
 /* оформление самих символов совпадения */
-.filetree-hit {
+.file-tree-hit {
     -fx-font-weight: bold;
     -fx-underline: true;
 }

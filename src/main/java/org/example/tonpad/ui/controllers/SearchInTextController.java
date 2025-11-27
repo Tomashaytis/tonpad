@@ -1,110 +1,162 @@
 package org.example.tonpad.ui.controllers;
 
-import java.util.*;
-
+import javafx.animation.PauseTransition;
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.util.Duration;
+import lombok.Getter;
+import lombok.Setter;
 import org.example.tonpad.core.editor.Editor;
-
+import org.example.tonpad.core.editor.dto.SearchResult;
 import javafx.application.Platform;
 import javafx.scene.control.TabPane;
-import javafx.scene.layout.AnchorPane;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-
 import javafx.scene.control.Tab;
-import org.example.tonpad.core.editor.dto.SearchResult;
+import org.example.tonpad.ui.controllers.AbstractController;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @Component
-@RequiredArgsConstructor
-public class SearchInTextController {
+public class SearchInTextController extends AbstractController {
+
+    @Getter
+    @FXML
+    private VBox searchBarVBox;
+
+    @FXML
+    private TextField searchField;
+
+    @FXML
+    private Button prevHitButton;
+
+    @FXML
+    private Button nextHitButton;
+
+    @FXML
+    private TextField searchResultsField;
 
     @Setter
     private TabPane tabPane;
 
     @Setter
-    private Map<Tab, Editor> EditorMap;
+    private Map<Tab, Editor> editorMap;
 
-    private final SearchFieldController searchFieldController;
+    @FXML
+    private void initialize() {
+        var debounce = new PauseTransition(Duration.millis(400));
+        searchField.textProperty().addListener((o, ov, nv) -> {
+            debounce.stop();
+            debounce.setOnFinished(e -> runSearch());
+            debounce.playFromStart();
+        });
+
+        searchField.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+            var code = e.getCode();
+            if ((code == KeyCode.F3 && e.isShiftDown()) || code == KeyCode.UP) {
+                e.consume();
+                selectPrevHit();
+            } else if (code == KeyCode.F3 || code == KeyCode.DOWN || code == KeyCode.ENTER) {
+                e.consume();
+                selectNextHit();
+            }
+        });
+
+        prevHitButton.setOnAction(e -> selectPrevHit());
+        nextHitButton.setOnAction(e -> selectNextHit());
+    }
 
     public void init(AnchorPane parent) {
-        searchFieldController.init(parent);
-        searchFieldController.setOnQueryChanged(q -> runSearch());
-        searchFieldController.setOnNext(this::selectNextHit);
-        searchFieldController.setOnPrev(this::selectPrevHit);
+        parent.getChildren().add(searchBarVBox);
+        AnchorPane.setTopAnchor(searchBarVBox, 0.0);
+        AnchorPane.setRightAnchor(searchBarVBox, 14.0);
     }
 
     public void activateSearchBar() {
-        searchFieldController.setOnQueryChanged(q -> runSearch());
-        searchFieldController.setOnNext(this::selectNextHit);
-        searchFieldController.setOnPrev(this::selectPrevHit);
         showSearchBar();
     }
 
     private void selectPrevHit() {
         Editor editor = getActiveEditor();
-        if (editor == null) {
-            return;
-        }
-
+        if (editor == null) return;
         editor.findPrevious().thenAccept(this::handleSearchResult);
     }
 
     private void selectNextHit() {
         Editor editor = getActiveEditor();
-        if (editor == null) {
-            return;
-        }
-
+        if (editor == null) return;
         editor.findNext().thenAccept(this::handleSearchResult);
     }
 
     public void showSearchBar() {
-        searchFieldController.focus();
+        focus();
         Platform.runLater(() -> {
-            String q = searchFieldController.getQuery();
+            String q = getQuery();
             if (!q.isEmpty()) {
                 runSearch();
             } else {
-                searchFieldController.setResults(0, 0);
+                clearResults();
             }
         });
     }
 
     public void hideSearchBar() {
         Editor editor = getActiveEditor();
-        if (editor == null) {
-            searchFieldController.clearResults();
-            return;
+        if (editor != null) {
+            editor.clearSearch();
         }
-
-        editor.clearSearch();
-        searchFieldController.clearResults();
+        clearResults();
     }
 
     private void runSearch() {
         Editor editor = getActiveEditor();
-        if (editor == null) {
-            return;
-        }
+        if (editor == null) return;
 
-        String query = searchFieldController.getQuery();
-        if (query == null) {
-            query = "";
-        }
-
+        String query = getQuery();
         editor.find(query).thenAccept(this::handleSearchResult);
     }
 
     private Editor getActiveEditor() {
         Tab tab = tabPane.getSelectionModel().getSelectedItem();
-        return EditorMap.getOrDefault(tab, null);
+        return editorMap.get(tab);
     }
 
     private void handleSearchResult(SearchResult searchResult) {
         if (searchResult != null && searchResult.isActive()) {
-            searchFieldController.setResults(searchResult.getCurrent(), searchResult.getTotal());
+            setResults(searchResult.getCurrent(), searchResult.getTotal());
         } else {
-            searchFieldController.clearResults();
+            clearResults();
         }
+    }
+
+    public void focus() {
+        searchField.requestFocus();
+        searchField.selectAll();
+    }
+
+    public void clearResults() {
+        searchResultsField.setText("");
+    }
+
+    public void setResults(int current1based, int total) {
+        searchResultsField.setText(total <= 0 ? "" : (current1based + "/" + total));
+    }
+
+    public void setQuery(String q) {
+        searchField.setText(q == null ? "" : q);
+    }
+
+    public String getQuery() {
+        return searchField.getText().trim();
+    }
+
+    @Override
+    protected String getFxmlSource() {
+        return "/ui/fxml/search-in-text-bar.fxml";
     }
 }

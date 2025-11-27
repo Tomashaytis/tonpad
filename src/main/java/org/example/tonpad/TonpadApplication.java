@@ -9,7 +9,6 @@ import org.example.tonpad.ui.controllers.MainController;
 import org.example.tonpad.ui.controllers.QuickStartDialogController;
 import org.example.tonpad.ui.controllers.TabController;
 import org.example.tonpad.ui.extentions.VaultPathsContainer;
-import org.example.tonpad.ui.controllers.TestFieldController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -35,9 +34,6 @@ public class TonpadApplication extends Application {
     private QuickStartDialogController quickStartDialogController;
 
     @Autowired
-    private TestFieldController testFieldController;
-
-    @Autowired
     private FileTreeController fileTreeController;
 
     @Autowired
@@ -55,7 +51,6 @@ public class TonpadApplication extends Application {
     public void start(Stage primaryStage) {
         Thread.setDefaultUncaughtExceptionHandler(globalExceptionHandler);
 
-        //testFieldController.init(primaryStage);
         quickStartDialogController.init();
         quickStartDialogController.setCreateVaultHandler(selectedPath -> {
             quickStartDialogController.hide();

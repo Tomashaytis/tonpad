@@ -1,5 +1,6 @@
 package org.example.tonpad.core.files;
 
+import javafx.scene.control.TreeItem;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.exceptions.CustomIOException;
@@ -241,8 +242,7 @@ public class FileSystemServiceImpl implements FileSystemService {
         buffer.setCopyBuffer(List.of(path));
         buffer.setCutMode(false);
     }
-    public void copyFile(String path)
-    {
+    public void copyFile(String path) {
         copyFile(Path.of(path));
     }
 
@@ -255,8 +255,7 @@ public class FileSystemServiceImpl implements FileSystemService {
         cutFile(Path.of(path));
     }
 
-    public void pasteFile(String targetDir)
-    {
+    public void pasteFile(String targetDir) {
         pasteFile(Path.of(targetDir));
     }
 
@@ -283,6 +282,25 @@ public class FileSystemServiceImpl implements FileSystemService {
                 }
             }
         }
+    }
+
+    public boolean isMarkdownFile(String path) {
+        return isMarkdownFile(Path.of(path));
+    }
+
+    public boolean isMarkdownFile(Path path) {
+        if (path == null) return false;
+
+        if (Files.isDirectory(path)) {
+            return false;
+        }
+
+        String fileName = path.getFileName().toString().toLowerCase();
+        return fileName.endsWith(".md") ||
+                fileName.endsWith(".markdown") ||
+                fileName.endsWith(".mdown") ||
+                fileName.endsWith(".mkd") ||
+                fileName.endsWith(".mdx");
     }
 
     public void showFileInExplorer(Path path) {

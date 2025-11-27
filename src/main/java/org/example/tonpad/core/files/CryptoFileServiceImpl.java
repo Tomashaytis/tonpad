@@ -25,11 +25,6 @@ public class CryptoFileServiceImpl implements CryptoFileService {
     private final VaultSession vaultSession;
     private final EncryptorFactory encryptorFactory;
 
-    // Разрешенные расширения для обработки (allow-list)
-    private static final Set<String> ALLOWED_EXT = Set.of(
-        "md", "markdown", "mdx"
-    );
-
     private static final Set<String> NAME_SKIP = Set.of(
         ".DS_Store", "Thumbs.db", "desktop.ini"
     );
@@ -56,11 +51,8 @@ public class CryptoFileServiceImpl implements CryptoFileService {
             if (NAME_SKIP.contains(base)) return false;
             if (looksBackupOrTemp(base)) return false;
 
-            // только разрешенные расширения
-            int dot = base.lastIndexOf('.');
-            if (dot <= 0 || dot >= base.length() - 1) return false;
-            String ext = base.substring(dot + 1).toLowerCase();
-            if (!ALLOWED_EXT.contains(ext)) return false;
+            if (!fileSystemService.isMarkdownFile(base))
+                return false;
 
             // исключаем каталоги по имени в пути
             for (Path p : file) {

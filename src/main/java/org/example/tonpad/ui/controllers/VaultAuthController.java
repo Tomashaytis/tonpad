@@ -1,5 +1,6 @@
 package org.example.tonpad.ui.controllers;
 
+import org.example.tonpad.ui.controllers.AbstractController;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 

@@ -9,14 +9,13 @@ import javafx.scene.control.TabPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import lombok.RequiredArgsConstructor;
-import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.example.tonpad.ui.service.ThemeService;
 import org.springframework.stereotype.Component;
 
@@ -29,18 +28,6 @@ public class MainController extends AbstractController {
 
     @FXML
     private VBox mainVBox;
-
-    @FXML
-    private HBox mainHBox;
-
-    @FXML
-    private VBox leftToolsPane;
-
-    @FXML
-    private VBox rightToolsPane;
-
-    @FXML
-    private StackPane noteStackPane;
 
     @FXML
     private AnchorPane settingsPane;
@@ -62,6 +49,9 @@ public class MainController extends AbstractController {
 
     @FXML
     private AnchorPane searchInTextPane;
+
+    @FXML
+    private AnchorPane searchInFileTreePane;
 
     @FXML
     private Button showFilesButton;
@@ -95,8 +85,6 @@ public class MainController extends AbstractController {
 
     private final SettingsController settingsController;
 
-    private final VaultPathsContainer vaultPathsContainer;
-
     private final ThemeService themeService;
 
     public void init(Stage stage) {
@@ -106,6 +94,7 @@ public class MainController extends AbstractController {
         themeService.apply(mainVBox.getScene(), ThemeService.Theme.LIGHT);
         titleBarController.init(stage, mainVBox);
         setupEventHandlers();
+        setupGlobalClickHandler();
     }
 
     private void setupControllers() {
@@ -125,8 +114,7 @@ public class MainController extends AbstractController {
 
         settingsController.init(settingsPane);
 
-        searchInFileTreeController.setTabPane(tabPane);
-        searchInFileTreeController.init(searchInTextPane);
+        searchInFileTreeController.init(searchInFileTreePane);
     }
 
     private void setupEventHandlers() {
@@ -143,8 +131,8 @@ public class MainController extends AbstractController {
 
         setSearchShortCut(
                 new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN),
-                () -> showPane(leftStackPane, searchInTextPane, searchInTextController::showSearchBar),
-                () -> hidePane(leftStackPane, searchInTextPane, searchInTextController::hideSearchBar)
+                () -> showPane(leftStackPane, searchInFilesPane, () -> {}),
+                () -> hidePane(leftStackPane, searchInFilesPane, () -> {})
         );
 
         titleBarController.bindSettingsButton(e -> settingsController.toggle());
@@ -155,7 +143,7 @@ public class MainController extends AbstractController {
         );
 
         setOpenShortcut(
-                new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN),
+                new KeyCodeCombination(KeyCode.P, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN),
                 this::showSearchInFileTreeOverlay
         );
 
@@ -167,7 +155,12 @@ public class MainController extends AbstractController {
         if (fileTreePane.isVisible()) {
             searchInFileTreeController.hideSearchBar();
         }
-        if (searchInTextPane.isVisible()) searchInTextPane.setVisible(false);
+
+        if (searchInTextPane.isVisible())
+            searchInTextPane.setVisible(false);
+        if (searchInFileTreePane.isVisible())
+            searchInFileTreePane.setVisible(false);
+
         if (fileTreePane.isVisible()) {
             leftStackPane.setManaged(false);
             fileTreePane.setVisible(false);
@@ -220,8 +213,8 @@ public class MainController extends AbstractController {
     }
 
     private void showSearchInFileTreeOverlay() {
-        if (!searchInTextPane.isVisible()) {
-            searchInTextPane.setVisible(true);
+        if (!searchInFileTreePane.isVisible()) {
+            searchInFileTreePane.setVisible(true);
         }
         if (!fileTreePane.isVisible()) {
             togglePane(
@@ -237,9 +230,9 @@ public class MainController extends AbstractController {
     }
 
     private void hideSearchInFileTreeOverlay() {
-        if (searchInTextPane.isVisible()) {
+        if (searchInFileTreePane.isVisible()) {
             searchInFileTreeController.hideSearchBar();
-            searchInTextPane.setVisible(false);
+            searchInFileTreePane.setVisible(false);
         }
     }
 
@@ -299,6 +292,21 @@ public class MainController extends AbstractController {
 
     private void openFileInEditor(Path path) {
         tabController.openFileInCurrentTab(path);
+    }
+
+    private void setupGlobalClickHandler() {
+        mainVBox.getScene().addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
+            if (searchInTextPane.isVisible() &&
+                    !searchInTextPane.contains(event.getX(), event.getY())) {
+                hideSearchOverlay();
+            }
+
+            if (fileTreePane.isVisible() && searchInFileTreePane.isVisible() &&
+                    !fileTreePane.getBoundsInParent().contains(event.getX(), event.getY()) &&
+                    !searchInFileTreePane.contains(event.getX(), event.getY())) {
+                hideSearchInFileTreeOverlay();
+            }
+        });
     }
 
     @Override

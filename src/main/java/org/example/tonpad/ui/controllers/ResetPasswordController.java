@@ -3,6 +3,7 @@ package org.example.tonpad.ui.controllers;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
+import org.example.tonpad.ui.controllers.AbstractController;
 import org.springframework.context.annotation.Scope;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.stereotype.Component;

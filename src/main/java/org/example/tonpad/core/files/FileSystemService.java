@@ -66,6 +66,10 @@ public interface FileSystemService {
 
     void pasteFile(Path path);
 
+    boolean isMarkdownFile(String path);
+
+    boolean isMarkdownFile(Path path);
+
     void showFileInExplorer(String path);
 
     void showFileInExplorer(Path path);
