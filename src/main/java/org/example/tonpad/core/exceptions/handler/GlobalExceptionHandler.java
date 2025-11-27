@@ -44,15 +44,10 @@ public class GlobalExceptionHandler implements Thread.UncaughtExceptionHandler {
 
     @Override
     public void uncaughtException(Thread thread, Throwable throwable) {
-        if (!(throwable instanceof TonpadBaseException exception)) {
-            return;
-        }
-
         for (HandlerMethod handler : handlers) {
-            if (handler.exceptionType().isInstance(exception)) {
+            if (handler.exceptionType().isInstance(throwable)) {
                 try {
-                    handler.method().invoke(this, exception);
-
+                    handler.method().invoke(this, throwable);
                     return;
                 } catch (Exception e) {
                     throw new RuntimeException(e);
@@ -62,14 +57,19 @@ public class GlobalExceptionHandler implements Thread.UncaughtExceptionHandler {
     }
 
     @ExceptionHandler
+    private void handleAnyException(Exception exception) {
+        showErrorAlert(exception);
+    }
+
+    @ExceptionHandler
     private void handleBaseException(TonpadBaseException exception) {
         showErrorAlert(exception);
     }
 
-    private void showErrorAlert(TonpadBaseException exception) {
+    private void showErrorAlert(Exception exception) {
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Ошибка");
+            alert.setTitle("Error");
             alert.setHeaderText(exception.getMessage());
 
             alert.showAndWait();

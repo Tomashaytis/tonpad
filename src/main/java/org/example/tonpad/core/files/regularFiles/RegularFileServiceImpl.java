@@ -32,7 +32,7 @@ public class RegularFileServiceImpl implements RegularFileService {
 
     public Path renameFile(Path path, String name) {
         if (!Files.isRegularFile(path)) {
-            throw new IllegalInputException("Ошибка при переименовании файла");
+            throw new IllegalInputException("Cannot rename file");
         }
 
         return fileSystem.rename(path, Path.of(path.toAbsolutePath().getParent().toString(), name + FILE_EXTENSION));
@@ -40,7 +40,7 @@ public class RegularFileServiceImpl implements RegularFileService {
 
     public void deleteFile(Path path) {
         if (!Files.isRegularFile(path)) {
-            throw new IllegalInputException("Ошибка при удалении файла");
+            throw new IllegalInputException("Cannot remove file");
         }
 
         fileSystem.delete(path);

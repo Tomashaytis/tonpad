@@ -33,7 +33,7 @@ public class DirectoryServiceImpl implements DirectoryService {
 
     public Path renameDir(Path path, String name) {
         if (!Files.isDirectory(path)) {
-            throw new IllegalInputException("Ошибка при переименовании директории");
+            throw new IllegalInputException("Cannot rename directory");
         }
 
         return fileSystem.rename(path, Path.of(path.toAbsolutePath().getParent().toString(), name));
@@ -41,7 +41,7 @@ public class DirectoryServiceImpl implements DirectoryService {
 
     public void deleteDir(Path path) {
         if (!Files.isDirectory(path)) {
-            throw new IllegalInputException("Ошибка при удалении директории");
+            throw new IllegalInputException("Cannot remove directory");
         }
 
         fileSystem.delete(path);
