@@ -7,7 +7,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 
-<HBox fx:id="titleBarMainHBox" prefHeight="40.0" styleClass="title-bar" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.TitleBarController">
+<HBox fx:id="titleBarMainHBox" prefHeight="40.0" styleClass="title-bar" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.core.TitleBarController">
    <children>
       <HBox fx:id="leftHeaderHBox" prefHeight="100.0" prefWidth="200.0">
          <children>

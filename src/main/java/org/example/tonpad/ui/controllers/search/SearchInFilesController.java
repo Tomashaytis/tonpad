@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.search;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
@@ -35,7 +35,7 @@ import java.security.Key;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 @Component
 @RequiredArgsConstructor
@@ -66,7 +66,7 @@ public class SearchInFilesController extends AbstractController {
     private Runnable onCancel;
 
     @Setter
-    private Consumer<Path> fileOpenHandler;
+    private BiConsumer<Path, Boolean> fileOpenHandler;
 
     @Setter
     private java.util.function.Consumer<String> onQueryChanged;
@@ -144,7 +144,7 @@ public class SearchInFilesController extends AbstractController {
             }
 
             if (fileOpenHandler != null) {
-                fileOpenHandler.accept(filePath);
+                fileOpenHandler.accept(filePath, false);
             }
         }
     }

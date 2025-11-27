@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.action;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.ContextMenu;

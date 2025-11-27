@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.security;
 
 import java.util.Arrays;
 import java.util.function.Consumer;

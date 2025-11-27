@@ -70,6 +70,10 @@ public interface FileSystemService {
 
     boolean isMarkdownFile(Path path);
 
+    void showFileInNotepad(String path);
+
+    void showFileInNotepad(Path path);
+
     void showFileInExplorer(String path);
 
     void showFileInExplorer(Path path);

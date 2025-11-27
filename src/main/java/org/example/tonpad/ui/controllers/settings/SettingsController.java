@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.settings;
 
 import org.example.tonpad.core.exceptions.CustomIOException;
 import org.example.tonpad.core.files.CryptoFileService;
@@ -6,7 +6,7 @@ import org.example.tonpad.core.service.crypto.DerivationService;
 import org.example.tonpad.core.exceptions.DerivationException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.ui.controllers.AbstractController;
-import org.example.tonpad.ui.controllers.ResetPasswordController;
+import org.example.tonpad.ui.controllers.security.ResetPasswordController;
 import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.example.tonpad.ui.service.ThemeService;
 import org.springframework.beans.factory.ObjectProvider;

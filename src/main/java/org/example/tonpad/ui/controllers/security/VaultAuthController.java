@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.security;
 
 import org.example.tonpad.ui.controllers.AbstractController;
 import org.springframework.context.annotation.Scope;
@@ -37,15 +37,22 @@ public class VaultAuthController extends AbstractController {
     private Button okButton;
     @FXML
     private Button cancelButton;
+
     @FXML
     private Button enterWithoutButton;
 
     private final String EMPTY_PASSWORD_MESSAGE = "If you want to work with password, input something.\nyour input is empty. passwort must not be empty. input something that is not empty.\nOr enter in so called guest mode";
+
     private final String INFO_TITLE = "Info";
+
     private final String EMPTY_PASSWORD_HEADER = "password may not be empty";
+
     private final String GUEST_MODE_MESSAGE = "you are going to work in so called guest mode. \nAll the notes you work with won't be encrypted\n and u can not access encrypted notes as well. good luck.";
+
     private final String GUEST_MODE_HEADER = "Guest mode is active NOW";
+
     private final String PASSWORD_MODE_MESSAGE = "you are going to work with encrypted vault. \nAll the notes you work with will be encrypted immediately. \nYou can access not encrypted files, \nbut if you work with them they will be encrypted. \nyou can not access notes encrypted with password different from yours.";
+
     private final String PASSWORD_MODE_HEADER = "You work in encrypted vault.\nYour data is... probably safe";
 
     private Stage stage;

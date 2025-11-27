@@ -1,14 +1,10 @@
 package org.example.tonpad.core.files;
 
-import javafx.scene.control.TreeItem;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.exceptions.CustomIOException;
 import org.example.tonpad.core.exceptions.TonpadBaseException;
-import org.example.tonpad.core.service.crypto.Encryptor;
 import org.example.tonpad.core.service.crypto.EncryptorFactory;
-import org.example.tonpad.core.service.crypto.Impl.AesGcmEncryptor;
-import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.sort.SortOptions;
 import org.jetbrains.annotations.NotNull;
@@ -22,7 +18,6 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
-import java.security.Key;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -59,6 +54,8 @@ public class FileSystemServiceImpl implements FileSystemService {
     private final static String DELETE_ERROR = "Delete error";
 
     private final static String FILE_OPENING_IN_EXPLORER_ERROR = "Explorer opening error";
+
+    private final static String FILE_OPENING_IN_NOTEPAD_ERROR = "Notepad opening error";
 
     private final RecursiveDeleteFileVisitor visitor = new RecursiveDeleteFileVisitor();
 
@@ -303,6 +300,32 @@ public class FileSystemServiceImpl implements FileSystemService {
                 fileName.endsWith(".mdx");
     }
 
+
+    public void showFileInNotepad(String path) {
+        showFileInNotepad(Path.of(path));
+    }
+
+    public void showFileInNotepad(Path path) {
+        if (path == null || !isMarkdownFile(path)) {
+            return;
+        }
+
+        var file = path.toFile();
+        var os = System.getProperty("os.name").toLowerCase();
+
+        try {
+            if (os.contains("win")) {
+                new ProcessBuilder("notepad", file.getAbsolutePath()).start();
+            } else if (os.contains("mac")) {
+                new ProcessBuilder("open", "-e", file.getAbsolutePath()).start();
+            } else {
+                openInLinuxNotepads(file);
+            }
+        } catch (Exception e) {
+            throw new CustomIOException(FILE_OPENING_IN_NOTEPAD_ERROR, e);
+        }
+    }
+
     public void showFileInExplorer(Path path) {
         var file = path.toFile();
         var os = System.getProperty("os.name").toLowerCase();
@@ -330,9 +353,9 @@ public class FileSystemServiceImpl implements FileSystemService {
                     }
                 }
             }
-        } catch (Exception ex) {
+        } catch (Exception e) {
             log.warn(FILE_OPENING_IN_EXPLORER_ERROR);
-            throw new CustomIOException(FILE_OPENING_IN_EXPLORER_ERROR, ex);
+            throw new CustomIOException(FILE_OPENING_IN_EXPLORER_ERROR, e);
         }
     }
 
@@ -403,6 +426,26 @@ public class FileSystemServiceImpl implements FileSystemService {
             base = byIsDirDesc.thenComparing(base);
         }
         return base;
+    }
+
+    private void openInLinuxNotepads(File file) {
+        String[] linuxNotepads = {
+                "gedit",
+                "mousepad",
+                "kate",
+                "nano",
+                "vim",
+                "xdg-open"
+        };
+
+        for (String notepad : linuxNotepads) {
+            try {
+                new ProcessBuilder(notepad, file.getAbsolutePath()).start();
+                return;
+            } catch (IOException ignored) {}
+        }
+
+        throw new CustomIOException(FILE_OPENING_IN_NOTEPAD_ERROR);
     }
 
     private static class RecursiveDeleteFileVisitor implements FileVisitor<Path> {

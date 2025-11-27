@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox fx:id="searchBarVBox" prefWidth="184.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.SearchInTextController">
+<VBox fx:id="searchBarVBox" prefWidth="184.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.search.SearchInTextController">
    <children>
       <HBox fx:id="searchFieldHBox" styleClass="search-field" VBox.vgrow="NEVER">
          <children>

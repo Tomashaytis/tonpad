@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.core;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;

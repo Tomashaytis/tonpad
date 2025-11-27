@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.file;
 
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -10,7 +10,6 @@ import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
@@ -18,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import org.example.tonpad.core.exceptions.IllegalInputException;
 import org.example.tonpad.core.exceptions.TonpadBaseException;
 import org.example.tonpad.core.files.Buffer;
 import org.example.tonpad.core.files.FileSystemService;
@@ -26,8 +26,8 @@ import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.core.sort.SortKey;
 import org.example.tonpad.core.sort.SortOptions;
 import org.example.tonpad.ui.controllers.AbstractController;
-import org.example.tonpad.ui.controllers.QuickStartDialogController;
-import org.example.tonpad.ui.controllers.SelectFileActionController;
+import org.example.tonpad.ui.controllers.dialog.QuickStartDialogController;
+import org.example.tonpad.ui.controllers.action.SelectFileActionController;
 import org.example.tonpad.ui.extentions.FileTreeItem;
 import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.springframework.stereotype.Component;
@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -53,16 +54,10 @@ public class FileTreeController extends AbstractController {
     private VBox fileTreeVBox;
 
     @FXML
-    private HBox fileTreeToolsHBox;
-
-    @FXML
     private Button addNoteButton;
 
     @FXML
     private Button addDirectoryButton;
-
-    @FXML
-    private Button addCollectionButton;
 
     @FXML
     private Button refreshFilesButton;
@@ -109,7 +104,13 @@ public class FileTreeController extends AbstractController {
     private final BooleanProperty programmaticEdit = new SimpleBooleanProperty(false);
 
     @Setter
-    private Consumer<Path> fileOpenHandler;
+    private BiConsumer<Path, Boolean> noteOpenHandler;
+
+    @Setter
+    private BiConsumer<Path, Path> noteRenameHandler;
+
+    @Setter
+    private Consumer<Path> noteCloseHandler;
 
     @Setter
     private Map<String, List<SearchService.Hit>> hitsMap = Collections.emptyMap();
@@ -156,7 +157,7 @@ public class FileTreeController extends AbstractController {
 
         sortFilesButton.setOnAction(e -> {
             if (sortMenu == null) {
-                throw new IllegalStateException("sortMenu is null");
+                throw new IllegalInputException("sortMenu is null");
             }
             if (sortMenu.isShowing()) sortMenu.hide();
             else sortMenu.show(sortFilesButton, javafx.geometry.Side.BOTTOM, 0, 0);
@@ -196,19 +197,16 @@ public class FileTreeController extends AbstractController {
         applySortOptions();
         if(sortMenu != null && sortMenu.isShowing()) sortMenu.hide();
     }
-
-    private void onSortFlagsChanged() {}
     
-    private void applySortOptions()
-    {
+    private void applySortOptions() {
         refreshTree();        
     }
 
     private void onOpenFile(TreeItem<String> target) {
         if (target != null && target.isLeaf()) {
             Path filePath = getFullPath(target);
-            if (fileOpenHandler != null) {
-                fileOpenHandler.accept(filePath);
+            if (noteOpenHandler != null) {
+                noteOpenHandler.accept(filePath, false);
             }
         }
     }
@@ -299,6 +297,15 @@ public class FileTreeController extends AbstractController {
     private String getRelativePath(TreeItem<String> item) {
         var parts = new ArrayList<String>();
         for (TreeItem<String> cur = item; cur != null; cur = cur.getParent()) {
+            if (cur.getValue() == null || cur.getValue().isEmpty()) break;
+            parts.addFirst(cur.getValue());
+        }
+        return String.join("/", parts).replace('\\','/');
+    }
+
+    private String getVaultRelativePath(TreeItem<String> item) {
+        var parts = new ArrayList<String>();
+        for (TreeItem<String> cur = item; cur != null && cur.getParent() != null; cur = cur.getParent()) {
             if (cur.getValue() == null || cur.getValue().isEmpty()) break;
             parts.addFirst(cur.getValue());
         }
@@ -439,6 +446,11 @@ public class FileTreeController extends AbstractController {
     }
 
     private void setupMenuButtonHandlers() {
+        selectFileActionController.getOpenInCurrentTabMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onOpenInNewTab(selectedItem);
+        });
+
         selectFileActionController.getNewNoteMenuItem().setOnAction(e -> {
             actionMenu.hide();
             onAddNote();
@@ -477,6 +489,11 @@ public class FileTreeController extends AbstractController {
         selectFileActionController.getCopyRelativePathMenuItem().setOnAction(e -> {
             actionMenu.hide();
             onCopyRelPath(selectedItem);
+        });
+
+        selectFileActionController.getShowInNotepadMenuItem().setOnAction(e -> {
+            actionMenu.hide();
+            onShowInNotepad(selectedItem);
         });
 
         selectFileActionController.getShowInExplorerMenuItem().setOnAction(e -> {
@@ -522,11 +539,20 @@ public class FileTreeController extends AbstractController {
         selectFileActionController.getCutMenuItem().setDisable(false);
     }
 
+    private void onOpenInNewTab(TreeItem<String> target) {
+        if (target != null && target.isLeaf()) {
+            Path filePath = getFullPath(target);
+            if (noteOpenHandler != null) {
+                noteOpenHandler.accept(filePath, true);
+            }
+        }
+    }
+
     private void onAddNote() {
         Path newFilePath = addNote();
         refreshTree();
         selectItem(newFilePath, true);
-        fileOpenHandler.accept(newFilePath);
+        noteOpenHandler.accept(newFilePath, false);
     }
 
     private void onAddDirectory() {
@@ -535,18 +561,18 @@ public class FileTreeController extends AbstractController {
         selectItem(newDirPath, true);
     }
 
-    private void onCopy(TreeItem<String> node) 
-    {
+    private void onCopy(TreeItem<String> node) {
         if (node != null) {
             fileSystemService.copyFile(getFullPath(node));
         }
     }
-    private void onCut(TreeItem<String> node) 
-    {
+
+    private void onCut(TreeItem<String> node) {
         if (node != null) {
             fileSystemService.cutFile(getFullPath(node));
         }
     }
+
     private void onPaste(TreeItem<String> target) {
         Path targetPath;
 
@@ -562,12 +588,6 @@ public class FileTreeController extends AbstractController {
 
         fileSystemService.pasteFile(targetPath);
         refreshTree();
-    }
-
-    private Path resolveTargetDirForPaste(TreeItem<String> node) {
-        if (node == null) return vaultPathsContainer.getNotesPath();
-        Path here = getFullPath(node);
-        return Files.isDirectory(here) ? here : (here.getParent() != null ? here.getParent() : vaultPathsContainer.getNotesPath());
     }
 
     private void onCopyVaultPath() {
@@ -587,8 +607,14 @@ public class FileTreeController extends AbstractController {
     private void onCopyRelPath(TreeItem<String> node) {
         if (node != null) {
             var cc = new ClipboardContent();
-            cc.putString(getRelativePath(node));
+            cc.putString(getVaultRelativePath(node));
             Clipboard.getSystemClipboard().setContent(cc);
+        }
+    }
+
+    private void onShowInNotepad(TreeItem<String> node) {
+        if (node != null) {
+            fileSystemService.showFileInNotepad(getFullPath(node));
         }
     }
 
@@ -758,6 +784,7 @@ public class FileTreeController extends AbstractController {
 
         refreshTree();
         selectItem(newAbs, false);
+        noteRenameHandler.accept(oldAbs, newAbs);
     }
 
     private static String norm(String s) {
@@ -808,7 +835,7 @@ public class FileTreeController extends AbstractController {
             }
         }
 
-        return  treeItem;
+        return treeItem;
     }
 
     private Path addNote() {
@@ -910,8 +937,11 @@ public class FileTreeController extends AbstractController {
         var res = alert.showAndWait();
         if (res.isEmpty() || res.get() != ButtonType.OK) return;
 
-        fileSystemService.delete(getFullPath(node));
+        Path fullPath = getFullPath(node);
+
+        fileSystemService.delete(fullPath);
         refreshTree();
+        noteCloseHandler.accept(fullPath);
     }
 
     private void deleteSelected() {

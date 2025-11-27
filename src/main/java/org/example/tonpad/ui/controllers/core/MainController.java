@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.core;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -16,6 +16,12 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import lombok.RequiredArgsConstructor;
+import org.example.tonpad.ui.controllers.*;
+import org.example.tonpad.ui.controllers.file.FileTreeController;
+import org.example.tonpad.ui.controllers.search.SearchInFileTreeController;
+import org.example.tonpad.ui.controllers.search.SearchInFilesController;
+import org.example.tonpad.ui.controllers.search.SearchInTextController;
+import org.example.tonpad.ui.controllers.settings.SettingsController;
 import org.example.tonpad.ui.service.ThemeService;
 import org.springframework.stereotype.Component;
 
@@ -118,8 +124,10 @@ public class MainController extends AbstractController {
     }
 
     private void setupEventHandlers() {
-        fileTreeController.setFileOpenHandler(this::openFileInEditor);
-        searchInFilesController.setFileOpenHandler(this::openFileInEditor);
+        fileTreeController.setNoteOpenHandler(this::openNoteInEditor);
+        fileTreeController.setNoteCloseHandler(this::closeNoteInEditor);
+        fileTreeController.setNoteRenameHandler(this::renameNoteInEditor);
+        searchInFilesController.setFileOpenHandler(this::openNoteInEditor);
 
         showFilesButton.setOnAction(event -> togglePane(
                 leftStackPane, fileTreePane, showFilesButton, () -> {}, () -> {}
@@ -131,8 +139,7 @@ public class MainController extends AbstractController {
 
         setSearchShortCut(
                 new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN),
-                () -> showPane(leftStackPane, searchInFilesPane, () -> {}),
-                () -> hidePane(leftStackPane, searchInFilesPane, () -> {})
+                () -> showPane(leftStackPane, searchInFilesPane, () -> {})
         );
 
         titleBarController.bindSettingsButton(e -> settingsController.toggle());
@@ -198,11 +205,7 @@ public class MainController extends AbstractController {
         if (!searchInTextPane.isVisible()) {
             searchInTextPane.setVisible(true);
         }
-        searchInTextController.activateSearchBar();
-
-        if (fileTreePane.isVisible()) {
-            searchInFileTreeController.hideSearchBar();
-        }
+        searchInTextController.showSearchBar();
     }
 
     private void hideSearchOverlay() {
@@ -213,9 +216,6 @@ public class MainController extends AbstractController {
     }
 
     private void showSearchInFileTreeOverlay() {
-        if (!searchInFileTreePane.isVisible()) {
-            searchInFileTreePane.setVisible(true);
-        }
         if (!fileTreePane.isVisible()) {
             togglePane(
                     leftStackPane,
@@ -225,8 +225,12 @@ public class MainController extends AbstractController {
                     () -> {}
             );
         }
-        searchInFileTreeController.activateSearchBar();
-        searchInTextController.hideSearchBar();
+
+        if (!searchInFileTreePane.isVisible()) {
+            searchInFileTreePane.setVisible(true);
+        }
+
+        searchInFileTreeController.showSearchBar();
     }
 
     private void hideSearchInFileTreeOverlay() {
@@ -246,9 +250,7 @@ public class MainController extends AbstractController {
             for (Node child : stackPane.getChildren()) {
                 child.setVisible(false);
             }
-            for (Node child : stackPane.getChildren()) {
-                child.getStyleClass().remove("toggled-icon-button");
-            }
+            resetLeftToolButtons();
             button.getStyleClass().add("toggled-icon-button");
             stackPane.setManaged(true);
             anchorPane.setVisible(true);
@@ -256,7 +258,7 @@ public class MainController extends AbstractController {
         }
     }
 
-    private void setSearchShortCut(KeyCodeCombination openKeyComb, Runnable show, Runnable hide) {
+    private void setSearchShortCut(KeyCodeCombination openKeyComb, Runnable show) {
         if (tabPane.getScene() != null) {
             attachAccelerator(tabPane.getScene(), openKeyComb, show);
             tabPane.sceneProperty().addListener((obs, oldS, newS) -> {
@@ -269,12 +271,12 @@ public class MainController extends AbstractController {
 
     private void showPane(StackPane stackPane, AnchorPane anchorPane, Runnable show) {
         if (!anchorPane.isVisible()) {
+            resetLeftToolButtons();
+
             for (Node child : stackPane.getChildren()) {
                 child.setVisible(false);
             }
-            for (Node child : stackPane.getChildren()) {
-                child.getStyleClass().remove("toggled-icon-button");
-            }
+            resetLeftToolButtons();
 
             stackPane.setManaged(true);
             anchorPane.setVisible(true);
@@ -282,16 +284,16 @@ public class MainController extends AbstractController {
         }
     }
 
-    private void hidePane(StackPane stackPane, AnchorPane anchorPane, Runnable hide) {
-        if (anchorPane.isVisible()) {
-            anchorPane.setVisible(false);
-            stackPane.setManaged(false);
-            hide.run();
-        }
+    private void openNoteInEditor(Path path, boolean openInCurrent) {
+        tabController.openFileInTab(path, openInCurrent);
     }
 
-    private void openFileInEditor(Path path) {
-        tabController.openFileInCurrentTab(path);
+    private void renameNoteInEditor(Path oldPath, Path newPath) {
+        tabController.renameTab(oldPath, newPath);
+    }
+
+    private void closeNoteInEditor(Path path) {
+        tabController.clearTab(path);
     }
 
     private void setupGlobalClickHandler() {
@@ -307,6 +309,12 @@ public class MainController extends AbstractController {
                 hideSearchInFileTreeOverlay();
             }
         });
+    }
+
+    private void resetLeftToolButtons() {
+        showFilesButton.getStyleClass().remove("toggled-icon-button");
+        showSearchButton.getStyleClass().remove("toggled-icon-button");
+        showBookmarksButton.getStyleClass().remove("toggled-icon-button");
     }
 
     @Override

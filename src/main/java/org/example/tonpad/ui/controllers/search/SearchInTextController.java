@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.search;
 
 import javafx.animation.PauseTransition;
 import javafx.fxml.FXML;
@@ -75,10 +75,6 @@ public class SearchInTextController extends AbstractController {
         parent.getChildren().add(searchBarVBox);
         AnchorPane.setTopAnchor(searchBarVBox, 0.0);
         AnchorPane.setRightAnchor(searchBarVBox, 14.0);
-    }
-
-    public void activateSearchBar() {
-        showSearchBar();
     }
 
     private void selectPrevHit() {

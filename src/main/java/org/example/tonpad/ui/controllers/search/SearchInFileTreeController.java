@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers;
+package org.example.tonpad.ui.controllers.search;
 
 import javafx.animation.PauseTransition;
 import javafx.fxml.FXML;
@@ -10,7 +10,7 @@ import lombok.Getter;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.ui.controllers.AbstractController;
-import org.example.tonpad.ui.controllers.FileTreeController;
+import org.example.tonpad.ui.controllers.file.FileTreeController;
 import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.springframework.stereotype.Component;
 
@@ -69,10 +69,6 @@ public class SearchInFileTreeController extends AbstractController {
         fileTreeController.setHitsMap(new HashMap<>());
         fileTreeController.refreshTree();
         setQuery("");
-    }
-
-    public void activateSearchBar() {
-        showSearchBar();
     }
 
     public void runSearch() {

@@ -11,7 +11,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox fx:id="mainVBox" prefHeight="600.0" prefWidth="900.0" styleClass="main-body" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.MainController">
+<VBox fx:id="mainVBox" prefHeight="600.0" prefWidth="900.0" styleClass="main-body" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.core.MainController">
    <children>
       <HBox fx:id="mainHBox" prefHeight="600.0" prefWidth="900.0" VBox.vgrow="ALWAYS">
          <children>
