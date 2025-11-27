@@ -233,15 +233,15 @@ export class Editor {
 
         const validateFieldName = (fieldName) => {
             if (!fieldName.trim()) {
-                return 'Имя поля не может быть пустым';
+                return 'Field name cannot be empty';
             }
 
             if (this.frontMatter[fieldName]) {
-                return 'Поле с таким именем уже существует';
+                return 'Field with this name already exists';
             }
 
             if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName)) {
-                return 'Имя поля может содержать только буквы, цифры и подчеркивания, и должно начинаться с буквы или подчеркивания';
+                return 'Field name may contain only letters, numbers and underscores, and must start with a letter or underline';
             }
 
             return '';
@@ -249,7 +249,7 @@ export class Editor {
 
         const error = validateFieldName(newKey);
         if (error) {
-            this.showErrorDialog('Ошибка', error);
+            this.showErrorDialog('Error', error);
             row.querySelector('input[type="text"]').value = oldKey;
             return;
         }
@@ -312,7 +312,7 @@ export class Editor {
 
     deleteFrontMatterField(key) {
         this.showConfirmDialog(
-            `Удалить поле "${key}"?`,
+            `Remove field "${key}"?`,
             () => {
                 const oldValue = this.frontMatter[key];
                 delete this.frontMatter[key];
@@ -340,8 +340,8 @@ export class Editor {
         dialog.innerHTML = `
         <div class="frontmatter-confirm-message">${message}</div>
         <div class="frontmatter-confirm-buttons">
-            <button class="frontmatter-confirm-btn cancel">Отмена</button>
-            <button class="frontmatter-confirm-btn delete">Удалить</button>
+            <button class="frontmatter-confirm-btn cancel">Cancel</button>
+            <button class="frontmatter-confirm-btn delete">Remove</button>
         </div>
     `;
 
@@ -390,21 +390,21 @@ export class Editor {
         dialog.className = 'frontmatter-add-dialog';
 
         dialog.innerHTML = `
-        <h3 class="frontmatter-add-title">Добавить новое поле</h3>
+        <h3 class="frontmatter-add-title">Add new field</h3>
         <div class="frontmatter-add-form">
             <div class="frontmatter-add-field">
-                <label class="frontmatter-add-label">Имя поля:</label>
-                <input type="text" class="frontmatter-add-input" placeholder="Введите имя поля">
+                <label class="frontmatter-add-label">Field name:</label>
+                <input type="text" class="frontmatter-add-input" placeholder="Enter the field name">
                 <div class="frontmatter-add-error"></div>
             </div>
             <div class="frontmatter-add-field">
-                <label class="frontmatter-add-label">Значение:</label>
-                <input type="text" class="frontmatter-add-input" placeholder="Введите значение">
+                <label class="frontmatter-add-label">Value:</label>
+                <input type="text" class="frontmatter-add-input" placeholder="Enter the value">
                 <div class="frontmatter-add-error"></div>
             </div>
             <div class="frontmatter-add-buttons">
-                <button class="frontmatter-add-btn cancel">Отмена</button>
-                <button class="frontmatter-add-btn primary" disabled>Добавить</button>
+                <button class="frontmatter-add-btn cancel">Cancel</button>
+                <button class="frontmatter-add-btn primary" disabled>Add</button>
             </div>
         </div>
     `;
@@ -420,25 +420,25 @@ export class Editor {
 
         const validateFieldName = (fieldName) => {
             if (!fieldName.trim()) {
-                return 'Имя поля не может быть пустым';
+                return 'Field name cannot be empty';
             }
 
             if (this.frontMatter[fieldName]) {
-                return 'Поле с таким именем уже существует';
+                return 'Field with this name already exists';
             }
 
             const invalidChars = /[:{}\[\]]/;
             if (invalidChars.test(fieldName)) {
-                return 'Имя поля не может содержать символы : { } [ ]';
+                return 'Field name cannot contain characters : { } [ ]';
             }
 
             if (fieldName !== fieldName.trim()) {
-                return 'Имя поля не должно начинаться или заканчиваться пробелами';
+                return 'Field name must not begin or end with spaces';
             }
 
             const mayNeedQuotes = /[#&*!|>'"%@`-]|\s/;
             if (mayNeedQuotes.test(fieldName)) {
-                return 'Имя поля содержит символы, которые могут требовать кавычек в YAML. Это допустимо, но может усложнить чтение.';
+                return 'The field name contains characters that may require quotes in YAML. This is acceptable, but can make reading difficult.';
             }
 
             return '';

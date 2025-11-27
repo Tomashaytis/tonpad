@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import org.example.tonpad.core.exceptions.TonpadBaseException;
 import org.example.tonpad.core.files.Buffer;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.FileTree;
@@ -640,17 +641,19 @@ public class FileTreeController extends AbstractController {
             String oldName = getItem();
             if (newName == null) newName = "";
             newName = newName.trim();
-            if (newName.isEmpty() || newName.equals(oldName)) { cancelEdit(); return; }
+            if (newName.isEmpty() || newName.equals(oldName)) {
+                cancelEdit();
+                return;
+            }
 
             var ti = getTreeItem();
-            if (ti == null || ti.getParent() == null) { cancelEdit(); return; }
-
-            boolean ok = tryRename(ti, newName);
-            if (ok) {
-                commitEdit(newName);
-            } else {
+            if (ti == null || ti.getParent() == null) {
                 cancelEdit();
+                return;
             }
+
+            tryRename(ti, newName);
+            commitEdit(newName);
         }
     }
 
@@ -665,31 +668,19 @@ public class FileTreeController extends AbstractController {
         return new NameParts(fileName, "");
     }
 
-    private boolean tryRename(TreeItem<String> ti, String newName) {
-        try {
-            Path oldAbs = getFullPath(ti);
-            Path parent  = oldAbs.getParent();
-            if (parent == null) return false;
-
-            Path newAbs = parent.resolve(newName);
-
-            fileSystemService.rename(oldAbs.toString(), newAbs.toString());
-
-            refreshTree();
-            selectItem(newAbs, false);
-            return true;
-        } catch (Exception ex) {
-            showError("Rename error", String.valueOf(ex.getMessage()));
-            return false;
+    private void tryRename(TreeItem<String> ti, String newName) {
+        Path oldAbs = getFullPath(ti);
+        Path parent  = oldAbs.getParent();
+        if (parent == null) {
+            throw new TonpadBaseException("Cannot rename, because parent is null");
         }
-    }
 
-    private void showError(String header, String msg) {
-        var alert = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
-        var owner = fileTreeVBox.getScene() != null ? fileTreeVBox.getScene().getWindow() : null;
-        if (owner != null) alert.initOwner(owner);
-        alert.setHeaderText(header);
-        alert.showAndWait();
+        Path newAbs = parent.resolve(newName);
+
+        fileSystemService.rename(oldAbs.toString(), newAbs.toString());
+
+        refreshTree();
+        selectItem(newAbs, false);
     }
 
     private static String norm(String s) {
