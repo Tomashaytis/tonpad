@@ -1,5 +1,17 @@
 /* entity-icons.css - иконки для сущностей, светлая тема */
 
+.note-colored-icon {
+    -fx-image: url(/ui/icons/common/note-colored.png);
+}
+
+.file-colored-icon {
+    -fx-image: url(/ui/icons/common/file-colored.png);
+}
+
+.folder-colored-icon {
+    -fx-image: url(/ui/icons/common/folder-colored.png);
+}
+
 .file-icon {
     -fx-image: url(/ui/icons/light/file.png);
 }
@@ -13,5 +25,5 @@
 }
 
 .collection-icon {
-    -fx-image: url(/ui/icons/light/folder.png);
+    -fx-image: url(/ui/icons/light/collection.png);
 }

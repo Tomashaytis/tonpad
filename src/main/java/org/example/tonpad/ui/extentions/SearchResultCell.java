@@ -1,8 +1,10 @@
 package org.example.tonpad.ui.extentions;
 
+import javafx.scene.image.ImageView;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.scene.control.TreeCell;
+import javafx.scene.layout.HBox;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,9 +12,12 @@ import java.util.List;
 public class SearchResultCell extends TreeCell<String> {
 
     private final String currentQuery;
+    private final ImageView iconView = new ImageView();
 
     public SearchResultCell(String currentQuery) {
         this.currentQuery = currentQuery;
+        iconView.setFitWidth(16);
+        iconView.setFitHeight(16);
     }
 
     @Override
@@ -25,13 +30,34 @@ public class SearchResultCell extends TreeCell<String> {
             return;
         }
 
+        iconView.getStyleClass().remove("note-colored-icon");
+
         List<TextRange> matches = findMatches(item, currentQuery);
+
+        boolean showIcon = !getTreeItem().isLeaf();
+        if (showIcon) {
+            iconView.getStyleClass().add("note-colored-icon");
+        }
+
         if (matches.isEmpty()) {
-            setGraphic(null);
-            setText(item);
+            if (showIcon) {
+                HBox container = new HBox(5);
+                container.getChildren().addAll(iconView, new Text(item));
+                setGraphic(container);
+                setText(null);
+            } else {
+                setGraphic(null);
+                setText(item);
+            }
         } else {
             setText(null);
-            setGraphic(buildHighlightedName(item, matches));
+            if (showIcon) {
+                HBox container = new HBox(5);
+                container.getChildren().addAll(iconView, buildHighlightedName(item, matches));
+                setGraphic(container);
+            } else {
+                setGraphic(buildHighlightedName(item, matches));
+            }
         }
     }
 
@@ -40,10 +66,11 @@ public class SearchResultCell extends TreeCell<String> {
         if (query == null || query.isEmpty()) return matches;
 
         String lowerText = text.toLowerCase();
+        String lowerQuery = query.toLowerCase();
         int index = 0;
-        while ((index = lowerText.indexOf(query, index)) != -1) {
-            matches.add(new TextRange(index, index + query.length()));
-            index += query.length();
+        while ((index = lowerText.indexOf(lowerQuery, index)) != -1) {
+            matches.add(new TextRange(index, index + lowerQuery.length()));
+            index += lowerQuery.length();
         }
         return matches;
     }

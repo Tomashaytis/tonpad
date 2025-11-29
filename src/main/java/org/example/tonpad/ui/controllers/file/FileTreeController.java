@@ -10,6 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
@@ -641,9 +642,12 @@ public class FileTreeController extends AbstractController {
     private final class EditableFileCell extends TreeCell<String> {
 
         private TextField editor;
+        private final ImageView iconView = new ImageView();
 
         public EditableFileCell() {
             setEditable(true);
+            iconView.setFitWidth(16);
+            iconView.setFitHeight(16);
         }
 
         @Override
@@ -661,6 +665,8 @@ public class FileTreeController extends AbstractController {
                 return;
             }
 
+            determineIcon(getTreeItem());
+
             if (isEditing()) {
                 if (editor == null) editor = createEditor();
                 editor.setText(item);
@@ -670,13 +676,33 @@ public class FileTreeController extends AbstractController {
                 String rel = norm(getRelativePath(getTreeItem()));
                 var ranges = (hitsMap != null) ? hitsMap.get(rel) : null;
                 if (ranges == null || ranges.isEmpty()) {
-                    setGraphic(null);
                     setText(item);
+                    setGraphic(iconView);
                     pseudoClassStateChanged(MATCHED, false);
                 } else {
                     setText(null);
-                    setGraphic(buildHighlightedName(item, ranges));
+                    var highlightedText = buildHighlightedName(item, ranges);
+                    HBox container = new HBox(5);
+                    container.getChildren().addAll(iconView, highlightedText);
+                    setGraphic(container);
                     pseudoClassStateChanged(MATCHED, true);
+                }
+            }
+        }
+
+        private void determineIcon(TreeItem<String> treeItem) {
+            if (treeItem == null) return;
+
+            iconView.getStyleClass().removeAll("note-colored-icon", "file-colored-icon", "folder-colored-icon");
+
+            if (!treeItem.isLeaf()) {
+                iconView.getStyleClass().add("folder-colored-icon");
+            } else {
+                Path filePath = getFullPath(treeItem);
+                if (fileSystemService.isMarkdownFile(filePath)) {
+                    iconView.getStyleClass().add("note-colored-icon");
+                } else {
+                    iconView.getStyleClass().add("file-colored-icon");
                 }
             }
         }
@@ -699,13 +725,15 @@ public class FileTreeController extends AbstractController {
         public void cancelEdit() {
             super.cancelEdit();
             setText(getItem());
-            setGraphic(null);
+            determineIcon(getTreeItem());
+            setGraphic(iconView);
         }
 
         @Override
         public void commitEdit(String newValue) {
             super.commitEdit(newValue);
-            setGraphic(null);
+            determineIcon(getTreeItem());
+            setGraphic(iconView);
             setText(newValue);
         }
 
