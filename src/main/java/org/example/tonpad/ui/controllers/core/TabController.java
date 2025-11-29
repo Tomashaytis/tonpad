@@ -217,7 +217,10 @@ public class TabController {
 
     private void tabClose(Tab tab) {
         editorMap.remove(tab);
-        pathMap.remove(tab);
+        Path path = inversePathMap.get(tab);
+        inversePathMap.remove(tab);
+        pathMap.remove(path);
+
         if (tab.getTabPane() != null) {
             tab.getTabPane().getTabs().remove(tab);
         }
