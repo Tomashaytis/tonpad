@@ -7,7 +7,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.*?>
 
-<VBox fx:id="fileTreeVBox" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="184.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.tree.FileTreeController">
+<VBox fx:id="fileTreeVBox" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="184.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.tree.SnippetTreeController">
 
    <fx:define>
       <ToggleGroup fx:id="sortToggleGroup"/>
@@ -35,7 +35,7 @@
    <children>
       <HBox fx:id="fileTreeToolsHBox" prefHeight="40.0" prefWidth="184.0" spacing="5.0" styleClass="file-tools-panel">
          <children>
-            <Button fx:id="addNoteButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="N" textAlignment="CENTER">
+            <Button fx:id="addSnippetButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="N" textAlignment="CENTER">
                <padding>
                   <Insets right="3.0" />
                </padding>
@@ -51,7 +51,7 @@
                   </Tooltip>
                </tooltip>
                <graphic>
-                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="file-add-icon" />
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="snippet-add-icon" />
                </graphic>
             </Button>
             <Button fx:id="addDirectoryButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="D" textAlignment="CENTER">
@@ -86,7 +86,7 @@
                   <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="refresh-icon" />
                </graphic>
             </Button>
-            <Button fx:id="sortFilesButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
+            <Button fx:id="sortSnippetsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
                <padding>
                   <Insets right="3.0" />
                </padding>
@@ -102,7 +102,7 @@
                   <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="sort-up-icon" />
                </graphic>
             </Button>
-            <Button fx:id="expandFilesButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="E" textAlignment="CENTER">
+            <Button fx:id="expandSnippetsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="E" textAlignment="CENTER">
                <padding>
                   <Insets right="3.0" />
                </padding>
@@ -139,6 +139,6 @@
             <Insets bottom="5.0" top="5.0" />
          </padding>
       </HBox>
-      <TreeView fx:id="fileTreeView" prefHeight="363.0" prefWidth="184.0" styleClass="file-tree-view" VBox.vgrow="ALWAYS" />
+      <TreeView fx:id="snippetTreeView" prefHeight="363.0" prefWidth="184.0" styleClass="file-tree-view" VBox.vgrow="ALWAYS" />
    </children>
 </VBox>

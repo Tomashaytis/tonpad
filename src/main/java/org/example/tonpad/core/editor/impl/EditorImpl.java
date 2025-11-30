@@ -9,6 +9,7 @@ import netscape.javascript.JSObject;
 import org.example.tonpad.core.editor.Editor;
 import org.example.tonpad.core.editor.dto.SearchResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.tonpad.core.editor.enums.EditorMode;
 import org.example.tonpad.core.editor.event.FrontMatterChangeEvent;
 import org.example.tonpad.core.editor.listener.FrontMatterChangeListener;
 import org.yaml.snakeyaml.Yaml;
@@ -33,8 +34,16 @@ public class EditorImpl implements Editor {
 
     private final Yaml yaml = new Yaml();
 
-    public EditorImpl(WebEngine webEngine, boolean enableDebugAlerts) {
+    public EditorImpl(WebEngine webEngine, EditorMode mode, boolean enableDebugAlerts) {
         this.webEngine = webEngine;
+
+        if (mode == EditorMode.NOTE) {
+            executeJs("createEditor('note');");
+        } else if (mode == EditorMode.SNIPPET) {
+            executeJs("createEditor('snippet');");
+        } else {
+            executeJs("createEditor('template');");
+        }
 
         this.webEngine.getLoadWorker().stateProperty().addListener((obs, old, newState) -> {
             if (newState == Worker.State.SUCCEEDED) {

@@ -16,12 +16,14 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import lombok.RequiredArgsConstructor;
+import org.example.tonpad.core.editor.enums.EditorMode;
 import org.example.tonpad.ui.controllers.*;
-import org.example.tonpad.ui.controllers.file.FileTreeController;
+import org.example.tonpad.ui.controllers.tree.FileTreeController;
 import org.example.tonpad.ui.controllers.search.SearchInFileTreeController;
 import org.example.tonpad.ui.controllers.search.SearchInFilesController;
 import org.example.tonpad.ui.controllers.search.SearchInTextController;
 import org.example.tonpad.ui.controllers.settings.SettingsController;
+import org.example.tonpad.ui.controllers.tree.SnippetTreeController;
 import org.example.tonpad.ui.service.ThemeService;
 import org.springframework.stereotype.Component;
 
@@ -51,7 +53,7 @@ public class MainController extends AbstractController {
     private AnchorPane searchInFilesPane;
 
     @FXML
-    private AnchorPane bookmarksPane;
+    private AnchorPane snippetsPane;
 
     @FXML
     private AnchorPane searchInTextPane;
@@ -66,7 +68,7 @@ public class MainController extends AbstractController {
     private Button showSearchButton;
 
     @FXML
-    private Button showBookmarksButton;
+    private Button showSnippetsButton;
 
     @FXML
     private Button showSettingsButton;
@@ -81,11 +83,13 @@ public class MainController extends AbstractController {
 
     private final TabController tabController;
 
+    private final FileTreeController fileTreeController;
+
+    private final SnippetTreeController snippetTreeController;
+
     private final SearchInTextController searchInTextController;
 
     private final SearchInFilesController searchInFilesController;
-
-    private final FileTreeController fileTreeController;
 
     private final SearchInFileTreeController searchInFileTreeController;
 
@@ -106,10 +110,11 @@ public class MainController extends AbstractController {
     private void setupControllers() {
         fileTreeController.init(fileTreePane);
         searchInFilesController.init(searchInFilesPane);
+        snippetTreeController.init(snippetsPane);
 
         tabController.setTabPane(tabPane);
         try {
-            tabController.init(Objects.requireNonNull(getClass().getResource("/Welcome.md")).toURI());
+            tabController.init(Objects.requireNonNull(getClass().getResource("/Welcome.md")).toURI(), EditorMode.NOTE);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -124,10 +129,16 @@ public class MainController extends AbstractController {
     }
 
     private void setupEventHandlers() {
-        fileTreeController.setNoteOpenHandler(this::openNoteInEditor);
-        fileTreeController.setNoteCloseHandler(this::closeNoteInEditor);
-        fileTreeController.setNoteRenameHandler(this::renameNoteInEditor);
-        searchInFilesController.setFileOpenHandler(this::openNoteInEditor);
+        fileTreeController.setNoteOpenHandler(this::openInEditor);
+        fileTreeController.setNoteCloseHandler(this::closeInEditor);
+        fileTreeController.setNoteRenameHandler(this::renameInEditor);
+
+        snippetTreeController.setSnippetOpenHandler(this::openInEditor);
+        snippetTreeController.setSnippetCloseHandler(this::closeInEditor);
+        snippetTreeController.setSnippetRenameHandler(this::renameInEditor);
+        snippetTreeController.setSnippetInsertHandler(this::insertSnippetInEditor);
+
+        searchInFilesController.setFileOpenHandler(this::openInEditor);
 
         showFilesButton.setOnAction(event -> togglePane(
                 leftStackPane, fileTreePane, showFilesButton, () -> {}, () -> {}
@@ -135,6 +146,10 @@ public class MainController extends AbstractController {
 
         showSearchButton.setOnAction(event -> togglePane(
                 leftStackPane, searchInFilesPane, showSearchButton, () -> {}, () -> {}
+        ));
+
+        showSnippetsButton.setOnAction(event -> togglePane(
+                leftStackPane, snippetsPane, showSnippetsButton, () -> {}, () -> {}
         ));
 
         setSearchShortCut(
@@ -174,7 +189,7 @@ public class MainController extends AbstractController {
             showFilesButton.getStyleClass().remove("toggled-icon-button");
         }
         if (searchInFilesPane.isVisible()) searchInFilesPane.setVisible(false);
-        if (bookmarksPane.isVisible()) bookmarksPane.setVisible(false);
+        if (snippetsPane.isVisible()) snippetsPane.setVisible(false);
         settingsController.hide();
     }
 
@@ -284,16 +299,20 @@ public class MainController extends AbstractController {
         }
     }
 
-    private void openNoteInEditor(Path path, boolean openInCurrent) {
-        tabController.openFileInTab(path, openInCurrent);
+    private void openInEditor(Path path, boolean openInCurrent, EditorMode editorMode) {
+        tabController.openFileInTab(path, openInCurrent, editorMode);
     }
 
-    private void renameNoteInEditor(Path oldPath, Path newPath) {
+    private void renameInEditor(Path oldPath, Path newPath) {
         tabController.renameTab(oldPath, newPath);
     }
 
-    private void closeNoteInEditor(Path path) {
-        tabController.clearTab(path);
+    private void closeInEditor(Path path) {
+        tabController.closeTab(path);
+    }
+
+    private void insertSnippetInEditor(Path path) {
+        tabController.insertSnippet(path);
     }
 
     private void setupGlobalClickHandler() {
@@ -314,7 +333,7 @@ public class MainController extends AbstractController {
     private void resetLeftToolButtons() {
         showFilesButton.getStyleClass().remove("toggled-icon-button");
         showSearchButton.getStyleClass().remove("toggled-icon-button");
-        showBookmarksButton.getStyleClass().remove("toggled-icon-button");
+        showSnippetsButton.getStyleClass().remove("toggled-icon-button");
     }
 
     @Override

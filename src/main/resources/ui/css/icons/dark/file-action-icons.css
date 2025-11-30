@@ -27,3 +27,7 @@
 .move-file-icon {
     -fx-image: url(/ui/icons/dark/move-file.png);
 }
+
+.snippet-insert-icon {
+    -fx-image: url(/ui/icons/dark/snippet-insert.png);
+}

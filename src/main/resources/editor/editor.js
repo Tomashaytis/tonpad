@@ -13799,7 +13799,7 @@
               group: "block",
               defining: true,
               parseDOM: [{ tag: "li" }],
-              toDOM(node) { 
+              toDOM(node) {
                   const tag = node.attrs.renderAs === "span" ? "span" : "li";
                   const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
@@ -13818,7 +13818,7 @@
               group: "block",
               defining: true,
               parseDOM: [{ tag: "li" }],
-              toDOM(node) { 
+              toDOM(node) {
                   const tag = node.attrs.renderAs === "span" ? "span" : "li";
                   const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
@@ -13837,7 +13837,7 @@
               group: "block",
               defining: true,
               parseDOM: [{ tag: "li" }],
-              toDOM(node) { 
+              toDOM(node) {
                   const tag = node.attrs.renderAs === "span" ? "span" : "li";
                   const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
@@ -13959,6 +13959,15 @@
               ],
               toDOM() { return ["em"]; },
           },
+          italic: {
+              parseDOM: [
+                  { tag: "i" },
+                  { tag: "em" },
+                  { style: "font-style=italic" },
+                  { style: "font-style=normal", clearMark: (m) => m.type.name === "em" },
+              ],
+              toDOM() { return ["em"]; },
+          },
           strong: {
               parseDOM: [
                   { tag: "strong" },
@@ -14025,6 +14034,36 @@
               code: true,
               parseDOM: [{ tag: "code" }],
               toDOM() { return ["code"]; },
+          },
+          comment: {
+              code: true,
+              parseDOM: [{ tag: "span.comment" }],
+              toDOM() { return ["span", { class: "comment" }]; }
+          },
+          math: {
+              code: true,
+              parseDOM: [{ tag: "span.math" }],
+              toDOM() { return ["span", { class: "math" }]; }
+          },
+          math_word: {
+              code: true,
+              parseDOM: [{ tag: "span.math-word" }],
+              toDOM() { return ["span", { class: "math-word" }]; }
+          },
+          math_number: {
+              code: true,
+              parseDOM: [{ tag: "span.math-number" }],
+              toDOM() { return ["span", { class: "math-number" }]; }
+          },
+          math_bracket: {
+              code: true,
+              parseDOM: [{ tag: "span.math-bracket" }],
+              toDOM() { return ["span", { class: "math-bracket" }]; }
+          },
+          math_operand: {
+              code: true,
+              parseDOM: [{ tag: "span.math-operand" }],
+              toDOM() { return ["span", { class: "math-operand" }]; }
           },
       }
   });
@@ -14200,28 +14239,163 @@
           );
       }
 
-      static constructEm(text) {
-          return Fragment.from(this.createWrappedMark(["*", "*"], text, markdownSchema.marks.em));
+      static constructEm(content) {
+          if (content instanceof Fragment) {
+              return this.createWrappedMarkFragment(["*", "*"], content, markdownSchema.marks.em);
+          }
+          return Fragment.from(this.createWrappedMark(["*", "*"], content, markdownSchema.marks.em));
       }
 
-      static constructStrong(text) {
-          return Fragment.from(this.createWrappedMark(["**", "**"], text, markdownSchema.marks.strong));
+      static constructItalic(content) {
+          if (content instanceof Fragment) {
+              return this.createWrappedMarkFragment(["_", "_"], content, markdownSchema.marks.italic);
+          }
+          return Fragment.from(this.createWrappedMark(["_", "_"], content, markdownSchema.marks.italic));
       }
 
-      static constructStrike(text) {
-          return Fragment.from(this.createWrappedMark(["~~", "~~"], text, markdownSchema.marks.strike));
+      static constructStrong(content) {
+          if (content instanceof Fragment) {
+              return this.createWrappedMarkFragment(["**", "**"], content, markdownSchema.marks.strong);
+          }
+          return Fragment.from(this.createWrappedMark(["**", "**"], content, markdownSchema.marks.strong));
       }
 
-      static constructHighlight(text) {
-          return Fragment.from(this.createWrappedMark(["==", "=="], text, markdownSchema.marks.highlight));
+      static constructStrike(content) {
+          if (content instanceof Fragment) {
+              return this.createWrappedMarkFragment(["~~", "~~"], content, markdownSchema.marks.strike);
+          }
+          return Fragment.from(this.createWrappedMark(["~~", "~~"], content, markdownSchema.marks.strike));
       }
 
-      static constructUnderline(text) {
-          return Fragment.from(this.createWrappedMark(["__", "__"], text, markdownSchema.marks.underline));
+      static constructHighlight(content) {
+          if (content instanceof Fragment) {
+              return this.createWrappedMarkFragment(["==", "=="], content, markdownSchema.marks.highlight);
+          }
+          return Fragment.from(this.createWrappedMark(["==", "=="], content, markdownSchema.marks.highlight));
+      }
+
+      static constructUnderline(content) {
+          if (content instanceof Fragment) {
+              return this.createWrappedMarkFragment(["__", "__"], content, markdownSchema.marks.underline);
+          }
+          return Fragment.from(this.createWrappedMark(["__", "__"], content, markdownSchema.marks.underline));
       }
 
       static constructCode(text) {
           return Fragment.from(this.createWrappedMark(["`", "`"], text, markdownSchema.marks.code, 'code-mark-spec-left', 'code-mark-spec-right'));
+      }
+
+      static constructComment(text) {
+          return Fragment.from(this.createWrappedMark(["%%", "%%"], text, markdownSchema.marks.comment, 'comment', 'comment'));
+      }
+
+      static constructMath(text) {
+          const processedText = this.replaceMathSymbols(text);
+
+          const components = this.parseMathComponents(processedText);
+
+          return Fragment.from(this.createWrappedMark(
+              ["$", "$"],
+              components,
+              markdownSchema.marks.math,
+              'math-delimiter',
+              'math-delimiter'
+          ));
+      }
+
+      static replaceMathSymbols(text) {
+          let processed = text.replace(/-/g, '−');
+          return processed;
+      }
+
+      static parseMathComponents(text) {
+          const nodes = [];
+          let currentIndex = 0;
+
+          const numberRegex = /^-?\d*\.?\d+(?:[eE][-+]?\d+)?/;
+          const wordRegex = /^[a-zA-Zα-ωΑ-Ω]+/;
+          const bracketRegex = /^[{}()\[\]]/;
+          const operandRegex = /^[_^\.]/;
+
+          while (currentIndex < text.length) {
+              let match;
+
+              if (text[currentIndex] === ' ') {
+                  nodes.push(markdownSchema.text(' '));
+                  currentIndex++;
+                  continue;
+              }
+
+              match = text.slice(currentIndex).match(bracketRegex);
+              if (match) {
+                  nodes.push(markdownSchema.text(match[0], [
+                      markdownSchema.marks.math_bracket.create()
+                  ]));
+                  currentIndex += match[0].length;
+                  continue;
+              }
+
+              match = text.slice(currentIndex).match(numberRegex);
+              if (match) {
+                  nodes.push(markdownSchema.text(match[0], [
+                      markdownSchema.marks.math_number.create()
+                  ]));
+                  currentIndex += match[0].length;
+                  continue;
+              }
+
+              match = text.slice(currentIndex).match(wordRegex);
+              if (match) {
+                  nodes.push(markdownSchema.text(match[0], [
+                      markdownSchema.marks.math_word.create()
+                  ]));
+                  currentIndex += match[0].length;
+                  continue;
+              }
+
+              match = text.slice(currentIndex).match(operandRegex);
+              if (match) {
+                  nodes.push(markdownSchema.text(match[0], [
+                      markdownSchema.marks.math_operand.create()
+                  ]));
+                  currentIndex += match[0].length;
+                  continue;
+              }
+
+              nodes.push(markdownSchema.text(text[currentIndex], [
+                      markdownSchema.marks.math.create()
+                  ]));
+              currentIndex++;
+          }
+
+          return nodes;
+      }
+
+      static createWrappedMarkFragment(delimiters, content, mark, leftMarkClass = 'mark-spec', rightMarkClass = 'mark-spec') {
+          const nodes = [
+              markdownSchema.text(delimiters[0], [markdownSchema.marks.spec.create({
+                  specClass: leftMarkClass
+              })])
+          ];
+
+          if (content instanceof Fragment) {
+              content.forEach(node => {
+                  if (node.isText) {
+                      const newMarks = [...node.marks, mark.create()];
+                      nodes.push(markdownSchema.text(node.text, newMarks));
+                  } else {
+                      nodes.push(node);
+                  }
+              });
+          } else if (typeof content === 'string' && content !== "") {
+              nodes.push(markdownSchema.text(content, [mark.create()]));
+          }
+
+          nodes.push(markdownSchema.text(delimiters[1], [markdownSchema.marks.spec.create({
+              specClass: rightMarkClass
+          })]));
+
+          return Fragment.from(nodes);
       }
 
       static constructUrl(url) {
@@ -14347,7 +14521,9 @@
               })])
           ];
 
-          if (text && text !== "") {
+          if (Array.isArray(text)) {
+              nodes.push(...text);
+          } else if (text && text !== "") {
               nodes.push(markdownSchema.text(text, [mark.create()]));
           }
 
@@ -14490,11 +14666,6 @@
                   handler: this.wrapWithMark.bind(this, 'em')
               },
               {
-                  name: 'code',
-                  pattern: /`(.*?)`/g,
-                  handler: this.wrapWithMark.bind(this, 'code')
-              },
-              {
                   name: 'strike',
                   pattern: /~~(.*?)~~/g,
                   handler: this.wrapWithMark.bind(this, 'strike')
@@ -14510,13 +14681,33 @@
                   handler: this.wrapWithMark.bind(this, 'underline')
               },
               {
+                  name: 'italic',
+                  pattern: /(?<!_)_(.*?)_(?!_)/g,
+                  handler: this.wrapWithMark.bind(this, 'italic')
+              },
+              {
+                  name: 'code',
+                  pattern: /`(.*?)`/g,
+                  handler: this.wrapWithMark.bind(this, 'code')
+              },
+              {
+                  name: 'comment',
+                  pattern: /%%(.*?)%%/g,
+                  handler: this.wrapWithMark.bind(this, 'comment')
+              },
+              {
+                  name: 'math',
+                  pattern: /\$(.*?)\$/g,
+                  handler: this.wrapWithMark.bind(this, 'math')
+              },
+              {
                   name: 'note_link',
                   pattern: /\[(.*?)\](?!\()/g,
                   handler: this.wrapWithMark.bind(this, 'note_link')
               },
               {
                   name: 'link',
-                  pattern: /\[(.*)\]\((.*)\)/g,
+                  pattern: /\[(.*?)\]\((.*?)\)/g,
                   handler: this.wrapWithMark.bind(this, 'link')
               },
               {
@@ -14535,6 +14726,8 @@
                   handler: this.wrapWithMark.bind(this, 'tag')
               },
           ];
+
+          this.nestingMarks = new Set(['strong', 'em', 'italic', 'strike', 'highlight', 'underline']);
       }
 
       reconstructMarksInNode(node) {
@@ -14676,32 +14869,62 @@
       }
 
       wrapWithMark(markName, text, href = "") {
-          switch (markName) {
-              case 'strong':
-                  return NodeConverter.constructStrong(text);
-              case 'em':
-                  return NodeConverter.constructEm(text);
-              case 'code':
-                  return NodeConverter.constructCode(text);
-              case 'strike':
-                  return NodeConverter.constructStrike(text);
-              case 'highlight':
-                  return NodeConverter.constructHighlight(text);
-              case 'underline':
-                  return NodeConverter.constructUnderline(text);
-              case 'link':
-                  return NodeConverter.constructLink(text, href);
-              case 'note_link':
-                  return NodeConverter.constructNoteLink(text, href);
-              case 'url':
-                  return NodeConverter.constructUrl(text);
-              case 'email':
-                  return NodeConverter.constructEmail(text);
-              case 'tag':
-                  return NodeConverter.constructTag(text);
-              default:
-                  return [markdownSchema.text(text)];
+          if (this.nestingMarks.has(markName)) {
+              const processedContent = this.processNestedMarks(text);
+              
+              switch (markName) {
+                  case 'strong':
+                      return NodeConverter.constructStrong(processedContent);
+                  case 'em':
+                      return NodeConverter.constructEm(processedContent);
+                  case 'italic':
+                      return NodeConverter.constructItalic(processedContent);
+                  case 'strike':
+                      return NodeConverter.constructStrike(processedContent);
+                  case 'highlight':
+                      return NodeConverter.constructHighlight(processedContent);
+                  case 'underline':
+                      return NodeConverter.constructUnderline(processedContent);
+                  default:
+                      return [markdownSchema.text(text)];
+              }
+          } else {
+              switch (markName) {
+                  case 'code':
+                      return NodeConverter.constructCode(text);
+                  case 'comment':
+                      return NodeConverter.constructComment(text);
+                  case 'math':
+                      return NodeConverter.constructMath(text);
+                  case 'link':
+                      return NodeConverter.constructLink(text, href);
+                  case 'note_link':
+                      return NodeConverter.constructNoteLink(text, href);
+                  case 'url':
+                      return NodeConverter.constructUrl(text);
+                  case 'email':
+                      return NodeConverter.constructEmail(text);
+                  case 'tag':
+                      return NodeConverter.constructTag(text);
+                  default:
+                      return [markdownSchema.text(text)];
+              }
           }
+      }
+
+      processNestedMarks(text) {
+          if (!text) return Fragment.from([]);
+
+          const textNode = markdownSchema.text(text);
+          const tempParagraph = markdownSchema.nodes.paragraph.create({}, [textNode]);
+          
+          const reconstructed = this.reconstructMarks(tempParagraph);
+          
+          if (reconstructed) {
+              return Fragment.from(reconstructed.content);
+          }
+          
+          return Fragment.from([textNode]);
       }
 
       reconstructParagraph(match, originalParagraph, pos) {
@@ -14948,6 +15171,9 @@
               { pattern: /~~$/, leftDelimiter: "~~", rightDelimiter: "~~" },
               { pattern: /==$/, leftDelimiter: "==", rightDelimiter: "==" },
               { pattern: /__$/, leftDelimiter: "__", rightDelimiter: "__" },
+              { pattern: /%%$/, leftDelimiter: "%%", rightDelimiter: "%%" },
+              { pattern: /\$$/, leftDelimiter: "$", rightDelimiter: "$" },
+              { pattern: /_$/, leftDelimiter: "_", rightDelimiter: "_" },
               { pattern: /`$/, leftDelimiter: "`", rightDelimiter: "`" },
               { pattern: /\[$/, leftDelimiter: "[", rightDelimiter: "]" },
               { pattern: /\($/, leftDelimiter: "(", rightDelimiter: ")" },
@@ -14958,7 +15184,10 @@
 
           for (const rule of markRules) {
               if (rule.pattern.test(textBefore + text)) {
-                  if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && !textAfter.startsWith(' ')) {
+                  if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && (!textAfter.startsWith(' ') || !textAfter.startsWith('\t'))) {
+                      break;
+                  }
+                  if (["_"].includes(rule.leftDelimiter) && textBefore.length > 0 && (!textBefore.endsWith(' ') || !textBefore.endsWith('\t'))) {
                       break;
                   }
                   if (textAfter.startsWith(rule.rightDelimiter[0])) {
@@ -14968,6 +15197,12 @@
                       };
                   }
                   if (rule.leftDelimiter == "**" && rule.pattern.test(textBefore)) {
+                      return {
+                          text: rule.rightDelimiter,
+                          offset: -2
+                      };
+                  }
+                  if (rule.leftDelimiter == "__" && rule.pattern.test(textBefore)) {
                       return {
                           text: rule.rightDelimiter,
                           offset: -2
@@ -24219,6 +24454,12 @@
               mixable: true,
               expelEnclosingWhitespace: true
           },
+          italic: {
+              open: "",
+              close: "",
+              mixable: true,
+              expelEnclosingWhitespace: true
+          },
           strong: {
               open: "",
               close: "",
@@ -24230,12 +24471,6 @@
               close: "",
               mixable: true,
               expelEnclosingWhitespace: true
-          },
-          code: {
-              open: "",
-              close: "",
-              mixable: false,
-              expelEnclosingWhitespace: false
           },
           strike: {
               open: "",
@@ -24254,7 +24489,49 @@
               close: "",
               mixable: true,
               expelEnclosingWhitespace: true
-          }
+          },
+          code: {
+              open: "",
+              close: "",
+              mixable: false,
+              expelEnclosingWhitespace: false
+          },
+          comment: {
+              open: "",
+              close: "",
+              mixable: false,
+              expelEnclosingWhitespace: false
+          },
+          math: {
+              open: "",
+              close: "",
+              mixable: false,
+              expelEnclosingWhitespace: false
+          },
+          math_word: {
+              open: "",
+              close: "",
+              mixable: false,
+              expelEnclosingWhitespace: false
+          },
+          math_number: {
+              open: "",
+              close: "",
+              mixable: false,
+              expelEnclosingWhitespace: false
+          },
+          math_bracket: {
+              open: "",
+              close: "",
+              mixable: false,
+              expelEnclosingWhitespace: false
+          },
+          math_operand: {
+              open: "",
+              close: "",
+              mixable: false,
+              expelEnclosingWhitespace: false
+          },
       }
   );
 
@@ -29744,34 +30021,44 @@
   };
 
   class Editor {
-      constructor(target, content = '') {
+      constructor(target, mode = 'note', content = '') {
           if (!target) throw new Error('Target element required');
+
+          this.mode = mode;
 
           const docContent = this.parseDoc(content);
 
-          this.frontMatter = docContent.frontMatter;
+          if (this.mode == 'note' || this.mode == 'template') {
+              this.frontMatter = docContent.frontMatter;
 
-          const doc = this.createDocumentFromText(docContent.markdown);
+              this.frontMatterTable = document.getElementById('frontmatter-table');
+              this.frontMatterBody = document.getElementById('frontmatter-body');
+              this.updateFrontMatterTable();
+          }
 
-          this.frontMatterTable = document.getElementById('frontmatter-table');
-          this.frontMatterBody = document.getElementById('frontmatter-body');
-          this.updateFrontMatterTable();
+          if (this.mode == 'snippet') {
+              docContent.markdown = content;
+          }
 
-          this.view = new EditorView(target, {
-              state: EditorState.create({
-                  doc: doc,
-                  schema: markdownSchema,
-                  plugins: this.createPlugins()
-              }),
-              attributes: {
-                  class: "markdown-editor",
-                  spellcheck: "false",
-                  'data-gramm': "false",
-                  'data-gramm-editor': "false",
-              }
-          });
+          if (this.mode == 'note' || this.mode == 'snippet') {
+              const doc = this.createDocumentFromText(docContent.markdown);
 
-          this.rebuildTree();
+              this.view = new EditorView(target, {
+                  state: EditorState.create({
+                      doc: doc,
+                      schema: markdownSchema,
+                      plugins: this.createPlugins()
+                  }),
+                  attributes: {
+                      class: "markdown-editor",
+                      spellcheck: "false",
+                      'data-gramm': "false",
+                      'data-gramm-editor': "false",
+                  }
+              });
+
+              this.rebuildTree();
+          }
       }
 
       createDocumentFromText(content) {
@@ -30375,18 +30662,26 @@
 
       setNoteContent(content) {
           const docContent = this.parseDoc(content);
-          this.frontMatter = docContent.frontMatter;
-          this.updateFrontMatterTable();
+          if (this.mode == 'note' || this.mode == 'template') {
+              this.frontMatter = docContent.frontMatter;
+              this.updateFrontMatterTable();
+          }
 
-          const newDoc = this.createDocumentFromText(docContent.markdown);
-          const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
-          tr.setMeta('addToHistory', false);
+          if (this.mode == 'snippet') {
+              docContent.markdown = content;
+          }
 
-          this.view.dispatch(tr);
+          if (this.mode == 'note' || this.mode == 'snippet') {
+              const newDoc = this.createDocumentFromText(docContent.markdown);
+              const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
+              tr.setMeta('addToHistory', false);
 
-          this.rebuildTree();
+              this.view.dispatch(tr);
+
+              this.rebuildTree();
+          }
       }
-      
+
       setFrontMatter(yamlString) {
           this.frontMatter = this.parseYAML(yamlString);
           this.updateFrontMatterTable();
@@ -30521,6 +30816,18 @@
 
       destroy() {
           this.view.destroy();
+          
+          if (this.frontMatterTable) {
+              this.frontMatterTable.style.display = 'none';
+              if (this.frontMatterBody) {
+                  this.frontMatterBody.innerHTML = '';
+              }
+          }
+
+          // Очищаем ссылки
+          this.view = null;
+          this.frontMatter = null;
+          this.frontMatterTable = null;
       }
   }
 
@@ -30697,8 +31004,35 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
           }
       };
 
+      window.createEditor = function (mode = 'note') {
+          const container = document.getElementById('editor');
+          if (container) {
+              window.editor = new Editor(container, mode);
+
+              console.log('Editor created successfully');
+          }
+      };
+
+      window.deleteEditor = function () {
+          if (window.editor) {
+              if (typeof window.editor.destroy === 'function') {
+                  window.editor.destroy();
+              }
+
+              window.editor = null;
+
+              const container = document.getElementById('editor');
+              if (container) {
+                  container.innerHTML = '';
+              }
+
+              console.log('Editor deleted successfully');
+          }
+      };
+
   })();
 
+  /*
   document.addEventListener('DOMContentLoaded', () => {
       const container = document.getElementById('editor');
       if (container) {
@@ -30706,7 +31040,6 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
       }
   });
 
-  /*
   window.editor.setNoteContent(`---
   author: pavel
   time: 12:15

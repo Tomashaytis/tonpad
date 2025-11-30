@@ -114,6 +114,12 @@ export const markdownSerializer = new ExtendedMarkdownSerializer(
             mixable: true,
             expelEnclosingWhitespace: true
         },
+        italic: {
+            open: "",
+            close: "",
+            mixable: true,
+            expelEnclosingWhitespace: true
+        },
         strong: {
             open: "",
             close: "",
@@ -125,12 +131,6 @@ export const markdownSerializer = new ExtendedMarkdownSerializer(
             close: "",
             mixable: true,
             expelEnclosingWhitespace: true
-        },
-        code: {
-            open: "",
-            close: "",
-            mixable: false,
-            expelEnclosingWhitespace: false
         },
         strike: {
             open: "",
@@ -149,6 +149,48 @@ export const markdownSerializer = new ExtendedMarkdownSerializer(
             close: "",
             mixable: true,
             expelEnclosingWhitespace: true
-        }
+        },
+        code: {
+            open: "",
+            close: "",
+            mixable: false,
+            expelEnclosingWhitespace: false
+        },
+        comment: {
+            open: "",
+            close: "",
+            mixable: false,
+            expelEnclosingWhitespace: false
+        },
+        math: {
+            open: "",
+            close: "",
+            mixable: false,
+            expelEnclosingWhitespace: false
+        },
+        math_word: {
+            open: "",
+            close: "",
+            mixable: false,
+            expelEnclosingWhitespace: false
+        },
+        math_number: {
+            open: "",
+            close: "",
+            mixable: false,
+            expelEnclosingWhitespace: false
+        },
+        math_bracket: {
+            open: "",
+            close: "",
+            mixable: false,
+            expelEnclosingWhitespace: false
+        },
+        math_operand: {
+            open: "",
+            close: "",
+            mixable: false,
+            expelEnclosingWhitespace: false
+        },
     }
 );

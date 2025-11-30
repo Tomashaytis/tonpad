@@ -93,7 +93,7 @@ export const markdownSchema = new Schema({
             group: "block",
             defining: true,
             parseDOM: [{ tag: "li" }],
-            toDOM(node) { 
+            toDOM(node) {
                 const tag = node.attrs.renderAs === "span" ? "span" : "li";
                 const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
@@ -112,7 +112,7 @@ export const markdownSchema = new Schema({
             group: "block",
             defining: true,
             parseDOM: [{ tag: "li" }],
-            toDOM(node) { 
+            toDOM(node) {
                 const tag = node.attrs.renderAs === "span" ? "span" : "li";
                 const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
@@ -131,7 +131,7 @@ export const markdownSchema = new Schema({
             group: "block",
             defining: true,
             parseDOM: [{ tag: "li" }],
-            toDOM(node) { 
+            toDOM(node) {
                 const tag = node.attrs.renderAs === "span" ? "span" : "li";
                 const className = node.attrs.renderAs === "span" ? "li-content" : "li";
 
@@ -253,6 +253,15 @@ export const markdownSchema = new Schema({
             ],
             toDOM() { return ["em"]; },
         },
+        italic: {
+            parseDOM: [
+                { tag: "i" },
+                { tag: "em" },
+                { style: "font-style=italic" },
+                { style: "font-style=normal", clearMark: (m) => m.type.name === "em" },
+            ],
+            toDOM() { return ["em"]; },
+        },
         strong: {
             parseDOM: [
                 { tag: "strong" },
@@ -319,6 +328,36 @@ export const markdownSchema = new Schema({
             code: true,
             parseDOM: [{ tag: "code" }],
             toDOM() { return ["code"]; },
+        },
+        comment: {
+            code: true,
+            parseDOM: [{ tag: "span.comment" }],
+            toDOM() { return ["span", { class: "comment" }]; }
+        },
+        math: {
+            code: true,
+            parseDOM: [{ tag: "span.math" }],
+            toDOM() { return ["span", { class: "math" }]; }
+        },
+        math_word: {
+            code: true,
+            parseDOM: [{ tag: "span.math-word" }],
+            toDOM() { return ["span", { class: "math-word" }]; }
+        },
+        math_number: {
+            code: true,
+            parseDOM: [{ tag: "span.math-number" }],
+            toDOM() { return ["span", { class: "math-number" }]; }
+        },
+        math_bracket: {
+            code: true,
+            parseDOM: [{ tag: "span.math-bracket" }],
+            toDOM() { return ["span", { class: "math-bracket" }]; }
+        },
+        math_operand: {
+            code: true,
+            parseDOM: [{ tag: "span.math-operand" }],
+            toDOM() { return ["span", { class: "math-operand" }]; }
         },
     }
 });

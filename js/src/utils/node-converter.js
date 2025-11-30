@@ -172,28 +172,163 @@ export class NodeConverter {
         );
     }
 
-    static constructEm(text) {
-        return Fragment.from(this.createWrappedMark(["*", "*"], text, markdownSchema.marks.em));
+    static constructEm(content) {
+        if (content instanceof Fragment) {
+            return this.createWrappedMarkFragment(["*", "*"], content, markdownSchema.marks.em);
+        }
+        return Fragment.from(this.createWrappedMark(["*", "*"], content, markdownSchema.marks.em));
     }
 
-    static constructStrong(text) {
-        return Fragment.from(this.createWrappedMark(["**", "**"], text, markdownSchema.marks.strong));
+    static constructItalic(content) {
+        if (content instanceof Fragment) {
+            return this.createWrappedMarkFragment(["_", "_"], content, markdownSchema.marks.italic);
+        }
+        return Fragment.from(this.createWrappedMark(["_", "_"], content, markdownSchema.marks.italic));
     }
 
-    static constructStrike(text) {
-        return Fragment.from(this.createWrappedMark(["~~", "~~"], text, markdownSchema.marks.strike));
+    static constructStrong(content) {
+        if (content instanceof Fragment) {
+            return this.createWrappedMarkFragment(["**", "**"], content, markdownSchema.marks.strong);
+        }
+        return Fragment.from(this.createWrappedMark(["**", "**"], content, markdownSchema.marks.strong));
     }
 
-    static constructHighlight(text) {
-        return Fragment.from(this.createWrappedMark(["==", "=="], text, markdownSchema.marks.highlight));
+    static constructStrike(content) {
+        if (content instanceof Fragment) {
+            return this.createWrappedMarkFragment(["~~", "~~"], content, markdownSchema.marks.strike);
+        }
+        return Fragment.from(this.createWrappedMark(["~~", "~~"], content, markdownSchema.marks.strike));
     }
 
-    static constructUnderline(text) {
-        return Fragment.from(this.createWrappedMark(["__", "__"], text, markdownSchema.marks.underline));
+    static constructHighlight(content) {
+        if (content instanceof Fragment) {
+            return this.createWrappedMarkFragment(["==", "=="], content, markdownSchema.marks.highlight);
+        }
+        return Fragment.from(this.createWrappedMark(["==", "=="], content, markdownSchema.marks.highlight));
+    }
+
+    static constructUnderline(content) {
+        if (content instanceof Fragment) {
+            return this.createWrappedMarkFragment(["__", "__"], content, markdownSchema.marks.underline);
+        }
+        return Fragment.from(this.createWrappedMark(["__", "__"], content, markdownSchema.marks.underline));
     }
 
     static constructCode(text) {
         return Fragment.from(this.createWrappedMark(["`", "`"], text, markdownSchema.marks.code, 'code-mark-spec-left', 'code-mark-spec-right'));
+    }
+
+    static constructComment(text) {
+        return Fragment.from(this.createWrappedMark(["%%", "%%"], text, markdownSchema.marks.comment, 'comment', 'comment'));
+    }
+
+    static constructMath(text) {
+        const processedText = this.replaceMathSymbols(text);
+
+        const components = this.parseMathComponents(processedText);
+
+        return Fragment.from(this.createWrappedMark(
+            ["$", "$"],
+            components,
+            markdownSchema.marks.math,
+            'math-delimiter',
+            'math-delimiter'
+        ));
+    }
+
+    static replaceMathSymbols(text) {
+        let processed = text.replace(/-/g, '−');
+        return processed;
+    }
+
+    static parseMathComponents(text) {
+        const nodes = [];
+        let currentIndex = 0;
+
+        const numberRegex = /^-?\d*\.?\d+(?:[eE][-+]?\d+)?/;
+        const wordRegex = /^[a-zA-Zα-ωΑ-Ω]+/;
+        const bracketRegex = /^[{}()\[\]]/;
+        const operandRegex = /^[_^\.]/;
+
+        while (currentIndex < text.length) {
+            let match;
+
+            if (text[currentIndex] === ' ') {
+                nodes.push(markdownSchema.text(' '));
+                currentIndex++;
+                continue;
+            }
+
+            match = text.slice(currentIndex).match(bracketRegex);
+            if (match) {
+                nodes.push(markdownSchema.text(match[0], [
+                    markdownSchema.marks.math_bracket.create()
+                ]));
+                currentIndex += match[0].length;
+                continue;
+            }
+
+            match = text.slice(currentIndex).match(numberRegex);
+            if (match) {
+                nodes.push(markdownSchema.text(match[0], [
+                    markdownSchema.marks.math_number.create()
+                ]));
+                currentIndex += match[0].length;
+                continue;
+            }
+
+            match = text.slice(currentIndex).match(wordRegex);
+            if (match) {
+                nodes.push(markdownSchema.text(match[0], [
+                    markdownSchema.marks.math_word.create()
+                ]));
+                currentIndex += match[0].length;
+                continue;
+            }
+
+            match = text.slice(currentIndex).match(operandRegex);
+            if (match) {
+                nodes.push(markdownSchema.text(match[0], [
+                    markdownSchema.marks.math_operand.create()
+                ]));
+                currentIndex += match[0].length;
+                continue;
+            }
+
+            nodes.push(markdownSchema.text(text[currentIndex], [
+                    markdownSchema.marks.math.create()
+                ]));
+            currentIndex++;
+        }
+
+        return nodes;
+    }
+
+    static createWrappedMarkFragment(delimiters, content, mark, leftMarkClass = 'mark-spec', rightMarkClass = 'mark-spec') {
+        const nodes = [
+            markdownSchema.text(delimiters[0], [markdownSchema.marks.spec.create({
+                specClass: leftMarkClass
+            })])
+        ];
+
+        if (content instanceof Fragment) {
+            content.forEach(node => {
+                if (node.isText) {
+                    const newMarks = [...node.marks, mark.create()];
+                    nodes.push(markdownSchema.text(node.text, newMarks));
+                } else {
+                    nodes.push(node);
+                }
+            });
+        } else if (typeof content === 'string' && content !== "") {
+            nodes.push(markdownSchema.text(content, [mark.create()]));
+        }
+
+        nodes.push(markdownSchema.text(delimiters[1], [markdownSchema.marks.spec.create({
+            specClass: rightMarkClass
+        })]));
+
+        return Fragment.from(nodes);
     }
 
     static constructUrl(url) {
@@ -319,7 +454,9 @@ export class NodeConverter {
             })])
         ];
 
-        if (text && text !== "") {
+        if (Array.isArray(text)) {
+            nodes.push(...text);
+        } else if (text && text !== "") {
             nodes.push(markdownSchema.text(text, [mark.create()]));
         }
 
