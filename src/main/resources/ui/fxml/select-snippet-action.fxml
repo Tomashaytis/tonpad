@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.ContextMenu?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.image.ImageView?>
+
+<ContextMenu fx:id="contextMenu" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.action.SelectSnippetActionController">
+
+   <items>
+      <MenuItem fx:id="openInCurrentTabMenuItem" text="Open in current tab">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="open-in-new-tab-icon" />
+         </graphic>
+      </MenuItem>
+
+      <MenuItem fx:id="newSnippetMenuItem" text="New snippet">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="snippet-add-icon" />
+         </graphic>
+      </MenuItem>
+
+      <MenuItem fx:id="newFolderMenuItem" text="New folder">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="folder-add-icon" />
+         </graphic>
+      </MenuItem>
+
+      <SeparatorMenuItem />
+
+      <MenuItem fx:id="insertSnippetMenuItem" text="Insert snippet">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="snippet-insert-icon" />
+         </graphic>
+      </MenuItem>
+      <MenuItem fx:id="copyMenuItem" text="Copy (Ctrl+C)">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="copy-file-icon" />
+         </graphic>
+      </MenuItem>
+      <MenuItem fx:id="cutMenuItem" text="Cut (Ctrl+X)">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="cut-file-icon" />
+         </graphic>
+      </MenuItem>
+      <MenuItem fx:id="pasteMenuItem" text="Paste (Ctrl+V)">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="paste-file-icon" />
+         </graphic>
+      </MenuItem>
+
+      <SeparatorMenuItem />
+
+      <MenuItem fx:id="copyVaultPathMenuItem" text="Copy vault path">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="copy-path-icon" />
+         </graphic>
+      </MenuItem>
+      <MenuItem fx:id="copyAbsolutePathMenuItem" text="Copy absolute path">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="copy-path-icon" />
+         </graphic>
+      </MenuItem>
+      <MenuItem fx:id="copyRelativePathMenuItem" text="Copy relative path">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="copy-path-icon" />
+         </graphic>
+      </MenuItem>
+
+      <SeparatorMenuItem />
+
+      <MenuItem fx:id="showInNotepadMenuItem" text="Show in notepad">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="open-in-notepad-icon" />
+         </graphic>
+      </MenuItem>
+      <MenuItem fx:id="showInExplorerMenuItem" text="Show in explorer">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="open-in-explorer-icon" />
+         </graphic>
+      </MenuItem>
+
+      <SeparatorMenuItem />
+
+      <MenuItem fx:id="renameMenuItem" text="Rename (F2)">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="rename-icon" />
+         </graphic>
+      </MenuItem>
+      <MenuItem fx:id="removeMenuItem" text="Remove (Delete)">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="remove-icon" />
+         </graphic>
+      </MenuItem>
+   </items>
+</ContextMenu>

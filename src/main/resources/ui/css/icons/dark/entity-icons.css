@@ -12,12 +12,20 @@
     -fx-image: url(/ui/icons/common/folder-colored.png);
 }
 
+.snippet-colored-icon {
+    -fx-image: url(/ui/icons/common/snippet-colored.png);
+}
+
 .file-icon {
     -fx-image: url(/ui/icons/dark/file.png);
 }
 
 .folder-icon {
     -fx-image: url(/ui/icons/dark/folder.png);
+}
+
+.snippet-icon {
+    -fx-image: url(/ui/icons/dark/snippet.png);
 }
 
 .bookmarks-icon {

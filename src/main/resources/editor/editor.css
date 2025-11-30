@@ -436,6 +436,60 @@ code {
     font-size: 0.85em;
 }
 
+/* Стили для строчного блока Comment */
+.comment {
+    color: #888;
+    opacity: 0.7;
+}
+
+/* Стили для строчного блока Math */
+.math {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+}
+
+.math-word {
+    font-family: "Cambria Math", "Latin Modern Math", "Times New Roman", serif;
+    font-style: italic;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #3e9fa6;
+}
+
+.math-number {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    color: #620286;
+}
+
+.math-bracket {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    color: #606060;
+}
+
+.math-operand {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    color: #cb3600;
+}
+
+.math-delimiter {
+    font-family: "Cambria Math", "Latin Modern Math", "Times New Roman", serif;
+    font-style: italic;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: #79854c;
+}
+
 /* Стили для ссылок */
 a {
     color: var(--link-color, #620286);

@@ -18,7 +18,9 @@ import javafx.util.Duration;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.example.tonpad.core.editor.enums.EditorMode;
 import org.example.tonpad.core.exceptions.DecryptionException;
+import org.example.tonpad.core.extentions.TriConsumer;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.FileTree;
 import org.example.tonpad.core.service.crypto.Encryptor;
@@ -35,7 +37,7 @@ import java.security.Key;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.BiConsumer;
+
 
 @Component
 @RequiredArgsConstructor
@@ -66,7 +68,7 @@ public class SearchInFilesController extends AbstractController {
     private Runnable onCancel;
 
     @Setter
-    private BiConsumer<Path, Boolean> fileOpenHandler;
+    private TriConsumer<Path, Boolean, EditorMode> fileOpenHandler;
 
     @Setter
     private java.util.function.Consumer<String> onQueryChanged;
@@ -144,7 +146,7 @@ public class SearchInFilesController extends AbstractController {
             }
 
             if (fileOpenHandler != null) {
-                fileOpenHandler.accept(filePath, false);
+                fileOpenHandler.accept(filePath, false, EditorMode.NOTE);
             }
         }
     }

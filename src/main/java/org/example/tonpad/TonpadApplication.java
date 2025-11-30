@@ -4,7 +4,7 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.exceptions.handler.GlobalExceptionHandler;
-import org.example.tonpad.ui.controllers.file.FileTreeController;
+import org.example.tonpad.ui.controllers.tree.FileTreeController;
 import org.example.tonpad.ui.controllers.core.MainController;
 import org.example.tonpad.ui.controllers.dialog.QuickStartDialogController;
 import org.example.tonpad.ui.controllers.core.TabController;

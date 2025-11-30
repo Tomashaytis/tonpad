@@ -10,7 +10,7 @@ import lombok.Getter;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.ui.controllers.AbstractController;
-import org.example.tonpad.ui.controllers.file.FileTreeController;
+import org.example.tonpad.ui.controllers.tree.FileTreeController;
 import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.springframework.stereotype.Component;
 

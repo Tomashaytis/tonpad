@@ -1,6 +1,7 @@
 import { markdownSchema } from "../schema/markdown-schema.js";
 import { NodeConverter } from "./node-converter.js";
 import { findTabs } from "./utils.js";
+import { Fragment } from "prosemirror-model";
 
 export class NodeReconstructor {
     constructor() {
@@ -54,11 +55,6 @@ export class NodeReconstructor {
                 handler: this.wrapWithMark.bind(this, 'em')
             },
             {
-                name: 'code',
-                pattern: /`(.*?)`/g,
-                handler: this.wrapWithMark.bind(this, 'code')
-            },
-            {
                 name: 'strike',
                 pattern: /~~(.*?)~~/g,
                 handler: this.wrapWithMark.bind(this, 'strike')
@@ -74,13 +70,33 @@ export class NodeReconstructor {
                 handler: this.wrapWithMark.bind(this, 'underline')
             },
             {
+                name: 'italic',
+                pattern: /(?<!_)_(.*?)_(?!_)/g,
+                handler: this.wrapWithMark.bind(this, 'italic')
+            },
+            {
+                name: 'code',
+                pattern: /`(.*?)`/g,
+                handler: this.wrapWithMark.bind(this, 'code')
+            },
+            {
+                name: 'comment',
+                pattern: /%%(.*?)%%/g,
+                handler: this.wrapWithMark.bind(this, 'comment')
+            },
+            {
+                name: 'math',
+                pattern: /\$(.*?)\$/g,
+                handler: this.wrapWithMark.bind(this, 'math')
+            },
+            {
                 name: 'note_link',
                 pattern: /\[(.*?)\](?!\()/g,
                 handler: this.wrapWithMark.bind(this, 'note_link')
             },
             {
                 name: 'link',
-                pattern: /\[(.*)\]\((.*)\)/g,
+                pattern: /\[(.*?)\]\((.*?)\)/g,
                 handler: this.wrapWithMark.bind(this, 'link')
             },
             {
@@ -99,6 +115,8 @@ export class NodeReconstructor {
                 handler: this.wrapWithMark.bind(this, 'tag')
             },
         ];
+
+        this.nestingMarks = new Set(['strong', 'em', 'italic', 'strike', 'highlight', 'underline']);
     }
 
     reconstructMarksInNode(node) {
@@ -240,32 +258,62 @@ export class NodeReconstructor {
     }
 
     wrapWithMark(markName, text, href = "") {
-        switch (markName) {
-            case 'strong':
-                return NodeConverter.constructStrong(text);
-            case 'em':
-                return NodeConverter.constructEm(text);
-            case 'code':
-                return NodeConverter.constructCode(text);
-            case 'strike':
-                return NodeConverter.constructStrike(text);
-            case 'highlight':
-                return NodeConverter.constructHighlight(text);
-            case 'underline':
-                return NodeConverter.constructUnderline(text);
-            case 'link':
-                return NodeConverter.constructLink(text, href);
-            case 'note_link':
-                return NodeConverter.constructNoteLink(text, href);
-            case 'url':
-                return NodeConverter.constructUrl(text);
-            case 'email':
-                return NodeConverter.constructEmail(text);
-            case 'tag':
-                return NodeConverter.constructTag(text);
-            default:
-                return [markdownSchema.text(text)];
+        if (this.nestingMarks.has(markName)) {
+            const processedContent = this.processNestedMarks(text);
+            
+            switch (markName) {
+                case 'strong':
+                    return NodeConverter.constructStrong(processedContent);
+                case 'em':
+                    return NodeConverter.constructEm(processedContent);
+                case 'italic':
+                    return NodeConverter.constructItalic(processedContent);
+                case 'strike':
+                    return NodeConverter.constructStrike(processedContent);
+                case 'highlight':
+                    return NodeConverter.constructHighlight(processedContent);
+                case 'underline':
+                    return NodeConverter.constructUnderline(processedContent);
+                default:
+                    return [markdownSchema.text(text)];
+            }
+        } else {
+            switch (markName) {
+                case 'code':
+                    return NodeConverter.constructCode(text);
+                case 'comment':
+                    return NodeConverter.constructComment(text);
+                case 'math':
+                    return NodeConverter.constructMath(text);
+                case 'link':
+                    return NodeConverter.constructLink(text, href);
+                case 'note_link':
+                    return NodeConverter.constructNoteLink(text, href);
+                case 'url':
+                    return NodeConverter.constructUrl(text);
+                case 'email':
+                    return NodeConverter.constructEmail(text);
+                case 'tag':
+                    return NodeConverter.constructTag(text);
+                default:
+                    return [markdownSchema.text(text)];
+            }
         }
+    }
+
+    processNestedMarks(text) {
+        if (!text) return Fragment.from([]);
+
+        const textNode = markdownSchema.text(text);
+        const tempParagraph = markdownSchema.nodes.paragraph.create({}, [textNode]);
+        
+        const reconstructed = this.reconstructMarks(tempParagraph);
+        
+        if (reconstructed) {
+            return Fragment.from(reconstructed.content);
+        }
+        
+        return Fragment.from([textNode]);
     }
 
     reconstructParagraph(match, originalParagraph, pos) {

@@ -51,12 +51,12 @@
                               <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="folder-search-icon" />
                            </graphic>
                         </Button>
-                        <Button fx:id="showBookmarksButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="T" textAlignment="CENTER">
+                        <Button fx:id="showSnippetsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
                            <padding>
                               <Insets right="3.0" />
                            </padding>
                            <tooltip>
-                              <Tooltip text="Show bookmarks panel">
+                              <Tooltip text="Show snippets panel">
                                  <styleClass>
                                     <String fx:value="custom-tooltip" />
                                     <String fx:value="tooltip-right" />
@@ -64,7 +64,7 @@
                               </Tooltip>
                            </tooltip>
                            <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="bookmarks-icon" />
+                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="snippet-icon" />
                            </graphic>
                         </Button>
                      </children>
@@ -77,16 +77,16 @@
             <StackPane fx:id="leftStackPane" prefHeight="150.0" prefWidth="200.0">
                <children>
                   <AnchorPane fx:id="fileTreePane" minWidth="180.0" styleClass="file-tree-panel" visible="false" />
-                  <AnchorPane fx:id="searchInFileTreePane" pickOnBounds="false" styleClass="viewing-panel" visible="false"/>
+                  <AnchorPane fx:id="searchInFileTreePane" pickOnBounds="false" styleClass="viewing-panel" visible="false" />
                   <AnchorPane fx:id="searchInFilesPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
-                  <AnchorPane fx:id="bookmarksPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
+                  <AnchorPane fx:id="snippetsPane" minWidth="180.0" styleClass="viewing-panel" visible="false" />
                </children>
             </StackPane>
 
             <StackPane fx:id="noteStackPane" prefHeight="150.0" prefWidth="200.0" HBox.hgrow="ALWAYS">
                <children>
                   <TabPane fx:id="tabPane" prefHeight="598.0" prefWidth="823.0" tabClosingPolicy="ALL_TABS" />
-                  <AnchorPane fx:id="searchInTextPane" pickOnBounds="false" styleClass="viewing-panel" visible="false"/>
+                  <AnchorPane fx:id="searchInTextPane" pickOnBounds="false" styleClass="viewing-panel" visible="false" />
                   <AnchorPane fx:id="settingsPane" pickOnBounds="false" />
                </children>
             </StackPane>

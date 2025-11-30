@@ -1,4 +1,4 @@
-package org.example.tonpad.ui.controllers.file;
+package org.example.tonpad.ui.controllers.tree;
 
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -18,8 +18,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import org.example.tonpad.core.editor.enums.EditorMode;
 import org.example.tonpad.core.exceptions.IllegalInputException;
 import org.example.tonpad.core.exceptions.TonpadBaseException;
+import org.example.tonpad.core.extentions.TriConsumer;
 import org.example.tonpad.core.files.Buffer;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.FileTree;
@@ -105,7 +107,7 @@ public class FileTreeController extends AbstractController {
     private final BooleanProperty programmaticEdit = new SimpleBooleanProperty(false);
 
     @Setter
-    private BiConsumer<Path, Boolean> noteOpenHandler;
+    private TriConsumer<Path, Boolean, EditorMode> noteOpenHandler;
 
     @Setter
     private BiConsumer<Path, Path> noteRenameHandler;
@@ -207,7 +209,7 @@ public class FileTreeController extends AbstractController {
         if (target != null && target.isLeaf()) {
             Path filePath = getFullPath(target);
             if (noteOpenHandler != null) {
-                noteOpenHandler.accept(filePath, false);
+                noteOpenHandler.accept(filePath, false, EditorMode.NOTE);
             }
         }
     }
@@ -428,8 +430,8 @@ public class FileTreeController extends AbstractController {
         selectFileActionController.getRenameMenuItem().setDisable(true);
         selectFileActionController.getRemoveMenuItem().setDisable(true);
 
-        selectFileActionController.getNewNoteMenuItem().setDisable(true);
-        selectFileActionController.getNewFolderMenuItem().setDisable(true);
+        selectFileActionController.getNewNoteMenuItem().setDisable(false);
+        selectFileActionController.getNewFolderMenuItem().setDisable(false);
         selectFileActionController.getCopyVaultPathMenuItem().setDisable(false);
     }
 
@@ -544,7 +546,7 @@ public class FileTreeController extends AbstractController {
         if (target != null && target.isLeaf()) {
             Path filePath = getFullPath(target);
             if (noteOpenHandler != null) {
-                noteOpenHandler.accept(filePath, true);
+                noteOpenHandler.accept(filePath, true, EditorMode.NOTE);
             }
         }
     }
@@ -553,7 +555,7 @@ public class FileTreeController extends AbstractController {
         Path newFilePath = addNote();
         refreshTree();
         selectItem(newFilePath, true);
-        noteOpenHandler.accept(newFilePath, false);
+        noteOpenHandler.accept(newFilePath, false, EditorMode.NOTE);
     }
 
     private void onAddDirectory() {

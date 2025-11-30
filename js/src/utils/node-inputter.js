@@ -186,6 +186,9 @@ export class NodeInputter {
             { pattern: /~~$/, leftDelimiter: "~~", rightDelimiter: "~~" },
             { pattern: /==$/, leftDelimiter: "==", rightDelimiter: "==" },
             { pattern: /__$/, leftDelimiter: "__", rightDelimiter: "__" },
+            { pattern: /%%$/, leftDelimiter: "%%", rightDelimiter: "%%" },
+            { pattern: /\$$/, leftDelimiter: "$", rightDelimiter: "$" },
+            { pattern: /_$/, leftDelimiter: "_", rightDelimiter: "_" },
             { pattern: /`$/, leftDelimiter: "`", rightDelimiter: "`" },
             { pattern: /\[$/, leftDelimiter: "[", rightDelimiter: "]" },
             { pattern: /\($/, leftDelimiter: "(", rightDelimiter: ")" },
@@ -196,7 +199,10 @@ export class NodeInputter {
 
         for (const rule of markRules) {
             if (rule.pattern.test(textBefore + text)) {
-                if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && !textAfter.startsWith(' ')) {
+                if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && (!textAfter.startsWith(' ') || !textAfter.startsWith('\t'))) {
+                    break;
+                }
+                if (["_"].includes(rule.leftDelimiter) && textBefore.length > 0 && (!textBefore.endsWith(' ') || !textBefore.endsWith('\t'))) {
                     break;
                 }
                 if (textAfter.startsWith(rule.rightDelimiter[0])) {
@@ -206,6 +212,12 @@ export class NodeInputter {
                     };
                 }
                 if (rule.leftDelimiter == "**" && rule.pattern.test(textBefore)) {
+                    return {
+                        text: rule.rightDelimiter,
+                        offset: -2
+                    };
+                }
+                if (rule.leftDelimiter == "__" && rule.pattern.test(textBefore)) {
                     return {
                         text: rule.rightDelimiter,
                         offset: -2

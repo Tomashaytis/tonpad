@@ -18,34 +18,44 @@ import { clipboardPlugin } from "./plugins/clipboard.js"
 import jsYAML from 'js-yaml';
 
 export class Editor {
-    constructor(target, content = '') {
+    constructor(target, mode = 'note', content = '') {
         if (!target) throw new Error('Target element required');
+
+        this.mode = mode;
 
         const docContent = this.parseDoc(content);
 
-        this.frontMatter = docContent.frontMatter;
+        if (this.mode == 'note' || this.mode == 'template') {
+            this.frontMatter = docContent.frontMatter;
 
-        const doc = this.createDocumentFromText(docContent.markdown);
+            this.frontMatterTable = document.getElementById('frontmatter-table');
+            this.frontMatterBody = document.getElementById('frontmatter-body');
+            this.updateFrontMatterTable();
+        }
 
-        this.frontMatterTable = document.getElementById('frontmatter-table');
-        this.frontMatterBody = document.getElementById('frontmatter-body');
-        this.updateFrontMatterTable();
+        if (this.mode == 'snippet') {
+            docContent.markdown = content;
+        }
 
-        this.view = new EditorView(target, {
-            state: EditorState.create({
-                doc: doc,
-                schema: markdownSchema,
-                plugins: this.createPlugins()
-            }),
-            attributes: {
-                class: "markdown-editor",
-                spellcheck: "false",
-                'data-gramm': "false",
-                'data-gramm-editor': "false",
-            }
-        });
+        if (this.mode == 'note' || this.mode == 'snippet') {
+            const doc = this.createDocumentFromText(docContent.markdown);
 
-        this.rebuildTree();
+            this.view = new EditorView(target, {
+                state: EditorState.create({
+                    doc: doc,
+                    schema: markdownSchema,
+                    plugins: this.createPlugins()
+                }),
+                attributes: {
+                    class: "markdown-editor",
+                    spellcheck: "false",
+                    'data-gramm': "false",
+                    'data-gramm-editor': "false",
+                }
+            });
+
+            this.rebuildTree();
+        }
     }
 
     createDocumentFromText(content) {
@@ -649,18 +659,26 @@ export class Editor {
 
     setNoteContent(content) {
         const docContent = this.parseDoc(content);
-        this.frontMatter = docContent.frontMatter;
-        this.updateFrontMatterTable();
+        if (this.mode == 'note' || this.mode == 'template') {
+            this.frontMatter = docContent.frontMatter;
+            this.updateFrontMatterTable();
+        }
 
-        const newDoc = this.createDocumentFromText(docContent.markdown);
-        const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
-        tr.setMeta('addToHistory', false);
+        if (this.mode == 'snippet') {
+            docContent.markdown = content;
+        }
 
-        this.view.dispatch(tr);
+        if (this.mode == 'note' || this.mode == 'snippet') {
+            const newDoc = this.createDocumentFromText(docContent.markdown);
+            const tr = this.view.state.tr.replaceWith(0, this.view.state.doc.content.size, newDoc.content);
+            tr.setMeta('addToHistory', false);
 
-        this.rebuildTree();
+            this.view.dispatch(tr);
+
+            this.rebuildTree();
+        }
     }
-    
+
     setFrontMatter(yamlString) {
         this.frontMatter = this.parseYAML(yamlString);
         this.updateFrontMatterTable();
@@ -795,5 +813,17 @@ export class Editor {
 
     destroy() {
         this.view.destroy();
+        
+        if (this.frontMatterTable) {
+            this.frontMatterTable.style.display = 'none';
+            if (this.frontMatterBody) {
+                this.frontMatterBody.innerHTML = '';
+            }
+        }
+
+        // Очищаем ссылки
+        this.view = null;
+        this.frontMatter = null;
+        this.frontMatterTable = null;
     }
 }

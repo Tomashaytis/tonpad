@@ -174,8 +174,35 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
         }
     };
 
+    window.createEditor = function (mode = 'note') {
+        const container = document.getElementById('editor');
+        if (container) {
+            window.editor = new Editor(container, mode);
+
+            console.log('Editor created successfully');
+        }
+    };
+
+    window.deleteEditor = function () {
+        if (window.editor) {
+            if (typeof window.editor.destroy === 'function') {
+                window.editor.destroy();
+            }
+
+            window.editor = null;
+
+            const container = document.getElementById('editor');
+            if (container) {
+                container.innerHTML = '';
+            }
+
+            console.log('Editor deleted successfully');
+        }
+    };
+
 })();
 
+/*
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('editor');
     if (container) {
@@ -183,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-/*
 window.editor.setNoteContent(`---
 author: pavel
 time: 12:15

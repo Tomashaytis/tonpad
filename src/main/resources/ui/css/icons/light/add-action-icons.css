@@ -8,6 +8,10 @@
     -fx-image: url(/ui/icons/light/folder-add.png);
 }
 
+.snippet-add-icon {
+    -fx-image: url(/ui/icons/light/snippet-add.png);
+}
+
 .collection-add-icon {
     -fx-image: url(/ui/icons/light/collection-add.png);
 }

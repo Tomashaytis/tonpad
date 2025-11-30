@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import org.example.tonpad.core.editor.enums.EditorMode;
 import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
 import org.example.tonpad.core.service.crypto.Encryptor;
@@ -46,23 +47,29 @@ public class TabController {
     @Getter
     private final Map<Tab, Path> inversePathMap = new ConcurrentHashMap<>();
 
-    private final RegularFileService fileService;
+    private final RegularFileService fileSystemService;
 
     private final VaultSession vaultSession;
 
     private final EncryptorFactory encryptorFactory;
 
-    public void init(URI fileUri) {
-        createInitialTab(fileUri);
+    public void init(URI fileUri, EditorMode editorMode) {
+        createInitialTab(fileUri, editorMode);
     }
 
-    public void openFileInTab(Path filePath, boolean openInCurrent) {
+    public void openFileInTab(Path filePath, boolean openInCurrent, EditorMode editorMode) {
+        if (pathMap.containsKey(filePath)) {
+            Tab existingTab = pathMap.get(filePath);
+            tabPane.getSelectionModel().select(existingTab);
+            return;
+        }
+
         String noteContent;
         if(vaultSession.isOpendWithNoPassword())
         {
             Encryptor encoder = encryptorFactory.encryptorForKey();
             if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
-                noteContent = fileService.readFile(filePath);
+                noteContent = fileSystemService.readFile(filePath);
             }
             else {
                 throw new DecryptionException("Invalid password");
@@ -74,18 +81,19 @@ public class TabController {
             {
                 byte[] key = vaultSession.getKeyIfPresent().map(Key::getEncoded).orElse(null);
                 Encryptor encoder = encryptorFactory.encryptorForKey(key);
-                noteContent = encoder.decrypt(fileService.readFile(filePath), null);
+                noteContent = encoder.decrypt(fileSystemService.readFile(filePath), null);
             }
             catch(DecryptionException e) {
                 throw new DecryptionException("Invalid password", e);
             }
         }
+
         Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
 
-        if (!editorMap.containsKey(currentTab) || openInCurrent) {
-            replaceTabContent(currentTab, getTabName(filePath), noteContent, filePath);
+        if (openInCurrent) {
+            replaceTabContent(currentTab, getTabName(filePath), noteContent, filePath, editorMode);
         } else {
-            createTabWithContent(getTabName(filePath), noteContent, filePath);
+            createTabWithContent(getTabName(filePath), noteContent, filePath, editorMode);
         }
     }
 
@@ -93,7 +101,7 @@ public class TabController {
     tabPane.getTabs().stream()
             .filter(t -> !t.isDisable())
             .toList()
-            .forEach(this::tabClose);
+            .forEach(this::closeTab);
     }
 
     public void renameTab(Path oldPath, Path newPath) {
@@ -110,18 +118,26 @@ public class TabController {
         }
     }
 
-    public void clearTab(Path path) {
+    public void closeTab(Path path) {
         if (pathMap.containsKey(path)) {
             Tab tab = pathMap.get(path);
-            tabClose(tab);
+            closeTab(tab);
         }
     }
 
-    private void createInitialTab(URI fileUri) {
+    public void insertSnippet(Path path) {
+        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+
+        String snippetContent = fileSystemService.readFile(path);
+
+        editorMap.get(currentTab).insertSnippet(snippetContent);
+    }
+
+    private void createInitialTab(URI fileUri, EditorMode editorMode) {
         try {
             Path filePath = Path.of(fileUri);
             String noteContent = Files.readString(filePath);
-            createTabWithContent(getTabName(filePath), noteContent, filePath);
+            createTabWithContent(getTabName(filePath), noteContent, filePath, editorMode);
         } catch (Exception e) {
             createErrorTab();
         }
@@ -133,20 +149,20 @@ public class TabController {
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
 
-        initTabContent(newTab, "<h1>Error loading content</h1>", content, webView);
+        initTabContent(newTab, "<h1>Error loading content</h1>", content, webView, EditorMode.SNIPPET);
         addTabToPane(newTab);
 
-        newTab.setOnCloseRequest(event -> tabClose(newTab));
+        newTab.setOnCloseRequest(event -> closeTab(newTab));
     }
 
-    private void createTabWithContent(String title, String noteContent, Path path) {
+    private void createTabWithContent(String title, String noteContent, Path path, EditorMode editorMode) {
         Tab newTab = new Tab(title);
 
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
         pathMap.put(path, newTab);
         inversePathMap.put(newTab, path);
-        initTabContent(newTab, noteContent, content, webView);
+        initTabContent(newTab, noteContent, content, webView, editorMode);
         addTabToPane(newTab);
 
         PauseTransition debounce = new PauseTransition(Duration.millis(1500));
@@ -154,19 +170,19 @@ public class TabController {
 
         newTab.setOnCloseRequest(event -> {
             saveToFile(true);
-            tabClose(newTab);
+            closeTab(newTab);
         });
         content.addEventFilter(KeyEvent.KEY_TYPED, event -> debounce.playFromStart());
     }
 
-    private void initTabContent(Tab tab, String noteContent, AnchorPane content, WebView webView) {
+    private void initTabContent(Tab tab, String noteContent, AnchorPane content, WebView webView, EditorMode editorMode) {
         AnchorPane.setTopAnchor(webView, 0.0);
         AnchorPane.setBottomAnchor(webView, 0.0);
         AnchorPane.setLeftAnchor(webView, 0.0);
         AnchorPane.setRightAnchor(webView, 0.0);
         content.getChildren().add(webView);
 
-        Editor editor = new EditorImpl(webView.getEngine(), false);
+        Editor editor = new EditorImpl(webView.getEngine(), editorMode, false);
         editor.setNoteContent(noteContent);
         editorMap.put(tab, editor);
 
@@ -191,20 +207,20 @@ public class TabController {
     }
 
 
-    private void replaceTabContent(Tab tab, String title, String noteContent, Path path) {
+    private void replaceTabContent(Tab tab, String title, String noteContent, Path path, EditorMode editorMode) {
         tab.setText(title);
         pathMap.put(path, tab);
         inversePathMap.put(tab, path);
 
         AnchorPane content = new AnchorPane();
         WebView webView = new WebView();
-        initTabContent(tab, noteContent, content, webView);
+        initTabContent(tab, noteContent, content, webView, editorMode);
         PauseTransition debounce = new PauseTransition(Duration.millis(1500));
         debounce.setOnFinished(event -> saveToFile(false));
 
         tab.setOnCloseRequest(event -> {
             saveToFile(false);
-            tabClose(tab);
+            closeTab(tab);
         });
         content.addEventFilter(KeyEvent.KEY_TYPED, event -> debounce.playFromStart());
     }
@@ -215,7 +231,7 @@ public class TabController {
         return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
     }
 
-    private void tabClose(Tab tab) {
+    private void closeTab(Tab tab) {
         editorMap.remove(tab);
         Path path = inversePathMap.get(tab);
         inversePathMap.remove(tab);
@@ -237,11 +253,11 @@ public class TabController {
                 Path path = inversePathMap.get(currentTab);
                 String noteContent = editorMap.get(currentTab).getNoteContent().get(3, TimeUnit.SECONDS);
                 if (vaultSession.isOpendWithNoPassword() || isSpecialNote)
-                    fileService.writeFile(path, noteContent);
+                    fileSystemService.writeFile(path, noteContent);
                 else
                 {
                     Encryptor encoder = encryptorFactory.encryptorForKey(key);
-                    fileService.writeFile(path, encoder.encrypt(noteContent, null));
+                    fileSystemService.writeFile(path, encoder.encrypt(noteContent, null));
                 }
             } catch (Exception e) {
                 System.out.println(e.getMessage());
