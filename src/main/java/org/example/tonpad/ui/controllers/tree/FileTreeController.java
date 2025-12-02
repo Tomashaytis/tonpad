@@ -25,7 +25,9 @@ import org.example.tonpad.core.extentions.TriConsumer;
 import org.example.tonpad.core.files.Buffer;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.FileTree;
+import org.example.tonpad.core.models.NoteRecord;
 import org.example.tonpad.core.service.SearchService;
+import org.example.tonpad.core.service.db.NotesService;
 import org.example.tonpad.core.sort.SortKey;
 import org.example.tonpad.core.sort.SortOptions;
 import org.example.tonpad.ui.controllers.AbstractController;
@@ -93,6 +95,8 @@ public class FileTreeController extends AbstractController {
     private final FileSystemService fileSystemService;
 
     private final Buffer buffer;
+
+    private final NotesService notesService;
 
     private final VaultPathsContainer vaultPathsContainer;
 
@@ -303,6 +307,17 @@ public class FileTreeController extends AbstractController {
             if (cur.getValue() == null || cur.getValue().isEmpty()) break;
             parts.addFirst(cur.getValue());
         }
+        return String.join("/", parts).replace('\\','/');
+    }
+
+    private String getRelativePath(Path target, Path base) {
+        List<String> parts = new ArrayList<>();
+
+        while (!target.equals(base)) {
+            parts.addFirst(target.getFileName().toString());
+            target = target.getParent();
+        }
+
         return String.join("/", parts).replace('\\','/');
     }
 
@@ -553,6 +568,7 @@ public class FileTreeController extends AbstractController {
 
     private void onAddNote() {
         Path newFilePath = addNote();
+        notesService.save(new NoteRecord(getRelativePath(newFilePath, vaultPathsContainer.getVaultPath())));
         refreshTree();
         selectItem(newFilePath, true);
         noteOpenHandler.accept(newFilePath, false, EditorMode.NOTE);
@@ -589,7 +605,15 @@ public class FileTreeController extends AbstractController {
             targetPath = vaultPathsContainer.getNotesPath();
         }
 
-        fileSystemService.pasteFile(targetPath);
+        if (buffer.isCutMode()) {
+            fileSystemService.processFiles(buffer.getCopyBuffer().getFirst(),
+                    path -> notesService.delete(getRelativePath(path, vaultPathsContainer.getVaultPath())));
+        }
+
+        Path resultPath = fileSystemService.pasteFile(targetPath);
+
+        fileSystemService.processFiles(resultPath,
+                path -> notesService.save(new NoteRecord(getRelativePath(path, vaultPathsContainer.getVaultPath()))));
         refreshTree();
     }
 
@@ -811,6 +835,10 @@ public class FileTreeController extends AbstractController {
         Path newAbs = parent.resolve(newName);
 
         fileSystemService.rename(oldAbs.toString(), newAbs.toString());
+        if (fileSystemService.isMarkdownFile(newAbs)) {
+            notesService.delete(getRelativePath(oldAbs, vaultPathsContainer.getVaultPath()));
+            notesService.save(new NoteRecord(getRelativePath(newAbs, vaultPathsContainer.getVaultPath())));
+        }
 
         refreshTree();
         selectItem(newAbs, false);
@@ -969,6 +997,8 @@ public class FileTreeController extends AbstractController {
 
         Path fullPath = getFullPath(node);
 
+        fileSystemService.processFiles(fullPath,
+                path -> notesService.delete(getRelativePath(path, vaultPathsContainer.getVaultPath())));
         fileSystemService.delete(fullPath);
         refreshTree();
         noteCloseHandler.accept(fullPath);

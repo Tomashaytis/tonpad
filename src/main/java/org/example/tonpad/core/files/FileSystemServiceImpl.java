@@ -3,7 +3,6 @@ package org.example.tonpad.core.files;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.exceptions.CustomIOException;
-import org.example.tonpad.core.exceptions.TonpadBaseException;
 import org.example.tonpad.core.service.crypto.EncryptorFactory;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.sort.SortOptions;
@@ -22,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 @Service
@@ -57,6 +57,8 @@ public class FileSystemServiceImpl implements FileSystemService {
 
     private final static String FILE_OPENING_IN_NOTEPAD_ERROR = "Notepad opening error";
 
+    private final static String FILE_PROCESSING_ERROR = "File processing error";
+
     private final RecursiveDeleteFileVisitor visitor = new RecursiveDeleteFileVisitor();
 
     private final Buffer buffer;
@@ -72,6 +74,15 @@ public class FileSystemServiceImpl implements FileSystemService {
     public FileTree getFileTree(Path path) {
         SortOptions opt = SortOptions.defaults();
         return getFileTreeSorted(path, opt);
+    }
+
+    public void processFiles(Path path, Consumer<Path> processor) {
+        try (Stream<Path> files = Files.walk(path)) {
+            files.filter(Files::isRegularFile).forEach(processor);
+        } catch (IOException e) {
+            log.warn(FILE_PROCESSING_ERROR, e);
+            throw new CustomIOException(FILE_PROCESSING_ERROR, e);
+        }
     }
 
     public Optional<Path> findFileInDir(Path rootDir, String fileName) {
@@ -252,15 +263,17 @@ public class FileSystemServiceImpl implements FileSystemService {
         cutFile(Path.of(path));
     }
 
-    public void pasteFile(String targetDir) {
-        pasteFile(Path.of(targetDir));
+    public Path pasteFile(String targetDir)
+    {
+        return pasteFile(Path.of(targetDir));
     }
 
-    public void pasteFile(Path targetDir) {
+    public Path pasteFile(Path targetDir) {
 
+        Path dst = null;
         for(Path filePath: buffer.getCopyBuffer()) {
             if (!buffer.isCutMode()) {
-                Path dst = uniqueDest(targetDir, filePath);
+                dst = uniqueDest(targetDir, filePath);
                 try {
                     FileSystemUtils.copyRecursively(filePath, dst);
                 } catch (IOException e) {
@@ -269,7 +282,7 @@ public class FileSystemServiceImpl implements FileSystemService {
                 }
             } else {
                 try {
-                    Path dst = targetDir.resolve(filePath.getFileName());
+                    dst = targetDir.resolve(filePath.getFileName());
 
                     if (!Files.exists(dst))
                         Files.move(filePath, dst);
@@ -279,6 +292,8 @@ public class FileSystemServiceImpl implements FileSystemService {
                 }
             }
         }
+
+        return dst;
     }
 
     public boolean isMarkdownFile(String path) {

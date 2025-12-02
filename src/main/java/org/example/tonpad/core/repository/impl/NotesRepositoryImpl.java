@@ -20,7 +20,7 @@ public class NotesRepositoryImpl implements NotesRepository {
     public static final Table<?> NOTES_TABLE = DSL.table("notes");
 
     public static final Field<Integer> ID_FIELD = DSL.field("id", Integer.class);
-    public static final Field<String> NAME_FIELD = DSL.field("name", String.class);
+    public static final Field<String> PATH_FIELD = DSL.field("path", String.class);
 
     private final ConnectionProviderService connectionProviderService;
 
@@ -44,18 +44,28 @@ public class NotesRepositoryImpl implements NotesRepository {
     }
 
     @Override
+    public Optional<NoteRecord> getByPath(String path) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
+        return ctx.select()
+                .from(NOTES_TABLE)
+                .where(PATH_FIELD.eq(path))
+                .fetchOptionalInto(NoteRecord.class);
+    }
+
+    @Override
     public void save(NoteRecord note) {
         DSLContext ctx = connectionProviderService.getDSLContext();
 
         if (note.getId() == null) {
             Integer id = ctx.insertInto(NOTES_TABLE)
-                    .set(NAME_FIELD, note.getName())
+                    .set(PATH_FIELD, note.getPath())
                     .returningResult(ID_FIELD)
                     .fetchOneInto(Integer.class);
             note.setId(id);
         } else {
             ctx.update(NOTES_TABLE)
-                    .set(NAME_FIELD, note.getName())
+                    .set(PATH_FIELD, note.getPath())
                     .where(ID_FIELD.eq(note.getId()))
                     .execute();
         }
@@ -67,6 +77,15 @@ public class NotesRepositoryImpl implements NotesRepository {
 
         ctx.deleteFrom(NOTES_TABLE)
                 .where(ID_FIELD.eq(id))
+                .execute();
+    }
+
+    @Override
+    public void delete(String path) {
+        DSLContext ctx = connectionProviderService.getDSLContext();
+
+        ctx.deleteFrom(NOTES_TABLE)
+                .where(PATH_FIELD.eq(path))
                 .execute();
     }
 }

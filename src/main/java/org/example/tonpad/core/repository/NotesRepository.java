@@ -11,7 +11,11 @@ public interface NotesRepository {
 
     Optional<NoteRecord> getById(int id);
 
+    Optional<NoteRecord> getByPath(String path);
+
     void save(NoteRecord note);
 
     void delete(int id);
+
+    void delete(String path);
 }

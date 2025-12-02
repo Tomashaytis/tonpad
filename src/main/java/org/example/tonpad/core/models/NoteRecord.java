@@ -11,11 +11,11 @@ import lombok.Setter;
 @AllArgsConstructor
 public class NoteRecord {
 
-    public NoteRecord(String name) {
-        this.name = name;
+    public NoteRecord(String path) {
+        this.path = path;
     }
 
     private Integer id;
 
-    private String name;
+    private String path;
 }

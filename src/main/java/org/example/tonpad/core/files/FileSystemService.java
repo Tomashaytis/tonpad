@@ -3,6 +3,7 @@ package org.example.tonpad.core.files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.example.tonpad.core.sort.SortOptions;
 
@@ -11,6 +12,8 @@ public interface FileSystemService {
     FileTree getFileTree(String path);
 
     FileTree getFileTree(Path path);
+
+    void processFiles(Path path, Consumer<Path> processor);
 
     Optional<Path> findFileInDir(Path rootDir, String fileName);
 
@@ -62,9 +65,9 @@ public interface FileSystemService {
 
     void cutFile(Path path);
 
-    void pasteFile(String path);
+    Path pasteFile(String path);
 
-    void pasteFile(Path path);
+    Path pasteFile(Path path);
 
     boolean isMarkdownFile(String path);
 

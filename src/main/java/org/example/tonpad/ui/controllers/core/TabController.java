@@ -208,6 +208,7 @@ public class TabController {
 
 
     private void replaceTabContent(Tab tab, String title, String noteContent, Path path, EditorMode editorMode) {
+        saveToFile(false);
         tab.setText(title);
         pathMap.put(path, tab);
         inversePathMap.put(tab, path);

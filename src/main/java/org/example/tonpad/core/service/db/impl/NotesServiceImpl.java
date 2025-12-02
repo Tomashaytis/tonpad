@@ -27,6 +27,11 @@ public class NotesServiceImpl implements NotesService {
     }
 
     @Override
+    public NoteRecord getByPath(String path) {
+        return repository.getByPath(path).orElseThrow(() -> new ObjectNotFoundException("Произошла ошибка"));
+    }
+
+    @Override
     @Transactional
     public void save(NoteRecord note) {
         repository.save(note);
@@ -36,5 +41,11 @@ public class NotesServiceImpl implements NotesService {
     @Transactional
     public void delete(int id) {
         repository.delete(id);
+    }
+
+    @Override
+    @Transactional
+    public void delete(String path) {
+        repository.delete(path);
     }
 }
