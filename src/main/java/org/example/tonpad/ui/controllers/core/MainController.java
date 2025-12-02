@@ -16,6 +16,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import lombok.RequiredArgsConstructor;
+import org.example.tonpad.core.editor.Editor;
 import org.example.tonpad.core.editor.enums.EditorMode;
 import org.example.tonpad.ui.controllers.*;
 import org.example.tonpad.ui.controllers.tree.FileTreeController;
@@ -113,14 +114,8 @@ public class MainController extends AbstractController {
         snippetTreeController.init(snippetsPane);
 
         tabController.setTabPane(tabPane);
-        try {
-            tabController.init(Objects.requireNonNull(getClass().getResource("/Welcome.md")).toURI(), EditorMode.NOTE);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
 
-        searchInTextController.setTabPane(tabPane);
-        searchInTextController.setEditorMap(tabController.getEditorMap());
+        searchInTextController.setGetActiveEditorHandler(this::getActiveEditor);
         searchInTextController.init(searchInTextPane);
 
         settingsController.init(settingsPane);
@@ -129,7 +124,7 @@ public class MainController extends AbstractController {
     }
 
     private void setupEventHandlers() {
-        fileTreeController.setNoteOpenHandler(this::openInEditor);
+        fileTreeController.setNoteOpenHandler(this::openInEditorProtected);
         fileTreeController.setNoteCloseHandler(this::closeInEditor);
         fileTreeController.setNoteRenameHandler(this::renameInEditor);
 
@@ -138,7 +133,7 @@ public class MainController extends AbstractController {
         snippetTreeController.setSnippetRenameHandler(this::renameInEditor);
         snippetTreeController.setSnippetInsertHandler(this::insertSnippetInEditor);
 
-        searchInFilesController.setFileOpenHandler(this::openInEditor);
+        searchInFilesController.setFileOpenHandler(this::openInEditorProtected);
 
         showFilesButton.setOnAction(event -> togglePane(
                 leftStackPane, fileTreePane, showFilesButton, () -> {}, () -> {}
@@ -299,8 +294,16 @@ public class MainController extends AbstractController {
         }
     }
 
+    private void openInEditorProtected(Path path, boolean openInCurrent, EditorMode editorMode) {
+        tabController.openFileInTab(path, openInCurrent, editorMode, true);
+    }
+
     private void openInEditor(Path path, boolean openInCurrent, EditorMode editorMode) {
-        tabController.openFileInTab(path, openInCurrent, editorMode);
+        tabController.openFileInTab(path, openInCurrent, editorMode, false);
+    }
+
+    private Editor getActiveEditor() {
+        return tabController.getActiveEditor();
     }
 
     private void renameInEditor(Path oldPath, Path newPath) {
