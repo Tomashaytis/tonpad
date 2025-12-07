@@ -321,6 +321,6 @@ public class QuickStartDialogController extends AbstractController {
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/quick-start-dialog.fxml";
+        return "/ui/fxml/dialog/quick-start-dialog.fxml";
     }
 }

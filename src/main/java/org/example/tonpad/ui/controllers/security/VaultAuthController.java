@@ -132,6 +132,6 @@ public class VaultAuthController extends AbstractController {
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/vault-auth.fxml";
+        return "/ui/fxml/security/vault-auth.fxml";
     }
 }

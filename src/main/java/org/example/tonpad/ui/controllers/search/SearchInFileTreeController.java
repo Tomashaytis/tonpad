@@ -140,6 +140,6 @@ public class SearchInFileTreeController extends AbstractController {
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/search-in-file-tree-bar.fxml";
+        return "/ui/fxml/search/search-in-file-tree-bar.fxml";
     }
 }

@@ -325,6 +325,6 @@ public class SearchInFilesController extends AbstractController {
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/search-in-files-bar.fxml";
+        return "/ui/fxml/search/search-in-files-bar.fxml";
     }
 }

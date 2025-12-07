@@ -58,6 +58,6 @@ public class SelectFileActionController extends AbstractController {
         return contextMenu;
     }
     protected String getFxmlSource() {
-        return "/ui/fxml/select-file-action.fxml";
+        return "/ui/fxml/action/select-file-action.fxml";
     }
 }

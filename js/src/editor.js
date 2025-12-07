@@ -4,9 +4,9 @@ import { dropCursor } from "prosemirror-dropcursor";
 import { gapCursor } from "prosemirror-gapcursor";
 import { history, } from "prosemirror-history";
 import { markdownSchema } from "./schema/markdown-schema.js";
-import { NodeConverter } from "./utils/node-converter.js";
-import { NodeInputter } from "./utils/node-inputter.js";
-import { NodeReconstructor } from "./utils/node-reconstructor.js";
+import { NodeConverter } from "./core/node-converter.js";
+import { NodeInputter } from "./core/node-inputter.js";
+import { NodeReconstructor } from "./core/node-reconstructor.js";
 import { markdownSerializer } from "./serializer/markdown-serializer.js";
 import { blockNavigationPlugin } from "./plugins/block-navigation.js"
 import { keymapPlugin } from "./plugins/keymap.js";
@@ -687,8 +687,128 @@ export class Editor {
     insertSnippet(snippetContent) {
         if (snippetContent) {
             const { state, dispatch } = this.view;
-            NodeInputter.handlePasteInNode(this.view, state, dispatch, snippetContent);
+            NodeInputter.handlePasteInNode(this.view, state, dispatch, snippetContent, null, false);
         }
+    }
+
+    format(style) {
+        const { state, dispatch } = this.view;
+        const { from, to } = state.selection;
+
+        const selectedNodes = [];
+        state.doc.content.forEach((child, offset, index) => {
+            const childPos = offset;
+            const blockStart = childPos;
+            const blockEnd = childPos + child.nodeSize;
+
+            if (from < blockEnd && to > blockStart) {
+                let markerTextLength = 0;
+
+                child.descendants((node, pos) => {
+                    if (node.isText) {
+                        const hasNonFormatMark = node.marks.some(mark =>
+                            mark.type.name === 'spec' && mark.attrs.type !== 'format'
+                        );
+                        const hasMarker = node.marks.some(mark => mark.type.name === 'marker');
+                        const hasTab = node.marks.some(mark => mark.type.name === 'tab');
+
+                        if (hasNonFormatMark || hasMarker || hasTab) {
+                            markerTextLength += node.text.length;
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                    return true;
+                });
+
+                console.log(`Block ${index}: markerTextLength = ${markerTextLength}`);
+
+                selectedNodes.push({
+                    node: child,
+                    pos: childPos,
+                    index: index,
+                    blockStart,
+                    blockEnd,
+                    markerTextLength,
+                    intersectsFrom: Math.max(from, blockStart + 1 + markerTextLength),
+                    intersectsTo: Math.min(to, blockEnd),
+                    type: child.type.name,
+                    hasText: child.textContent.length > 0,
+                    isEmpty: child.childCount === 0,
+                    text: child.textContent
+                });
+            }
+        });
+
+        let marker = '';
+        switch (style) {
+            case 'bold':
+                marker = '**';
+                break;
+            case 'italic':
+                marker = '_';
+                break;
+            case 'underline':
+                marker = '__';
+                break;
+            case 'strikethrough':
+                marker = '~~';
+                break;
+            case 'highlight':
+                marker = '==';
+                break;
+            case 'comment':
+                marker = '%%';
+                break;
+            case 'math':
+                marker = '$';
+                break;
+            case 'code':
+                marker = '`';
+                break;
+        }
+
+        const paragraphs = []
+        selectedNodes.forEach(nodeInfo => {
+            const nodeText = nodeInfo.text;
+
+            const textStart = nodeInfo.blockStart + 1;
+
+            const markStartInText = nodeInfo.intersectsFrom - textStart;
+            const markEndInText = nodeInfo.intersectsTo - textStart;
+
+            const safeMarkStart = Math.max(0, Math.min(markStartInText, nodeText.length));
+            const safeMarkEnd = Math.max(0, Math.min(markEndInText, nodeText.length));
+
+            const beforeText = nodeText.slice(0, safeMarkStart);
+            const markText = nodeText.slice(safeMarkStart, safeMarkEnd);
+            const afterText = nodeText.slice(safeMarkEnd);
+
+            const escapeMarker = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const markerRegex = new RegExp(escapeMarker, 'g');
+
+            const cleanBeforeText = beforeText.replace(markerRegex, '');
+            const cleanMarkText = markText.replace(markerRegex, '');
+            const cleanAfterText = afterText.replace(markerRegex, '');
+
+            let paragraph = NodeConverter.constructParagraph(cleanBeforeText + marker + cleanMarkText + marker + cleanAfterText);
+            paragraphs.push(paragraph);
+        });
+
+        const reconstructor = new NodeReconstructor();
+        const reconstructed = reconstructor.applyBlockRules(paragraphs, 0);
+
+        let tr = state.tr;
+        let startReplacePos = selectedNodes[0].blockStart;
+        let endReplacePos = selectedNodes[selectedNodes.length - 1].blockEnd;
+        tr = tr.replaceWith(startReplacePos, endReplacePos, reconstructed);
+
+        const cursorOffset = marker.length;
+        const cursorPos = from + cursorOffset;
+
+        tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
+        dispatch(tr);
     }
 
     getMarkdown() {
@@ -813,7 +933,7 @@ export class Editor {
 
     destroy() {
         this.view.destroy();
-        
+
         if (this.frontMatterTable) {
             this.frontMatterTable.style.display = 'none';
             if (this.frontMatterBody) {
@@ -821,7 +941,6 @@ export class Editor {
             }
         }
 
-        // Очищаем ссылки
         this.view = null;
         this.frontMatter = null;
         this.frontMatterTable = null;

@@ -142,6 +142,6 @@ public class SearchInTextController extends AbstractController {
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/search-in-text-bar.fxml";
+        return "/ui/fxml/search/search-in-text-bar.fxml";
     }
 }

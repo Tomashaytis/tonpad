@@ -109,6 +109,6 @@ public class VaultSetPasswordController extends AbstractController {
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/vault-set-password.fxml";
+        return "/ui/fxml/security/vault-set-password.fxml";
     }
 }
