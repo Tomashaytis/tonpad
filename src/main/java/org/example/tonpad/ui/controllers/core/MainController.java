@@ -29,7 +29,6 @@ import org.example.tonpad.ui.service.ThemeService;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
-import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -341,6 +340,6 @@ public class MainController extends AbstractController {
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/tonpad-ui.fxml";
+        return "/ui/fxml/core/tonpad-ui.fxml";
     }
 }

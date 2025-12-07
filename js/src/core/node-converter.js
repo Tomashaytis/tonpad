@@ -26,7 +26,8 @@ export class NodeConverter {
 
         const children = [
             markdownSchema.text("#".repeat(level) + " ", [markdownSchema.marks.spec.create({
-                specClass: "heading-spec"
+                specClass: "heading-spec",
+                type: "heading"
             })])
         ];
 
@@ -52,7 +53,8 @@ export class NodeConverter {
 
         const children = [
             markdownSchema.text("> ", [markdownSchema.marks.spec.create({
-                specClass: "blockquote-spec"
+                specClass: "blockquote-spec",
+                type: "blockquote"
             })])
         ];
 
@@ -174,44 +176,44 @@ export class NodeConverter {
 
     static constructEm(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["*", "*"], content, markdownSchema.marks.em);
+            return this.createWrappedMarkFragment(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark');
         }
-        return Fragment.from(this.createWrappedMark(["*", "*"], content, markdownSchema.marks.em));
+        return Fragment.from(this.createWrappedMark(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark'));
     }
 
     static constructItalic(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["_", "_"], content, markdownSchema.marks.italic);
+            return this.createWrappedMarkFragment(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark');
         }
-        return Fragment.from(this.createWrappedMark(["_", "_"], content, markdownSchema.marks.italic));
+        return Fragment.from(this.createWrappedMark(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark'));
     }
 
     static constructStrong(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["**", "**"], content, markdownSchema.marks.strong);
+            return this.createWrappedMarkFragment(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark');
         }
-        return Fragment.from(this.createWrappedMark(["**", "**"], content, markdownSchema.marks.strong));
+        return Fragment.from(this.createWrappedMark(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark'));
     }
 
     static constructStrike(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["~~", "~~"], content, markdownSchema.marks.strike);
+            return this.createWrappedMarkFragment(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark');
         }
-        return Fragment.from(this.createWrappedMark(["~~", "~~"], content, markdownSchema.marks.strike));
+        return Fragment.from(this.createWrappedMark(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark'));
     }
 
     static constructHighlight(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["==", "=="], content, markdownSchema.marks.highlight);
+            return this.createWrappedMarkFragment(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark');
         }
-        return Fragment.from(this.createWrappedMark(["==", "=="], content, markdownSchema.marks.highlight));
+        return Fragment.from(this.createWrappedMark(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark'));
     }
 
     static constructUnderline(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["__", "__"], content, markdownSchema.marks.underline);
+            return this.createWrappedMarkFragment(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark');
         }
-        return Fragment.from(this.createWrappedMark(["__", "__"], content, markdownSchema.marks.underline));
+        return Fragment.from(this.createWrappedMark(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark'));
     }
 
     static constructCode(text) {
@@ -296,8 +298,8 @@ export class NodeConverter {
             }
 
             nodes.push(markdownSchema.text(text[currentIndex], [
-                    markdownSchema.marks.math.create()
-                ]));
+                markdownSchema.marks.math.create()
+            ]));
             currentIndex++;
         }
 
@@ -365,21 +367,96 @@ export class NodeConverter {
         ]);
     }
 
-    static constructNoteLink(text, href = "") {
+    static constructNoteLink(text) {        
+        const nodes = [
+            markdownSchema.text("[[", [markdownSchema.marks.spec.create()])
+        ];
+
+        if (text && text !== '') {
+            const separatorIndex = text.indexOf('|');
+
+            if (separatorIndex !== -1) {
+                const beforeSeparator = text.substring(0, separatorIndex);
+                const afterSeparator = text.substring(separatorIndex + 1);
+                const href = beforeSeparator;
+
+                if (beforeSeparator.length > 0) {
+                    nodes.push(markdownSchema.text(beforeSeparator, [markdownSchema.marks.link.create({
+                        href: 'tonpad://' + href
+                    })]));
+                }
+
+                nodes.push(markdownSchema.text("|", [markdownSchema.marks.spec.create()]));
+
+                if (afterSeparator.length > 0) {
+                    nodes.push(markdownSchema.text(afterSeparator, [markdownSchema.marks.link.create({
+                        href: 'tonpad://' + href
+                    })]));
+                }
+            } else {
+                nodes.push(markdownSchema.text(text, [markdownSchema.marks.link.create({
+                    href: 'tonpad://' + text
+                })]));
+            }
+        }
+
+        nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create()]));
+
+        return Fragment.from(nodes);
+    }
+
+    static constructEmbeddedLink(text) {        
+        const nodes = [
+            markdownSchema.text("![[", [markdownSchema.marks.spec.create()])
+        ];
+
+        if (text && text !== '') {
+            const separatorIndex = text.indexOf('|');
+
+            if (separatorIndex !== -1) {
+                const beforeSeparator = text.substring(0, separatorIndex);
+                const afterSeparator = text.substring(separatorIndex + 1);
+                const href = beforeSeparator;
+
+                if (beforeSeparator.length > 0) {
+                    nodes.push(markdownSchema.text(beforeSeparator, [markdownSchema.marks.link.create({
+                        href: 'tonpad://' + href
+                    })]));
+                }
+
+                nodes.push(markdownSchema.text("|", [markdownSchema.marks.spec.create()]));
+
+                if (afterSeparator.length > 0) {
+                    nodes.push(markdownSchema.text(afterSeparator, [markdownSchema.marks.link.create({
+                        href: 'tonpad://' + href
+                    })]));
+                }
+            } else {
+                nodes.push(markdownSchema.text(text, [markdownSchema.marks.link.create({
+                    href: 'tonpad://' + text
+                })]));
+            }
+        }
+
+        nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create()]));
+
+        return Fragment.from(nodes);
+    }
+
+    static constructEmptyLink(text) {
         const nodes = [
             markdownSchema.text("[", [markdownSchema.marks.spec.create()])
         ];
 
         if (text && text !== "") {
-            nodes.push(markdownSchema.text(text, [markdownSchema.marks.link.create({
-                href: 'tonpad://' + href
-            })]));
+            nodes.push(markdownSchema.text(text, [markdownSchema.marks.link.create()]));
         }
 
         nodes.push(markdownSchema.text("]", [markdownSchema.marks.spec.create()]));
 
         return Fragment.from(nodes);
     }
+
 
     static constructLink(text, href = "") {
         const nodes = [

@@ -180,6 +180,13 @@ export class NodeInputter {
         const textBefore = parent.textBetween(0, $from.parentOffset);
         const textAfter = parent.textBetween($from.parentOffset, parent.nodeSize - 2);
 
+        if (["]", ")", "}"].includes(text) && textAfter.length > 0 && textAfter.startsWith(text)) {
+            return {
+                text: "",
+                offset: 1
+            };
+        }
+
         const markRules = [
             { pattern: /\*\*$/, leftDelimiter: "**", rightDelimiter: "**" },
             { pattern: /\*$/, leftDelimiter: "*", rightDelimiter: "*" },
@@ -199,13 +206,14 @@ export class NodeInputter {
 
         for (const rule of markRules) {
             if (rule.pattern.test(textBefore + text)) {
-                if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && (!textAfter.startsWith(' ') || !textAfter.startsWith('\t'))) {
+                if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && (!textAfter.startsWith(' ') && !textAfter.startsWith('\t') && !textAfter.startsWith(rule.rightDelimiter))) {
+                    console.log(1);
                     break;
                 }
                 if (["_"].includes(rule.leftDelimiter) && textBefore.length > 0 && (!textBefore.endsWith(' ') || !textBefore.endsWith('\t'))) {
                     break;
                 }
-                if (textAfter.startsWith(rule.rightDelimiter[0])) {
+                if (textAfter.startsWith(rule.rightDelimiter[0]) && !["[", "(", "{"].includes(rule.leftDelimiter)) {
                     return {
                         text: "",
                         offset: 1

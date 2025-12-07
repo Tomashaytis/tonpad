@@ -70,6 +70,6 @@ public class TitleBarController extends AbstractController {
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/tonpad-title-bar.fxml";
+        return "/ui/fxml/core/tonpad-title-bar.fxml";
     }
 }

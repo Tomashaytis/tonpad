@@ -1,6 +1,6 @@
 import { Plugin } from "prosemirror-state";
-import { NodeInputter } from "../utils/node-inputter.js";
-import { NodeSelector } from "../utils/node-selector.js";
+import { NodeInputter } from "../core/node-inputter.js";
+import { NodeSelector } from "../core/node-selector.js";
 
 export function inputPlugin() {
     return new Plugin({

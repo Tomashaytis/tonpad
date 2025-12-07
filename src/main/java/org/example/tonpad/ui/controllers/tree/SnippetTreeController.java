@@ -995,7 +995,7 @@ public class SnippetTreeController extends AbstractController {
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/snippets-panel.fxml";
+        return "/ui/fxml/tree/snippet-tree-panel.fxml";
     }
 
 }

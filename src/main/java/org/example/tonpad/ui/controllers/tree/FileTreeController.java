@@ -988,7 +988,7 @@ public class FileTreeController extends AbstractController {
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/file-tree-panel.fxml";
+        return "/ui/fxml/tree/file-tree-panel.fxml";
     }
 
 }

@@ -1,7 +1,6 @@
 import { Plugin } from "prosemirror-state";
 import { keydownHandler } from "prosemirror-keymap";
-import { TextSelection } from "prosemirror-state";
-import { correctCursorPos, findNodePosition, getNavigationInfo, getNeighbor } from "../utils/utils.js";
+import { findNodePosition, getNavigationInfo, getNeighbor } from "../utils/utils.js";
 
 export function blockNavigationPlugin() {
     return new Plugin({

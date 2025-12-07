@@ -61,6 +61,6 @@ public class SelectSnippetActionController extends AbstractController {
         return contextMenu;
     }
     protected String getFxmlSource() {
-        return "/ui/fxml/select-snippet-action.fxml";
+        return "/ui/fxml/action/select-snippet-action.fxml";
     }
 }

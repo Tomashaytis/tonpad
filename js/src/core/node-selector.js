@@ -1,6 +1,5 @@
 import { NodeConverter } from "./node-converter.js";
 import { NodeReconstructor } from "./node-reconstructor.js";
-import { NodeInputter } from "./node-inputter.js";
 import { TextSelection } from "prosemirror-state";
 import { markdownSerializer } from "../serializer/markdown-serializer.js";
 

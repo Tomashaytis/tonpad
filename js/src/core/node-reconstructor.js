@@ -1,6 +1,6 @@
 import { markdownSchema } from "../schema/markdown-schema.js";
 import { NodeConverter } from "./node-converter.js";
-import { findTabs } from "./utils.js";
+import { findTabs } from "../utils/utils.js";
 import { Fragment } from "prosemirror-model";
 
 export class NodeReconstructor {
@@ -90,9 +90,19 @@ export class NodeReconstructor {
                 handler: this.wrapWithMark.bind(this, 'math')
             },
             {
+                name: 'embedded_link',
+                pattern: /!\[\[(.*?)\]\]/g,
+                handler: this.wrapWithMark.bind(this, 'embedded_link')
+            },
+            {
                 name: 'note_link',
-                pattern: /\[(.*?)\](?!\()/g,
+                pattern: /\[\[(.*?)\]\]/g,
                 handler: this.wrapWithMark.bind(this, 'note_link')
+            },
+            {
+                name: 'empty_link',
+                pattern: /\[(.*?)\](?!\()/g,
+                handler: this.wrapWithMark.bind(this, 'empty_link')
             },
             {
                 name: 'link',
@@ -287,8 +297,12 @@ export class NodeReconstructor {
                     return NodeConverter.constructMath(text);
                 case 'link':
                     return NodeConverter.constructLink(text, href);
+                case 'empty_link':
+                    return NodeConverter.constructEmptyLink(text);
                 case 'note_link':
-                    return NodeConverter.constructNoteLink(text, href);
+                    return NodeConverter.constructNoteLink(text);
+                case 'embedded_link':
+                    return NodeConverter.constructEmbeddedLink(text);
                 case 'url':
                     return NodeConverter.constructUrl(text);
                 case 'email':

@@ -1,8 +1,8 @@
 import { Plugin } from "prosemirror-state";
-import { NodeSelector } from "../utils/node-selector.js";
-import { NodeConverter } from "../utils/node-converter.js";
-import { NodeInputter } from "../utils/node-inputter.js";
-import { NodeReconstructor } from "../utils/node-reconstructor.js";
+import { NodeSelector } from "../core/node-selector.js";
+import { NodeConverter } from "../core/node-converter.js";
+import { NodeInputter } from "../core/node-inputter.js";
+import { NodeReconstructor } from "../core/node-reconstructor.js";
 
 let sourceNodePos = null;
 

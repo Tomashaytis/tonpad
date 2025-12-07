@@ -13889,6 +13889,7 @@
           spec: {
               attrs: {
                   specClass: { default: "mark-spec" },
+                  type: {default: "format"},
               },
               parseDOM: [
                   {
@@ -14093,7 +14094,8 @@
 
           const children = [
               markdownSchema.text("#".repeat(level) + " ", [markdownSchema.marks.spec.create({
-                  specClass: "heading-spec"
+                  specClass: "heading-spec",
+                  type: "heading"
               })])
           ];
 
@@ -14119,7 +14121,8 @@
 
           const children = [
               markdownSchema.text("> ", [markdownSchema.marks.spec.create({
-                  specClass: "blockquote-spec"
+                  specClass: "blockquote-spec",
+                  type: "blockquote"
               })])
           ];
 
@@ -14241,44 +14244,44 @@
 
       static constructEm(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["*", "*"], content, markdownSchema.marks.em);
+              return this.createWrappedMarkFragment(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark');
           }
-          return Fragment.from(this.createWrappedMark(["*", "*"], content, markdownSchema.marks.em));
+          return Fragment.from(this.createWrappedMark(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark'));
       }
 
       static constructItalic(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["_", "_"], content, markdownSchema.marks.italic);
+              return this.createWrappedMarkFragment(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark');
           }
-          return Fragment.from(this.createWrappedMark(["_", "_"], content, markdownSchema.marks.italic));
+          return Fragment.from(this.createWrappedMark(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark'));
       }
 
       static constructStrong(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["**", "**"], content, markdownSchema.marks.strong);
+              return this.createWrappedMarkFragment(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark');
           }
-          return Fragment.from(this.createWrappedMark(["**", "**"], content, markdownSchema.marks.strong));
+          return Fragment.from(this.createWrappedMark(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark'));
       }
 
       static constructStrike(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["~~", "~~"], content, markdownSchema.marks.strike);
+              return this.createWrappedMarkFragment(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark');
           }
-          return Fragment.from(this.createWrappedMark(["~~", "~~"], content, markdownSchema.marks.strike));
+          return Fragment.from(this.createWrappedMark(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark'));
       }
 
       static constructHighlight(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["==", "=="], content, markdownSchema.marks.highlight);
+              return this.createWrappedMarkFragment(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark');
           }
-          return Fragment.from(this.createWrappedMark(["==", "=="], content, markdownSchema.marks.highlight));
+          return Fragment.from(this.createWrappedMark(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark'));
       }
 
       static constructUnderline(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["__", "__"], content, markdownSchema.marks.underline);
+              return this.createWrappedMarkFragment(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark');
           }
-          return Fragment.from(this.createWrappedMark(["__", "__"], content, markdownSchema.marks.underline));
+          return Fragment.from(this.createWrappedMark(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark'));
       }
 
       static constructCode(text) {
@@ -14363,8 +14366,8 @@
               }
 
               nodes.push(markdownSchema.text(text[currentIndex], [
-                      markdownSchema.marks.math.create()
-                  ]));
+                  markdownSchema.marks.math.create()
+              ]));
               currentIndex++;
           }
 
@@ -14432,21 +14435,96 @@
           ]);
       }
 
-      static constructNoteLink(text, href = "") {
+      static constructNoteLink(text) {        
+          const nodes = [
+              markdownSchema.text("[[", [markdownSchema.marks.spec.create()])
+          ];
+
+          if (text && text !== '') {
+              const separatorIndex = text.indexOf('|');
+
+              if (separatorIndex !== -1) {
+                  const beforeSeparator = text.substring(0, separatorIndex);
+                  const afterSeparator = text.substring(separatorIndex + 1);
+                  const href = beforeSeparator;
+
+                  if (beforeSeparator.length > 0) {
+                      nodes.push(markdownSchema.text(beforeSeparator, [markdownSchema.marks.link.create({
+                          href: 'tonpad://' + href
+                      })]));
+                  }
+
+                  nodes.push(markdownSchema.text("|", [markdownSchema.marks.spec.create()]));
+
+                  if (afterSeparator.length > 0) {
+                      nodes.push(markdownSchema.text(afterSeparator, [markdownSchema.marks.link.create({
+                          href: 'tonpad://' + href
+                      })]));
+                  }
+              } else {
+                  nodes.push(markdownSchema.text(text, [markdownSchema.marks.link.create({
+                      href: 'tonpad://' + text
+                  })]));
+              }
+          }
+
+          nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create()]));
+
+          return Fragment.from(nodes);
+      }
+
+      static constructEmbeddedLink(text) {        
+          const nodes = [
+              markdownSchema.text("![[", [markdownSchema.marks.spec.create()])
+          ];
+
+          if (text && text !== '') {
+              const separatorIndex = text.indexOf('|');
+
+              if (separatorIndex !== -1) {
+                  const beforeSeparator = text.substring(0, separatorIndex);
+                  const afterSeparator = text.substring(separatorIndex + 1);
+                  const href = beforeSeparator;
+
+                  if (beforeSeparator.length > 0) {
+                      nodes.push(markdownSchema.text(beforeSeparator, [markdownSchema.marks.link.create({
+                          href: 'tonpad://' + href
+                      })]));
+                  }
+
+                  nodes.push(markdownSchema.text("|", [markdownSchema.marks.spec.create()]));
+
+                  if (afterSeparator.length > 0) {
+                      nodes.push(markdownSchema.text(afterSeparator, [markdownSchema.marks.link.create({
+                          href: 'tonpad://' + href
+                      })]));
+                  }
+              } else {
+                  nodes.push(markdownSchema.text(text, [markdownSchema.marks.link.create({
+                      href: 'tonpad://' + text
+                  })]));
+              }
+          }
+
+          nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create()]));
+
+          return Fragment.from(nodes);
+      }
+
+      static constructEmptyLink(text) {
           const nodes = [
               markdownSchema.text("[", [markdownSchema.marks.spec.create()])
           ];
 
           if (text && text !== "") {
-              nodes.push(markdownSchema.text(text, [markdownSchema.marks.link.create({
-                  href: 'tonpad://' + href
-              })]));
+              nodes.push(markdownSchema.text(text, [markdownSchema.marks.link.create()]));
           }
 
           nodes.push(markdownSchema.text("]", [markdownSchema.marks.spec.create()]));
 
           return Fragment.from(nodes);
       }
+
 
       static constructLink(text, href = "") {
           const nodes = [
@@ -14701,9 +14779,19 @@
                   handler: this.wrapWithMark.bind(this, 'math')
               },
               {
+                  name: 'embedded_link',
+                  pattern: /!\[\[(.*?)\]\]/g,
+                  handler: this.wrapWithMark.bind(this, 'embedded_link')
+              },
+              {
                   name: 'note_link',
-                  pattern: /\[(.*?)\](?!\()/g,
+                  pattern: /\[\[(.*?)\]\]/g,
                   handler: this.wrapWithMark.bind(this, 'note_link')
+              },
+              {
+                  name: 'empty_link',
+                  pattern: /\[(.*?)\](?!\()/g,
+                  handler: this.wrapWithMark.bind(this, 'empty_link')
               },
               {
                   name: 'link',
@@ -14898,8 +14986,12 @@
                       return NodeConverter.constructMath(text);
                   case 'link':
                       return NodeConverter.constructLink(text, href);
+                  case 'empty_link':
+                      return NodeConverter.constructEmptyLink(text);
                   case 'note_link':
-                      return NodeConverter.constructNoteLink(text, href);
+                      return NodeConverter.constructNoteLink(text);
+                  case 'embedded_link':
+                      return NodeConverter.constructEmbeddedLink(text);
                   case 'url':
                       return NodeConverter.constructUrl(text);
                   case 'email':
@@ -15165,6 +15257,13 @@
           const textBefore = parent.textBetween(0, $from.parentOffset);
           const textAfter = parent.textBetween($from.parentOffset, parent.nodeSize - 2);
 
+          if (["]", ")", "}"].includes(text) && textAfter.length > 0 && textAfter.startsWith(text)) {
+              return {
+                  text: "",
+                  offset: 1
+              };
+          }
+
           const markRules = [
               { pattern: /\*\*$/, leftDelimiter: "**", rightDelimiter: "**" },
               { pattern: /\*$/, leftDelimiter: "*", rightDelimiter: "*" },
@@ -15184,13 +15283,14 @@
 
           for (const rule of markRules) {
               if (rule.pattern.test(textBefore + text)) {
-                  if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && (!textAfter.startsWith(' ') || !textAfter.startsWith('\t'))) {
+                  if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && (!textAfter.startsWith(' ') && !textAfter.startsWith('\t') && !textAfter.startsWith(rule.rightDelimiter))) {
+                      console.log(1);
                       break;
                   }
                   if (["_"].includes(rule.leftDelimiter) && textBefore.length > 0 && (!textBefore.endsWith(' ') || !textBefore.endsWith('\t'))) {
                       break;
                   }
-                  if (textAfter.startsWith(rule.rightDelimiter[0])) {
+                  if (textAfter.startsWith(rule.rightDelimiter[0]) && !["[", "(", "{"].includes(rule.leftDelimiter)) {
                       return {
                           text: "",
                           offset: 1
@@ -30690,8 +30790,128 @@
       insertSnippet(snippetContent) {
           if (snippetContent) {
               const { state, dispatch } = this.view;
-              NodeInputter.handlePasteInNode(this.view, state, dispatch, snippetContent);
+              NodeInputter.handlePasteInNode(this.view, state, dispatch, snippetContent, null, false);
           }
+      }
+
+      format(style) {
+          const { state, dispatch } = this.view;
+          const { from, to } = state.selection;
+
+          const selectedNodes = [];
+          state.doc.content.forEach((child, offset, index) => {
+              const childPos = offset;
+              const blockStart = childPos;
+              const blockEnd = childPos + child.nodeSize;
+
+              if (from < blockEnd && to > blockStart) {
+                  let markerTextLength = 0;
+
+                  child.descendants((node, pos) => {
+                      if (node.isText) {
+                          const hasNonFormatMark = node.marks.some(mark =>
+                              mark.type.name === 'spec' && mark.attrs.type !== 'format'
+                          );
+                          const hasMarker = node.marks.some(mark => mark.type.name === 'marker');
+                          const hasTab = node.marks.some(mark => mark.type.name === 'tab');
+
+                          if (hasNonFormatMark || hasMarker || hasTab) {
+                              markerTextLength += node.text.length;
+                              return true;
+                          } else {
+                              return false;
+                          }
+                      }
+                      return true;
+                  });
+
+                  console.log(`Block ${index}: markerTextLength = ${markerTextLength}`);
+
+                  selectedNodes.push({
+                      node: child,
+                      pos: childPos,
+                      index: index,
+                      blockStart,
+                      blockEnd,
+                      markerTextLength,
+                      intersectsFrom: Math.max(from, blockStart + 1 + markerTextLength),
+                      intersectsTo: Math.min(to, blockEnd),
+                      type: child.type.name,
+                      hasText: child.textContent.length > 0,
+                      isEmpty: child.childCount === 0,
+                      text: child.textContent
+                  });
+              }
+          });
+
+          let marker = '';
+          switch (style) {
+              case 'bold':
+                  marker = '**';
+                  break;
+              case 'italic':
+                  marker = '_';
+                  break;
+              case 'underline':
+                  marker = '__';
+                  break;
+              case 'strikethrough':
+                  marker = '~~';
+                  break;
+              case 'highlight':
+                  marker = '==';
+                  break;
+              case 'comment':
+                  marker = '%%';
+                  break;
+              case 'math':
+                  marker = '$';
+                  break;
+              case 'code':
+                  marker = '`';
+                  break;
+          }
+
+          const paragraphs = [];
+          selectedNodes.forEach(nodeInfo => {
+              const nodeText = nodeInfo.text;
+
+              const textStart = nodeInfo.blockStart + 1;
+
+              const markStartInText = nodeInfo.intersectsFrom - textStart;
+              const markEndInText = nodeInfo.intersectsTo - textStart;
+
+              const safeMarkStart = Math.max(0, Math.min(markStartInText, nodeText.length));
+              const safeMarkEnd = Math.max(0, Math.min(markEndInText, nodeText.length));
+
+              const beforeText = nodeText.slice(0, safeMarkStart);
+              const markText = nodeText.slice(safeMarkStart, safeMarkEnd);
+              const afterText = nodeText.slice(safeMarkEnd);
+
+              const escapeMarker = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const markerRegex = new RegExp(escapeMarker, 'g');
+
+              const cleanBeforeText = beforeText.replace(markerRegex, '');
+              const cleanMarkText = markText.replace(markerRegex, '');
+              const cleanAfterText = afterText.replace(markerRegex, '');
+
+              let paragraph = NodeConverter.constructParagraph(cleanBeforeText + marker + cleanMarkText + marker + cleanAfterText);
+              paragraphs.push(paragraph);
+          });
+
+          const reconstructor = new NodeReconstructor();
+          const reconstructed = reconstructor.applyBlockRules(paragraphs, 0);
+
+          let tr = state.tr;
+          let startReplacePos = selectedNodes[0].blockStart;
+          let endReplacePos = selectedNodes[selectedNodes.length - 1].blockEnd;
+          tr = tr.replaceWith(startReplacePos, endReplacePos, reconstructed);
+
+          const cursorOffset = marker.length;
+          const cursorPos = from + cursorOffset;
+
+          tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
+          dispatch(tr);
       }
 
       getMarkdown() {
@@ -30816,7 +31036,7 @@
 
       destroy() {
           this.view.destroy();
-          
+
           if (this.frontMatterTable) {
               this.frontMatterTable.style.display = 'none';
               if (this.frontMatterBody) {
@@ -30824,7 +31044,6 @@
               }
           }
 
-          // Очищаем ссылки
           this.view = null;
           this.frontMatter = null;
           this.frontMatterTable = null;
@@ -31032,41 +31251,6 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
 
   })();
 
-  /*
-  document.addEventListener('DOMContentLoaded', () => {
-      const container = document.getElementById('editor');
-      if (container) {
-          window.editor = new Editor(container);
-      }
-  });
-
-  window.editor.setNoteContent(`---
-  author: pavel
-  time: 12:15
-  message: Hi
-  ---
-
-  # Heading 1
-  ## Heading 2
-
-  Quotes:
-  > "It's easy!"
-  > ProseMirror
-
-  Lists:
-      1
-          2
-  - item 1
-  - item 2
-      - item 3
-      - item 4
-  1. one
-  2. two
-  3. thee
-
-  Marks: *em* **strong** ~~strike~~ ==highlight== __underline__ \`code\`
-
-  Links: [note] [link](https://example.com) https://example.com my_email@mail.ru #tag`);
-   */
+  // window.createEditor('note');
 
 })();

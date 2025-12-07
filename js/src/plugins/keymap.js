@@ -2,10 +2,10 @@ import { keymap } from "prosemirror-keymap";
 import { baseKeymap, toggleMark, chainCommands, newlineInCode, createParagraphNear, liftEmptyBlock, splitBlock, joinBackward, selectNodeBackward } from "prosemirror-commands";
 import { undo, redo } from "prosemirror-history";
 import { markdownSchema } from "../schema/markdown-schema.js";
-import { NodeMerger } from "../utils/node-merger.js";
-import { NodeSplitter } from "../utils/node-splitter.js";
-import { NodeInputter } from "../utils/node-inputter.js";
-import { NodeSelector } from "../utils/node-selector.js";
+import { NodeMerger } from "../core/node-merger.js";
+import { NodeSplitter } from "../core/node-splitter.js";
+import { NodeInputter } from "../core/node-inputter.js";
+import { NodeSelector } from "../core/node-selector.js";
 
 export function keymapPlugin(editor) {
     return keymap({

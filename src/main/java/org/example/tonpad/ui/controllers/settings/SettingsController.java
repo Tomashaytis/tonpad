@@ -207,6 +207,6 @@ public class SettingsController extends AbstractController {
 
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/settings-panel.fxml";
+        return "/ui/fxml/settings/settings-panel.fxml";
     }
 }

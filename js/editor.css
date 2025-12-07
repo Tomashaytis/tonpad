@@ -289,16 +289,14 @@ h6 {
     background: none;
 }
 
-/* Notation block для цитат */
+/* Стилизация цитат */
 blockquote {
     position: relative;
-    padding-left: 12px;
     margin: 0;
     font-style: italic;
-    /* место для вертикальной линии */
 }
 
-/* Вертикальная линия как в Obsidian */
+/* Вертикальная линия */
 blockquote::before {
     content: "";
     position: absolute;
@@ -328,11 +326,11 @@ blockquote:has(+ blockquote)::before {
 
 /* Spec блоки для заголовков */
 .heading-spec {
+    font: inherit;
     margin: 0;
     padding: 0;
     color: #b8cb76;
     caret-color: black;
-    font: inherit;
 }
 
 /* Spec блоки для цитат */
@@ -340,7 +338,7 @@ blockquote:has(+ blockquote)::before {
     height: 100%;
     margin: 0;
     padding: 0;
-    color: #b8cb76;
+    color: #79854c;
     caret-color: black;
     font: inherit;
     font-style: normal;
@@ -396,13 +394,46 @@ h6 .heading-spec {
     padding: 0;
 }
 
-/* оОбщие стили символов марок*/
+/* Общие стили символов марок*/
 .mark-spec {
-    color: #79854c;
-    font-weight: bold;
-    caret-color: black;
-    opacity: 0.7;
     font: inherit;
+    color: #79854c;
+    caret-color: black;
+}
+
+.em-mark {
+    font: inherit;
+    font-style: italic;
+    color: #79854c;
+    caret-color: black;
+}
+
+.strong-mark {
+    font: inherit;
+    font-weight: bold;
+    color: #79854c;
+    caret-color: black;
+}
+
+.underline-mark {
+    font: inherit;
+    text-decoration: underline;
+    color: #79854c;
+    caret-color: black;
+}
+
+.strike-mark {
+    font: inherit;
+    text-decoration: line-through;
+    color: #79854c;
+    caret-color: black;
+}
+
+.highlight-mark {
+    font: inherit;
+    background-color: #ffff00;
+    color: #79854c;
+    caret-color: black;
 }
 
 /* Строчный блок кода */
@@ -415,7 +446,6 @@ h6 .heading-spec {
     color: #79854c;
     font-weight: bold;
     caret-color: black;
-    opacity: 0.7;
 }
 
 .code-mark-spec-right {
@@ -427,7 +457,6 @@ h6 .heading-spec {
     color: #79854c;
     font-weight: bold;
     caret-color: black;
-    opacity: 0.7;
 }
 
 code {

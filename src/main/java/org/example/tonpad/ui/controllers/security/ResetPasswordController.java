@@ -115,6 +115,6 @@ public class ResetPasswordController extends AbstractController {
     
     @Override
     protected String getFxmlSource() {
-        return "/ui/fxml/reset-password.fxml";
+        return "/ui/fxml/security/reset-password.fxml";
     }
 }
