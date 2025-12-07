@@ -114,7 +114,7 @@ public class AesGcmEncryptor implements Encryptor {
     public boolean isOpeningWithNoPasswordAllowed(Path path)
     {
         try {
-            if ((Files.newInputStream(path).readNBytes(HEADER_BYTES.length).equals(HEADER_BYTES)))
+            if (!(Files.newInputStream(path).readNBytes(HEADER_BYTES.length).equals(HEADER_BYTES)))
             {
                 return false;
             }

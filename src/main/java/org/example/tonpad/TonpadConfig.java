@@ -8,7 +8,7 @@ import java.nio.file.Path;
 public record TonpadConfig(
         String dataPath,
         ReservedDirNames reservedNames,
-        Path jsFunctionsDirectory,
+        String jsFunctionsDirectory,
         String changelogPath,
         String validateDbSchemaPath
 ) {
