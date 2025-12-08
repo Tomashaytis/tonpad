@@ -185,7 +185,7 @@ public class SearchInFilesController extends AbstractController {
         if(vaultSession.isOpendWithNoPassword())
         {
             Encryptor encoder = new AesGcmEncryptor();
-            if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
+            if (encoder.isActionWithNoPasswordAllowed(filePath)) {
                 return fileSystemService.readFile(filePath);
             }
             else {

@@ -67,7 +67,7 @@ public class TabController {
         if (protectedMode) {
             if(vaultSession.isOpendWithNoPassword()) {
                 Encryptor encoder = encryptorFactory.encryptorForKey();
-                if (encoder.isOpeningWithNoPasswordAllowed(filePath)) {
+                if (encoder.isActionWithNoPasswordAllowed(filePath)) {
                     noteContent = fileSystemService.readFile(filePath);
                 }
                 else {
