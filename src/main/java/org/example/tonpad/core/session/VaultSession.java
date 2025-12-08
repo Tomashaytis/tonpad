@@ -15,4 +15,5 @@ public interface VaultSession {
     boolean isOpendWithNoPassword();
     SecretKey requiredKey();
     Optional<SecretKey> getKeyIfPresent();
+    String getFingerPrint();
 }

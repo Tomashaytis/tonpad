@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.tonpad.core.editor.enums.EditorMode;
 import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
+import org.example.tonpad.core.service.RecentTabService;
 import org.example.tonpad.core.service.crypto.Encryptor;
 import org.example.tonpad.core.service.crypto.EncryptorFactory;
 import org.example.tonpad.core.exceptions.DecryptionException;
@@ -36,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class TabController {
 
-    @Setter
     private TabPane tabPane;
 
     @Getter
@@ -47,12 +47,43 @@ public class TabController {
 
     private final RegularFileService fileSystemService;
 
+    private final RecentTabService recentTabService;
+
     private final VaultSession vaultSession;
 
     private final EncryptorFactory encryptorFactory;
 
     public void init(URI fileUri, EditorMode editorMode, boolean protectedMode) {
         createInitialTab(fileUri, editorMode, protectedMode);
+    }
+
+    public void setTabPane(TabPane tabPane) {
+        this.tabPane = tabPane;
+
+        //эта хрнеь слушает смену активной вкладки
+        this.tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
+            if (newTab == null) {
+                recentTabService.clearLastActive();
+                return;
+            }
+
+            TabParams params = tabMap.get(newTab);
+            if (params == null) {
+                recentTabService.clearLastActive();
+                return;
+            }
+
+            Path path = params.path();
+            if (path == null) {
+                recentTabService.clearLastActive();
+                return;
+            }
+            recentTabService.updateLastActive(path);
+        });
+    }
+    
+    public void refreshRtConfig() {
+        recentTabService.refreshRtConfig();
     }
 
     public void openFileInTab(Path filePath, boolean openInCurrent, EditorMode editorMode, boolean protectedMode) {
@@ -94,6 +125,7 @@ public class TabController {
         } else {
             createTabWithContent(getTabName(filePath), noteContent, filePath, editorMode, protectedMode);
         }
+        recentTabService.addOpenedTab(filePath);
     }
 
     public void clearAllTabs() {
@@ -247,6 +279,7 @@ public class TabController {
         if (tab.getTabPane() != null) {
             tab.getTabPane().getTabs().remove(tab);
         }
+        recentTabService.deleteClosedTab(path);
     }
 
     private void saveToFile(boolean protectedMode) {

@@ -2,6 +2,7 @@ package org.example.tonpad.ui.controllers.settings;
 
 import org.example.tonpad.core.exceptions.CustomIOException;
 import org.example.tonpad.core.files.CryptoFileService;
+import org.example.tonpad.core.service.RecentTabService;
 import org.example.tonpad.core.service.crypto.DerivationService;
 import org.example.tonpad.core.exceptions.DerivationException;
 import org.example.tonpad.core.session.VaultSession;
@@ -46,6 +47,7 @@ public class SettingsController extends AbstractController {
 
     private final CryptoFileService cryptoFileService;
     private final DerivationService derivationService;
+    private final RecentTabService recentTabService;
     private final VaultSession vaultSession;
     private final VaultPathsContainer vaultPathsContainer;
 
@@ -97,6 +99,8 @@ public class SettingsController extends AbstractController {
                 vaultSession.unlock(pwd);
                 log.info("[SET-PWD] session state after: unlocked={}, withKey={}, noPwd={}",
                         vaultSession.isUnlocked(), vaultSession.isProtectionEnabled(), vaultSession.isOpendWithNoPassword());
+
+                recentTabService.refreshFingerPrint();
             }
             catch (DerivationException e) {
                 log.info("[SET-PWD] derivation failed: {}", e.toString());
@@ -126,6 +130,8 @@ public class SettingsController extends AbstractController {
                 vaultSession.openWithoutPassword();
                 log.info("[RESET-PWD] session state after: unlocked={}, withKey={}, noPwd={}",
                         vaultSession.isUnlocked(), vaultSession.isProtectionEnabled(), vaultSession.isOpendWithNoPassword());
+
+                recentTabService.refreshFingerPrint();
             }
             catch (Exception e) {
                 log.info("[RESET-PWD] unexpected error: {}", e.toString());

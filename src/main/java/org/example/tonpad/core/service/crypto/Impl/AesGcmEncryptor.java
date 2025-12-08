@@ -20,7 +20,6 @@ import org.example.tonpad.core.exceptions.EncryptionException;
 
 import lombok.NonNull;
 
-//Пароль пользователя прогони через эту хрень PBKDF2 (salt, iterations) -> AESключ 256 бит
 public class AesGcmEncryptor implements Encryptor {
 
     private static final String KEY_LENGTH_ERROR = "key must be only 16/24/32 bytes length";
