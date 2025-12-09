@@ -36,6 +36,8 @@ public class RecentTabServiceImpl implements RecentTabService {
 
     private String fingerPrint;
 
+    private boolean renaming = false;
+
     @Override
     public void saveConfig() {
         if (recentTabsConfig.getSessions() == null) {
@@ -49,9 +51,42 @@ public class RecentTabServiceImpl implements RecentTabService {
     public void refreshRtConfig() {
         String json = fileSystemService.readFile(getRtConfPath());
         loadFromJson(json);
-        System.out.println("SESSOINS");
-        System.out.println(recentTabsConfig.getSessions());
-        if (recentTabsConfig.getSessions() == null) recentTabsConfig.setSessions(new HashMap<>());
+        if (recentTabsConfig.getSessions() == null) {
+            recentTabsConfig.setSessions(new HashMap<>());
+        }
+        this.fingerPrint = null;
+    }
+
+    @Override
+    public void renamePath(Path oldPath, Path newPath) {
+        renaming = true;
+        Path oldRel = getRelativePath(oldPath);
+        Path newRel = getRelativePath(newPath);
+
+        RecentTabsSession session = getSession();
+
+        if (session.getTabs().remove(oldRel.toString())) {
+            session.getTabs().add(newRel.toString());
+        }
+
+        String last = session.getLastActiveTab();
+        if (last != null && last.equals(oldRel.toString())) {
+            session.setLastActiveTab(newRel.toString());
+        }
+        saveConfig();
+        renaming = false;
+    }
+
+    @Override
+    public void renameLastActive(Path oldPath, Path newPath) {
+        Path oldRel = getRelativePath(oldPath);
+        Path newRel = getRelativePath(newPath);
+
+        RecentTabsSession session = getSession();
+        if (oldRel.toString().equals(session.getLastActiveTab())) {
+            session.setLastActiveTab(newRel.toString());
+            saveConfig();
+        }
     }
 
     @Override
@@ -59,7 +94,7 @@ public class RecentTabServiceImpl implements RecentTabService {
         RecentTabsSession session = getSession();
         String last = session.getLastActiveTab();
         if (last == null || last.isBlank()) return Optional.empty();
-        return Optional.of(vaultPathsContainer.getSnippetsPath().resolve(last));
+        return Optional.of(vaultPathsContainer.getVaultPath().resolve(last));
     }
 
     @Override
@@ -70,7 +105,7 @@ public class RecentTabServiceImpl implements RecentTabService {
                         .map(t -> {
                             return (t == null || t.isBlank()) 
                                 ? Optional.<Path>empty() 
-                                : Optional.of(vaultPathsContainer.getSnippetsPath().resolve(t));
+                                : Optional.of(vaultPathsContainer.getVaultPath().resolve(t));
                         }).toList();
     }
 
@@ -102,7 +137,18 @@ public class RecentTabServiceImpl implements RecentTabService {
         Path path = getRelativePath(notePath);
         RecentTabsSession session = getSession();
         session.getTabs().remove(path.toString());
+        if (!renaming && path.toString().equals(session.getLastActiveTab())) {
+            session.setLastActiveTab(null);
+        }
         saveConfig();
+    }
+
+    @Override
+    public boolean isInRecent(Path notePath) {
+        Path path = getRelativePath(notePath);
+        RecentTabsSession session = getSession();
+        if (session.getTabs().contains(path.toString())) return true;
+        return false;
     }
 
     @Override
@@ -175,7 +221,6 @@ public class RecentTabServiceImpl implements RecentTabService {
     }
 
     private RecentTabsSession getSessionByFingerprint(String fp) {
-        System.out.println(this);
         return recentTabsConfig.getSessions().get(fp);
     }
 }

@@ -9,7 +9,6 @@ import javafx.scene.web.WebView;
 import javafx.util.Duration;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import org.example.tonpad.core.editor.enums.EditorMode;
@@ -19,6 +18,7 @@ import org.example.tonpad.core.service.RecentTabService;
 import org.example.tonpad.core.service.crypto.Encryptor;
 import org.example.tonpad.core.service.crypto.EncryptorFactory;
 import org.example.tonpad.core.exceptions.DecryptionException;
+import org.example.tonpad.core.exceptions.ObjectNotFoundException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.editor.Editor;
 import org.example.tonpad.ui.extentions.TabParams;
@@ -28,6 +28,8 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Key;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +40,8 @@ import java.util.concurrent.TimeUnit;
 public class TabController {
 
     private TabPane tabPane;
+
+    private boolean vaultChanging = false;
 
     @Getter
     private final Map<Tab, TabParams> tabMap = new ConcurrentHashMap<>();
@@ -62,6 +66,10 @@ public class TabController {
 
         //эта хрнеь слушает смену активной вкладки
         this.tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
+            if (vaultChanging) {
+                return;
+            }
+
             if (newTab == null) {
                 recentTabService.clearLastActive();
                 return;
@@ -84,6 +92,66 @@ public class TabController {
     
     public void refreshRtConfig() {
         recentTabService.refreshRtConfig();
+    }
+
+    public void restoreRecentTabs() {
+        Path lastActivePath = recentTabService.getLastActiveTab().orElse(null);
+
+        vaultChanging = true;
+
+        StringBuilder sb = new StringBuilder();
+        List<Path> badPaths = new ArrayList<>();
+        boolean[] lastActiveOpened = new boolean[1];
+        lastActiveOpened[0] = false;
+        try {
+            recentTabService.getRecentTabs()
+                            .stream().forEach(tabOpt -> {
+                                if (tabOpt.isEmpty()) return;
+                                Path notePath = tabOpt.get();
+                                try {
+                                    openFileInTab(notePath, false, EditorMode.NOTE, true);
+                                    if (lastActivePath != null && lastActivePath.equals(notePath)) {
+                                        lastActiveOpened[0] = true;
+                                    }
+                                }
+                                catch (Exception ex) {
+                                    sb.append(notePath).append(";\n");
+                                    badPaths.add(notePath);
+                                }
+                            });
+
+        }
+        finally {
+            vaultChanging = false;
+        }
+        if (!badPaths.isEmpty()) {
+            badPaths.stream().forEach(recentTabService::deleteClosedTab);
+        }
+
+        if (lastActiveOpened[0]) {
+            Tab lastTab = pathMap.get(lastActivePath);
+            if (lastTab != null) {
+                tabPane.getSelectionModel().select(lastTab);
+                recentTabService.updateLastActive(lastActivePath);
+            }
+        }
+        else {
+            if (!pathMap.isEmpty()) {
+                Path firstPath = pathMap.keySet().iterator().next();
+                Tab firstTab = pathMap.get(firstPath);
+                if (firstTab != null) {
+                    tabPane.getSelectionModel().select(firstTab);
+                    recentTabService.updateLastActive(firstPath);
+                }
+            }
+            else {
+                recentTabService.clearLastActive();
+            }
+        }
+
+        if (!sb.isEmpty()) {
+            throw new ObjectNotFoundException("not all tabs restored: couldn't open files: " + sb);
+        }
     }
 
     public void openFileInTab(Path filePath, boolean openInCurrent, EditorMode editorMode, boolean protectedMode) {
@@ -129,10 +197,15 @@ public class TabController {
     }
 
     public void clearAllTabs() {
-    tabPane.getTabs().stream()
-            .filter(t -> !t.isDisable())
-            .toList()
-            .forEach(this::closeTab);
+        vaultChanging = true;
+        try {
+            tabPane.getTabs().stream()
+                    .filter(t -> !t.isDisable())
+                    .toList()
+                    .forEach(t -> closeTab(t, true));
+        } finally {
+            vaultChanging = false;
+        }
     }
 
     public void renameTab(Path oldPath, Path newPath) {
@@ -148,12 +221,19 @@ public class TabController {
             String title = getTabName(newPath);
             tab.setText(title);
         }
+        boolean wasInRecent = recentTabService.isInRecent(oldPath);
+        recentTabService.renamePath(oldPath, newPath);
+        recentTabService.renameLastActive(oldPath, newPath);
+        if (wasInRecent) {
+            recentTabService.deleteClosedTab(oldPath);
+            recentTabService.addOpenedTab(newPath);
+        }
     }
 
-    public void closeTab(Path path) {
+    public void closeTab(Path path, boolean isVaultChanging) {
         if (pathMap.containsKey(path)) {
             Tab tab = pathMap.get(path);
-            closeTab(tab);
+            closeTab(tab, isVaultChanging);
         }
     }
 
@@ -189,7 +269,7 @@ public class TabController {
         initTabContent(newTab, "<h1>Error loading content</h1>", content, webView, EditorMode.SNIPPET);
         addTabToPane(newTab);
 
-        newTab.setOnCloseRequest(event -> closeTab(newTab));
+        newTab.setOnCloseRequest(event -> closeTab(newTab, false));
     }
 
     private void createTabWithContent(String title, String noteContent, Path path, EditorMode editorMode, boolean protectedMode) {
@@ -204,11 +284,11 @@ public class TabController {
         addTabToPane(newTab);
 
         PauseTransition debounce = new PauseTransition(Duration.millis(1500));
-        debounce.setOnFinished(event -> saveToFile(protectedMode));
+        debounce.setOnFinished(event -> saveToFile(newTab, protectedMode));
 
         newTab.setOnCloseRequest(event -> {
-            saveToFile(protectedMode);
-            closeTab(newTab);
+            saveToFile(newTab, protectedMode);
+            closeTab(newTab, false);
         });
         content.addEventFilter(KeyEvent.KEY_TYPED, event -> debounce.playFromStart());
     }
@@ -256,11 +336,11 @@ public class TabController {
         tabMap.put(tab, new TabParams(editor, path));
 
         PauseTransition debounce = new PauseTransition(Duration.millis(1500));
-        debounce.setOnFinished(event -> saveToFile(protectedMode));
+        debounce.setOnFinished(event -> saveToFile(tab, protectedMode));
 
         tab.setOnCloseRequest(event -> {
-            saveToFile(protectedMode);
-            closeTab(tab);
+            saveToFile(tab, protectedMode);
+            closeTab(tab, false);
         });
         content.addEventFilter(KeyEvent.KEY_TYPED, event -> debounce.playFromStart());
     }
@@ -271,7 +351,7 @@ public class TabController {
         return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
     }
 
-    private void closeTab(Tab tab) {
+    private void closeTab(Tab tab, boolean isVaultChanging) {
         Path path = tabMap.get(tab).path();
         tabMap.remove(tab);
         pathMap.remove(path);
@@ -279,19 +359,24 @@ public class TabController {
         if (tab.getTabPane() != null) {
             tab.getTabPane().getTabs().remove(tab);
         }
-        recentTabService.deleteClosedTab(path);
+        if (!isVaultChanging) recentTabService.deleteClosedTab(path);
     }
 
-    private void saveToFile(boolean protectedMode) {
+    private void saveToFile(Tab tab, boolean protectedMode) {
         byte[] key = vaultSession.getKeyIfPresent()
                         .map(Key::getEncoded)
                         .orElse(null);
+
+        TabParams params = tabMap.get(tab);
+        if (params == null) {
+            return;
+        }
+
+        Path path = params.path();
+        Editor editor = params.editor();
         
         new Thread(() -> {
             try {
-                Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-                Path path = tabMap.get(currentTab).path();
-                Editor editor = tabMap.get(currentTab).editor();
                 String noteContent = editor.getNoteContent().get(3, TimeUnit.SECONDS);
                 if (vaultSession.isOpendWithNoPassword() || !protectedMode)
                     fileSystemService.writeFile(path, noteContent);

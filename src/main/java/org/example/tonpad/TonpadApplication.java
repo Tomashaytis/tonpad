@@ -67,6 +67,7 @@ public class TonpadApplication extends Application {
             fileTreeController.refreshTree();
 
             tabController.refreshRtConfig();
+            tabController.restoreRecentTabs();
         });
     }
 

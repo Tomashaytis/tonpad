@@ -1,6 +1,6 @@
 package org.example.tonpad.core.service.crypto.Impl;
 
-import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -112,9 +112,12 @@ public class AesGcmEncryptor implements Encryptor {
     @Override
     public boolean isActionWithNoPasswordAllowed(Path path)
     {
-        try {
-            if (!(Files.newInputStream(path).readNBytes(HEADER_BYTES.length).equals(HEADER_BYTES)))
-            {
+        try (InputStream in = Files.newInputStream(path)) {
+            byte[] prefix = in.readNBytes(HEADER_BYTES.length);
+            if (prefix.length == 0) {
+                return true;
+            }
+            if (startWith(prefix, HEADER_BYTES)) {
                 return false;
             }
             return true;
