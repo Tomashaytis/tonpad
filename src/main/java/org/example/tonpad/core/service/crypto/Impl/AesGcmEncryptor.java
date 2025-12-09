@@ -1,6 +1,6 @@
 package org.example.tonpad.core.service.crypto.Impl;
 
-import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +20,6 @@ import org.example.tonpad.core.exceptions.EncryptionException;
 
 import lombok.NonNull;
 
-//Пароль пользователя прогони через эту хрень PBKDF2 (salt, iterations) -> AESключ 256 бит
 public class AesGcmEncryptor implements Encryptor {
 
     private static final String KEY_LENGTH_ERROR = "key must be only 16/24/32 bytes length";
@@ -113,9 +112,12 @@ public class AesGcmEncryptor implements Encryptor {
     @Override
     public boolean isActionWithNoPasswordAllowed(Path path)
     {
-        try {
-            if (!(Files.newInputStream(path).readNBytes(HEADER_BYTES.length).equals(HEADER_BYTES)))
-            {
+        try (InputStream in = Files.newInputStream(path)) {
+            byte[] prefix = in.readNBytes(HEADER_BYTES.length);
+            if (prefix.length == 0) {
+                return true;
+            }
+            if (startWith(prefix, HEADER_BYTES)) {
                 return false;
             }
             return true;

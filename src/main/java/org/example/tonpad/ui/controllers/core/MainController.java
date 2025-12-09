@@ -310,7 +310,7 @@ public class MainController extends AbstractController {
     }
 
     private void closeInEditor(Path path) {
-        tabController.closeTab(path);
+        tabController.closeTab(path, false);
     }
 
     private void insertSnippetInEditor(Path path) {
