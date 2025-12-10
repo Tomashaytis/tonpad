@@ -8,6 +8,7 @@ import { NodeConverter } from "./core/node-converter.js";
 import { NodeInputter } from "./core/node-inputter.js";
 import { NodeReconstructor } from "./core/node-reconstructor.js";
 import { NodeSelector } from "./core/node-selector.js";
+import { ClipboardManager } from "./core/clipboard-manager.js"; 
 import { markdownSerializer } from "./serializer/markdown-serializer.js";
 import { blockNavigationPlugin } from "./plugins/block-navigation.js"
 import { keymapPlugin } from "./plugins/keymap.js";
@@ -58,6 +59,8 @@ export class Editor {
             });
 
             this.rebuildTree();
+
+            this.clipboardManager = new ClipboardManager(this.view, window.editorBridge);
         }
     }
 
@@ -706,6 +709,23 @@ export class Editor {
         }
     }
 
+    insert(content) {
+        if (content) {
+            const { state, dispatch } = this.view;
+            const { selection } = state;
+
+            if (!selection.empty) {
+                const deleteTr = NodeSelector.createDeleteSelectionTransaction(this.view);
+                if (deleteTr) {
+                    const newState = state.apply(deleteTr);
+                    return NodeInputter.handlePasteInNode(this.view, newState, dispatch, content, deleteTr, false);
+                }
+            }
+
+            return NodeInputter.handlePasteInNode(this.view, state, dispatch, content);
+        }
+    }
+
     format(style) {
         const { state, dispatch } = this.view;
         const { from, to } = state.selection;
@@ -1083,6 +1103,24 @@ export class Editor {
         const { state } = this.view;
         const { $from, $to } = state.selection;
         return $from.parent === $to.parent;
+    }
+
+    copy() {
+        if (this.clipboardManager) {
+            return this.clipboardManager.copy();
+        }
+    }
+
+    cut() {
+        if (this.clipboardManager) {
+            return this.clipboardManager.cut();
+        }
+    }
+
+    paste() {
+        if (this.clipboardManager) {
+            return this.clipboardManager.paste();
+        }
     }
 
     selectAll() {

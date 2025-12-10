@@ -1,6 +1,10 @@
 package org.example.tonpad.core.editor;
 
+import javafx.scene.web.WebEngine;
 import org.example.tonpad.core.editor.dto.SearchResult;
+import org.example.tonpad.core.editor.enums.FormatType;
+import org.example.tonpad.core.editor.enums.LinkType;
+import org.example.tonpad.core.editor.enums.ParagraphType;
 import org.example.tonpad.core.editor.listener.FrontMatterChangeListener;
 
 import java.net.URL;
@@ -12,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
  * Инкапсулирует все вызовы JavaScript API
  */
 public interface Editor {
+
     void setNoteContent(String noteContent);
 
     void setFrontMatter(Map<String, String> frontMatter);
@@ -35,6 +40,24 @@ public interface Editor {
     CompletableFuture<String> getHtml();
 
     CompletableFuture<String> getMarkdown();
+
+    void link(LinkType linkType);
+
+    void format(FormatType formatType);
+
+    void paragraph(ParagraphType paragraphType);
+
+    void insert(String content);
+
+    CompletableFuture<Boolean> canCreateLinks();
+
+    void copy();
+
+    void cut();
+
+    void paste();
+
+    void selectAll();
 
     void focus();
 

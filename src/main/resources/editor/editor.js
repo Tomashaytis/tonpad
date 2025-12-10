@@ -24739,7 +24739,7 @@
           const tempDoc = state.schema.topNodeType.create({}, fragment);
           const markdownText = markdownSerializer.serialize(tempDoc);
           const cleanedText = markdownText.replace(/\n{3,}/g, '\n\n').trim();
-
+          
           if (event.clipboardData) {
               event.clipboardData.setData('text/plain', cleanedText);
               event.clipboardData.setData('text/markdown', cleanedText);
@@ -24750,6 +24750,76 @@
           }
 
           return cleanedText;
+      }
+  }
+
+  class ClipboardManager {
+      constructor(view, editorBridge) {
+          this.view = view;
+          this.editorBridge = editorBridge;
+      }
+
+      copy() {
+          const { state } = this.view;
+          const { selection, doc } = state;
+          const { $from, $to } = selection;
+
+          if ($from.pos === $to.pos) {
+              return false;
+          }
+
+          const fragment = doc.content.cut($from.pos, $to.pos);
+          const tempDoc = state.schema.topNodeType.create({}, fragment);
+          const markdownText = markdownSerializer.serialize(tempDoc);
+          const cleanedText = markdownText.replace(/\n{3,}/g, '\n\n').trim();
+
+          if (this.editorBridge && this.editorBridge.setClipboardText) {
+              this.editorBridge.setClipboardText(cleanedText);
+          }
+
+          return cleanedText;
+      }
+
+      cut() {
+          const copied = this.copy();
+          if (!copied) return false;
+
+          const deleteTr = NodeSelector.createDeleteSelectionTransaction(this.view);
+          if (deleteTr) {
+              this.view.dispatch(deleteTr);
+              return true;
+          }
+          return false;
+      }
+
+      paste() {
+          let clipboardText = "";
+          if (this.editorBridge && this.editorBridge.getClipboardText) {
+              clipboardText = this.editorBridge.getClipboardText();
+          }
+
+          if (!clipboardText) return false;
+
+          const { state, dispatch } = this.view;
+          const { selection } = state;
+
+          if (clipboardText.length > 1) {
+              return NodeInputter.handlePasteInNode(this.view, state, dispatch, clipboardText);
+          }
+          if (clipboardText.length === 1) {
+              return NodeInputter.handleInputInNode(state, dispatch, clipboardText);
+          }
+          return false;
+      }
+
+      async copyToSystemClipboard(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+              try {
+                  await navigator.clipboard.writeText(text);
+              } catch (err) {
+                  console.warn('Failed to copy to system clipboard:', err);
+              }
+          }
       }
   }
 
@@ -31001,6 +31071,8 @@
               });
 
               this.rebuildTree();
+
+              this.clipboardManager = new ClipboardManager(this.view, window.editorBridge);
           }
       }
 
@@ -31649,6 +31721,23 @@
           }
       }
 
+      insert(content) {
+          if (content) {
+              const { state, dispatch } = this.view;
+              const { selection } = state;
+
+              if (!selection.empty) {
+                  const deleteTr = NodeSelector.createDeleteSelectionTransaction(this.view);
+                  if (deleteTr) {
+                      const newState = state.apply(deleteTr);
+                      return NodeInputter.handlePasteInNode(this.view, newState, dispatch, content, deleteTr, false);
+                  }
+              }
+
+              return NodeInputter.handlePasteInNode(this.view, state, dispatch, content);
+          }
+      }
+
       format(style) {
           const { state, dispatch } = this.view;
           const { from, to } = state.selection;
@@ -32028,6 +32117,24 @@
           return $from.parent === $to.parent;
       }
 
+      copy() {
+          if (this.clipboardManager) {
+              return this.clipboardManager.copy();
+          }
+      }
+
+      cut() {
+          if (this.clipboardManager) {
+              return this.clipboardManager.cut();
+          }
+      }
+
+      paste() {
+          if (this.clipboardManager) {
+              return this.clipboardManager.paste();
+          }
+      }
+
       selectAll() {
           const { state, dispatch } = this.view;
 
@@ -32380,6 +32487,6 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
 
   })();
 
-  window.createEditor('note');
+  /*window.createEditor('note');*/
 
 })();

@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.example.tonpad.core.editor.enums.EditorMode;
 import org.example.tonpad.core.editor.impl.EditorImpl;
+import org.example.tonpad.core.exceptions.TonpadBaseException;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
 import org.example.tonpad.core.service.RecentTabService;
 import org.example.tonpad.core.service.crypto.Encryptor;
@@ -69,7 +70,6 @@ public class TabController {
     public void setTabPane(TabPane tabPane) {
         this.tabPane = tabPane;
 
-        //эта хрнеь слушает смену активной вкладки
         this.tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
             if (vaultChanging) {
                 return;
@@ -109,8 +109,7 @@ public class TabController {
         boolean[] lastActiveOpened = new boolean[1];
         lastActiveOpened[0] = false;
         try {
-            recentTabService.getRecentTabs()
-                            .stream().forEach(tabOpt -> {
+            recentTabService.getRecentTabs().forEach(tabOpt -> {
                                 if (tabOpt.isEmpty()) return;
                                 Path notePath = tabOpt.get();
                                 try {
@@ -130,7 +129,7 @@ public class TabController {
             vaultChanging = false;
         }
         if (!badPaths.isEmpty()) {
-            badPaths.stream().forEach(recentTabService::deleteClosedTab);
+            badPaths.forEach(recentTabService::deleteClosedTab);
         }
 
         if (lastActiveOpened[0]) {
@@ -155,7 +154,7 @@ public class TabController {
         }
 
         if (!sb.isEmpty()) {
-            throw new ObjectNotFoundException("not all tabs restored: couldn't open files: " + sb);
+            throw new ObjectNotFoundException("Not all tabs restored: couldn't open files: " + sb);
         }
     }
 
@@ -369,6 +368,19 @@ public class TabController {
         if (!isVaultChanging) recentTabService.deleteClosedTab(path);
     }
 
+    private void setupContextMenuForWebView(WebView webView, Editor editor) {
+        webView.setContextMenuEnabled(false);
+
+        webView.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                editorToolbarController.setEditor(editor);
+                editorToolbarController.setWebView(webView);
+                editorToolbarController.showAt(event.getScreenX(), event.getScreenY());
+                event.consume();
+            }
+        });
+    }
+
     private void saveToFile(Tab tab, boolean protectedMode) {
         byte[] key = vaultSession.getKeyIfPresent()
                         .map(Key::getEncoded)
@@ -393,7 +405,7 @@ public class TabController {
                     fileSystemService.writeFile(path, encoder.encrypt(noteContent, null));
                 }
             } catch (Exception e) {
-                System.out.println(e.getMessage());
+                throw new TonpadBaseException("Editor not responds");
             }
         }).start();
     }

@@ -202,4 +202,4 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
 
 })();
 
-window.createEditor('note');
+/*window.createEditor('note');*/

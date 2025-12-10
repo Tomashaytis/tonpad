@@ -1,15 +1,23 @@
 package org.example.tonpad.ui.controllers.toolbar;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.geometry.Point2D;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.web.WebView;
 import lombok.Setter;
 import org.example.tonpad.core.editor.Editor;
+import org.example.tonpad.core.editor.enums.FormatType;
+import org.example.tonpad.core.editor.enums.LinkType;
+import org.example.tonpad.core.editor.enums.ParagraphType;
 import org.example.tonpad.ui.controllers.AbstractController;
 import org.springframework.stereotype.Component;
+
 
 @Component
 public class EditorToolbarController extends AbstractController {
@@ -110,10 +118,8 @@ public class EditorToolbarController extends AbstractController {
     @Setter
     private Editor editor;
 
-    @Override
-    protected String getFxmlSource() {
-        return "/ui/fxml/toolbar/editor-toolbar.fxml";
-    }
+    @Setter
+    private WebView webView;
 
     @FXML
     public void initialize() {
@@ -122,6 +128,10 @@ public class EditorToolbarController extends AbstractController {
             root.setManaged(false);
         }
         setupEventHandlers();
+    }
+
+    public void init(AnchorPane parent) {
+        parent.getChildren().add(root);
     }
 
     private void setupEventHandlers() {
@@ -155,18 +165,94 @@ public class EditorToolbarController extends AbstractController {
     }
 
     public void showAt(double screenX, double screenY) {
-        if (root == null) return;
+        if (root == null || root.getParent() == null) return;
 
-        root.setVisible(true);
-        root.setManaged(true);
+        editor.canCreateLinks().thenAccept(result -> {
+            if (result) {
+                addNoteLinkButton.setDisable(false);
+                addExternalLinkButton.setDisable(false);
+            } else {
+                addNoteLinkButton.setDisable(true);
+                addExternalLinkButton.setDisable(true);
+            }
 
-        if (root.getScene() != null && root.getScene().getWindow() != null) {
-            root.getScene().getWindow().sizeToScene();
-            root.setLayoutX(screenX - root.getScene().getWindow().getX());
-            root.setLayoutY(screenY - root.getScene().getWindow().getY());
+            root.setVisible(true);
+            root.setManaged(true);
+
+            Platform.runLater(() -> {
+                Point2D localCoords = root.getParent().screenToLocal(screenX, screenY);
+                if (localCoords == null) return;
+
+                double panelWidth = root.getWidth();
+                double panelHeight = root.getHeight();
+                double parentWidth = root.getParent().getBoundsInLocal().getWidth();
+                double parentHeight = root.getParent().getBoundsInLocal().getHeight();
+
+                Point2D[] possiblePositions = {
+                        new Point2D(localCoords.getX(), localCoords.getY()),
+
+                        new Point2D(localCoords.getX(), localCoords.getY() - panelHeight),
+
+                        new Point2D(localCoords.getX() - panelWidth, localCoords.getY()),
+
+                        new Point2D(localCoords.getX() - panelWidth, localCoords.getY() - panelHeight),
+
+                        new Point2D(localCoords.getX() - panelWidth / 2, localCoords.getY()),
+
+                        new Point2D(localCoords.getX() - panelWidth / 2, localCoords.getY() - panelHeight)
+                };
+
+                Point2D bestPosition = null;
+                for (Point2D pos : possiblePositions) {
+                    if (isPositionValid(pos.getX(), pos.getY(), panelWidth, panelHeight,
+                            parentWidth, parentHeight)) {
+                        bestPosition = pos;
+                        break;
+                    }
+                }
+
+                // Если ничего не подошло, используем принудительное позиционирование
+                if (bestPosition == null) {
+                    bestPosition = getForcedPosition(localCoords, panelWidth, panelHeight,
+                            parentWidth, parentHeight);
+                }
+
+                root.setLayoutX(bestPosition.getX());
+                root.setLayoutY(bestPosition.getY());
+
+                setupOutsideClickHandler();
+            });
+        });
+    }
+
+    private boolean isPositionValid(double x, double y, double width, double height,
+                                    double parentWidth, double parentHeight) {
+        return x >= 0 &&
+                y >= 0 &&
+                x + width <= parentWidth &&
+                y + height <= parentHeight;
+    }
+
+    private Point2D getForcedPosition(Point2D clickPoint, double width, double height,
+                                      double parentWidth, double parentHeight) {
+        double x = clickPoint.getX();
+        double y = clickPoint.getY();
+
+        if (x + width > parentWidth) {
+            x = parentWidth - width;
+        }
+        if (x < 0) {
+            x = 0;
         }
 
-        setupOutsideClickHandler();
+        if (y + height > parentHeight) {
+            y = parentHeight - height;
+        }
+        if (y < 0) {
+            y = 0;
+        }
+
+        return new Point2D(x, y);
     }
 
     public void hide() {
@@ -187,110 +273,170 @@ public class EditorToolbarController extends AbstractController {
     }
 
     private void onAddNoteLink() {
-        System.out.println("Add note link clicked");
+        editor.link(LinkType.NOTE_LINK);
+        hide();
+        webView.requestFocus();
     }
 
     private void onAddExternalLink() {
-        System.out.println("Add external link clicked");
+        editor.link(LinkType.EXTERNAL_LINK);
+        hide();
+        webView.requestFocus();
     }
 
     private void onFormatBold() {
-        System.out.println("Format bold clicked");
+        editor.format(FormatType.BOLD);
+        hide();
+        webView.requestFocus();
     }
 
     private void onFormatItalic() {
-        System.out.println("Format italic clicked");
+        editor.format(FormatType.ITALIC);
+        hide();
+        webView.requestFocus();
     }
 
     private void onFormatUnderline() {
-        System.out.println("Format underline clicked");
+        editor.format(FormatType.UNDERLINE);
+        hide();
+        webView.requestFocus();
     }
 
     private void onFormatStrikethrough() {
-        System.out.println("Format strikethrough clicked");
+        editor.format(FormatType.STRIKETHROUGH);
+        hide();
+        webView.requestFocus();
     }
 
     private void onFormatHighlight() {
-        System.out.println("Format highlight clicked");
+        editor.format(FormatType.HIGHLIGHT);
+        hide();
+        webView.requestFocus();
     }
 
     private void onFormatComment() {
-        System.out.println("Format comment clicked");
+        editor.format(FormatType.COMMENT);
+        hide();
+        webView.requestFocus();
     }
 
     private void onFormatCode() {
-        System.out.println("Format code clicked");
+        editor.format(FormatType.CODE);
+        hide();
+        webView.requestFocus();
     }
 
     private void onFormatMath() {
-        System.out.println("Format math clicked");
+        editor.format(FormatType.MATH);
+        hide();
+        webView.requestFocus();
     }
 
     private void onClearFormatting() {
-        System.out.println("Clear formatting clicked");
+        editor.format(FormatType.CLEAR);
+        hide();
+        webView.requestFocus();
     }
 
     private void onBulletList() {
-        System.out.println("Bullet list clicked");
+        editor.paragraph(ParagraphType.BULLET_LIST);
+        hide();
+        webView.requestFocus();
     }
 
     private void onOrderedList() {
-        System.out.println("Ordered list clicked");
+        editor.paragraph(ParagraphType.ORDERED_LIST);
+        hide();
+        webView.requestFocus();
     }
 
     private void onHeading1() {
-        System.out.println("Heading 1 clicked");
+        editor.paragraph(ParagraphType.HEADING_1);
+        hide();
+        webView.requestFocus();
     }
 
     private void onHeading2() {
-        System.out.println("Heading 2 clicked");
+        editor.paragraph(ParagraphType.HEADING_2);
+        hide();
+        webView.requestFocus();
     }
 
     private void onHeading3() {
-        System.out.println("Heading 3 clicked");
+        editor.paragraph(ParagraphType.HEADING_3);
+        hide();
+        webView.requestFocus();
     }
 
     private void onHeading4() {
-        System.out.println("Heading 4 clicked");
+        editor.paragraph(ParagraphType.HEADING_4);
+        hide();
+        webView.requestFocus();
     }
 
     private void onHeading5() {
-        System.out.println("Heading 5 clicked");
+        editor.paragraph(ParagraphType.HEADING_5);
+        hide();
+        webView.requestFocus();
     }
 
     private void onHeading6() {
-        System.out.println("Heading 6 clicked");
+        editor.paragraph(ParagraphType.HEADING_6);
+        hide();
+        webView.requestFocus();
     }
 
     private void onBodyText() {
-        System.out.println("Body text clicked");
+        editor.paragraph(ParagraphType.BODY);
+        hide();
+        webView.requestFocus();
     }
 
     private void onQuote() {
-        System.out.println("Quote clicked");
+        editor.paragraph(ParagraphType.QUOTE);
+        hide();
+        webView.requestFocus();
     }
 
     private void onInsertSnippet() {
         System.out.println("Insert snippet clicked");
+        hide();
+        webView.requestFocus();
     }
 
     private void onInsertHorizontalRule() {
-        System.out.println("Insert horizontal rule clicked");
+        editor.insert("---\n");
+        hide();
+        webView.requestFocus();
     }
 
     private void onCut() {
-        System.out.println("Cut clicked");
+        editor.cut();
+        hide();
+        webView.requestFocus();
     }
 
     private void onCopy() {
-        System.out.println("Copy clicked");
+        editor.copy();
+        hide();
+        webView.requestFocus();
     }
 
     private void onPaste() {
-        System.out.println("Paste clicked");
+        editor.paste();
+        hide();
+        webView.requestFocus();
     }
 
     private void onSelectAll() {
-        System.out.println("Select all clicked");
+        editor.selectAll();
+        hide();
+        webView.requestFocus();
     }
+
+    @Override
+    protected String getFxmlSource() {
+        return "/ui/fxml/toolbar/editor-toolbar.fxml";
+    }
+
 }

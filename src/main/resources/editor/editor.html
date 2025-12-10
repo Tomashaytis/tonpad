@@ -5,6 +5,36 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <link rel="stylesheet" href="editor.css">
+    <style>
+        .editor-stats {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #f5f5f5;
+            border-top: 1px solid #ddd;
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #666;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .editor-stats-item {
+            margin: 0 12px;
+        }
+        
+        .editor-stats-number {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .editor-container {
+            padding-bottom: 40px; /* Место для счётчика */
+        }
+    </style>
 </head>
 <body>
     <div class="editor-container">
@@ -21,6 +51,16 @@
         </table>
         <div id="editor" class="editor"></div>
     </div>
+    
+    <div id="editor-stats" class="editor-stats">
+        <span class="editor-stats-item">
+            <span class="editor-stats-number" id="word-count">0</span> words
+        </span>
+        <span class="editor-stats-item">
+            <span class="editor-stats-number" id="char-count">0</span> characters
+        </span>
+    </div>
+
     <script src="editor.js"></script>
 </body>
 </html>

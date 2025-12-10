@@ -14,11 +14,11 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import lombok.RequiredArgsConstructor;
 import org.example.tonpad.core.editor.Editor;
 import org.example.tonpad.core.editor.enums.EditorMode;
 import org.example.tonpad.ui.controllers.*;
+import org.example.tonpad.ui.controllers.toolbar.EditorToolbarController;
 import org.example.tonpad.ui.controllers.tree.FileTreeController;
 import org.example.tonpad.ui.controllers.search.SearchInFileTreeController;
 import org.example.tonpad.ui.controllers.search.SearchInFilesController;
@@ -42,6 +42,9 @@ public class MainController extends AbstractController {
 
     @FXML
     private StackPane leftStackPane;
+
+    @FXML
+    public AnchorPane toolbarContainer;
 
     @FXML
     private TabPane tabPane;
@@ -83,6 +86,8 @@ public class MainController extends AbstractController {
 
     private final TabController tabController;
 
+    private final EditorToolbarController editorToolbarController;
+
     private final FileTreeController fileTreeController;
 
     private final SnippetTreeController snippetTreeController;
@@ -100,7 +105,7 @@ public class MainController extends AbstractController {
     public void init(Stage stage) {
         setupControllers();
         leftStackPane.setManaged(false);
-        setStage(stage, mainVBox, StageStyle.TRANSPARENT);
+        setStage(stage, mainVBox);
         themeService.apply(mainVBox.getScene(), ThemeService.Theme.LIGHT);
         titleBarController.init(stage, mainVBox);
         setupEventHandlers();
@@ -120,6 +125,8 @@ public class MainController extends AbstractController {
         settingsController.init(settingsPane);
 
         searchInFileTreeController.init(searchInFileTreePane);
+
+        editorToolbarController.init(toolbarContainer);
     }
 
     private void setupEventHandlers() {

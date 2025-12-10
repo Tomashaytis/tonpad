@@ -5,13 +5,11 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
-import javax.swing.text.AsyncBoxView;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -29,7 +27,7 @@ public abstract class AbstractController {
         loader.load();
     }
 
-    protected void setStage(Stage stage, Parent root, StageStyle stageStyle) {
+    protected void setStage(Stage stage, Parent root) {
         Scene scene = new Scene(root);
 
         Image icon = new Image(Objects.requireNonNull(
@@ -47,7 +45,11 @@ public abstract class AbstractController {
 
         scene.setFill(Color.TRANSPARENT);
 
-        stage.initStyle(stageStyle);
+        stage.setTitle("Tonpad");
+        stage.toFront();
+        stage.requestFocus();
+
+        stage.initStyle(StageStyle.TRANSPARENT);
         stage.setResizable(true);
         stage.setScene(scene);
         stage.show();

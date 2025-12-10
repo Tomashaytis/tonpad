@@ -88,6 +88,7 @@
                   <TabPane fx:id="tabPane" prefHeight="598.0" prefWidth="823.0" tabClosingPolicy="ALL_TABS" />
                   <AnchorPane fx:id="searchInTextPane" pickOnBounds="false" styleClass="viewing-panel" visible="false" />
                   <AnchorPane fx:id="settingsPane" pickOnBounds="false" />
+                  <AnchorPane fx:id="toolbarContainer" pickOnBounds="false" />
                </children>
             </StackPane>
             <VBox prefWidth="40.0">
