@@ -3,13 +3,18 @@ package org.example.tonpad.ui.controllers.toolbar;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Point2D;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.web.WebView;
+import javafx.stage.Window;
 import lombok.Setter;
 import org.example.tonpad.core.editor.Editor;
 import org.example.tonpad.core.editor.enums.FormatType;
@@ -17,6 +22,8 @@ import org.example.tonpad.core.editor.enums.LinkType;
 import org.example.tonpad.core.editor.enums.ParagraphType;
 import org.example.tonpad.ui.controllers.AbstractController;
 import org.springframework.stereotype.Component;
+
+import java.util.function.BiConsumer;
 
 
 @Component
@@ -121,17 +128,14 @@ public class EditorToolbarController extends AbstractController {
     @Setter
     private WebView webView;
 
-    @FXML
-    public void initialize() {
+    public void init(AnchorPane parent) {
         if (root != null) {
             root.setVisible(false);
             root.setManaged(false);
         }
-        setupEventHandlers();
-    }
 
-    public void init(AnchorPane parent) {
         parent.getChildren().add(root);
+        setupEventHandlers();
     }
 
     private void setupEventHandlers() {
@@ -180,79 +184,57 @@ public class EditorToolbarController extends AbstractController {
             root.setManaged(true);
 
             Platform.runLater(() -> {
-                Point2D localCoords = root.getParent().screenToLocal(screenX, screenY);
-                if (localCoords == null) return;
+                root.applyCss();
+                root.layout();
 
                 double panelWidth = root.getWidth();
                 double panelHeight = root.getHeight();
-                double parentWidth = root.getParent().getBoundsInLocal().getWidth();
-                double parentHeight = root.getParent().getBoundsInLocal().getHeight();
 
-                Point2D[] possiblePositions = {
-                        new Point2D(localCoords.getX(), localCoords.getY()),
+                AnchorPane parent = (AnchorPane) root.getParent();
 
-                        new Point2D(localCoords.getX(), localCoords.getY() - panelHeight),
+                Scene scene = parent.getScene();
+                if (scene == null) return;
 
-                        new Point2D(localCoords.getX() - panelWidth, localCoords.getY()),
+                Window window = scene.getWindow();
+                if (window == null) return;
 
-                        new Point2D(localCoords.getX() - panelWidth, localCoords.getY() - panelHeight),
+                Point2D sceneCoords = scene.getRoot().screenToLocal(screenX, screenY);
+                if (sceneCoords == null) return;
 
-                        new Point2D(localCoords.getX() - panelWidth / 2, localCoords.getY()),
+                Point2D localCoords = parent.sceneToLocal(sceneCoords);
+                if (localCoords == null) return;
 
-                        new Point2D(localCoords.getX() - panelWidth / 2, localCoords.getY() - panelHeight)
-                };
+                double parentWidth = parent.getWidth();
+                double parentHeight = parent.getHeight();
 
-                Point2D bestPosition = null;
-                for (Point2D pos : possiblePositions) {
-                    if (isPositionValid(pos.getX(), pos.getY(), panelWidth, panelHeight,
-                            parentWidth, parentHeight)) {
-                        bestPosition = pos;
-                        break;
-                    }
+                double x = localCoords.getX();
+                double y = localCoords.getY();
+
+                double preferredX = x;
+                double preferredY = y + 10;
+
+                if (y - panelHeight >= 0) {
+                    preferredY = y - panelHeight - 10;
+                } else {
+                    preferredY = Math.max(0, (parentHeight - panelHeight) / 2);
                 }
 
-                // Если ничего не подошло, используем принудительное позиционирование
-                if (bestPosition == null) {
-                    bestPosition = getForcedPosition(localCoords, panelWidth, panelHeight,
-                            parentWidth, parentHeight);
+                if (preferredX + panelWidth > parentWidth) {
+                    preferredX = parentWidth - panelWidth;
+                }
+                if (preferredX < 0) {
+                    preferredX = 0;
                 }
 
-                root.setLayoutX(bestPosition.getX());
-                root.setLayoutY(bestPosition.getY());
+                preferredX = Math.max(0, Math.min(preferredX, parentWidth - panelWidth));
+                preferredY = Math.max(0, Math.min(preferredY, parentHeight - panelHeight));
+
+                root.setLayoutX(preferredX);
+                root.setLayoutY(preferredY);
 
                 setupOutsideClickHandler();
             });
         });
-    }
-
-    private boolean isPositionValid(double x, double y, double width, double height,
-                                    double parentWidth, double parentHeight) {
-        return x >= 0 &&
-                y >= 0 &&
-                x + width <= parentWidth &&
-                y + height <= parentHeight;
-    }
-
-    private Point2D getForcedPosition(Point2D clickPoint, double width, double height,
-                                      double parentWidth, double parentHeight) {
-        double x = clickPoint.getX();
-        double y = clickPoint.getY();
-
-        if (x + width > parentWidth) {
-            x = parentWidth - width;
-        }
-        if (x < 0) {
-            x = 0;
-        }
-
-        if (y + height > parentHeight) {
-            y = parentHeight - height;
-        }
-        if (y < 0) {
-            y = 0;
-        }
-
-        return new Point2D(x, y);
     }
 
     public void hide() {
@@ -265,8 +247,15 @@ public class EditorToolbarController extends AbstractController {
     private void setupOutsideClickHandler() {
         if (root.getScene() != null) {
             root.getScene().addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
-                if (!root.getBoundsInParent().contains(event.getX(), event.getY())) {
-                    hide();
+                Point2D scenePoint = new Point2D(event.getSceneX(), event.getSceneY());
+                Point2D parentLocalPoint = root.getParent().sceneToLocal(scenePoint);
+
+                if (parentLocalPoint != null) {
+                    boolean inside = root.getBoundsInParent().contains(parentLocalPoint);
+
+                    if (!inside) {
+                        hide();
+                    }
                 }
             });
         }

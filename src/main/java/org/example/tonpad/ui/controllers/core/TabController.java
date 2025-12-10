@@ -1,11 +1,10 @@
 package org.example.tonpad.ui.controllers.core;
 
 import javafx.animation.PauseTransition;
+import javafx.scene.Scene;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.web.WebView;
 import javafx.util.Duration;
@@ -14,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.example.tonpad.core.editor.enums.EditorMode;
+import org.example.tonpad.core.editor.enums.FormatType;
 import org.example.tonpad.core.editor.impl.EditorImpl;
 import org.example.tonpad.core.exceptions.TonpadBaseException;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 @Slf4j
 @Component
@@ -307,12 +308,35 @@ public class TabController {
         Editor editor = new EditorImpl(webView.getEngine(), editorMode, false);
         editor.setNoteContent(noteContent);
 
+        setupKeyboardShortcutsForWebView(webView, editor);
+
         setupContextMenuForWebView(webView, editor);
 
         tab.setContent(content);
         tab.setUserData(webView);
 
         return editor;
+    }
+
+    private void setupKeyboardShortcutsForWebView(WebView webView, Editor editor) {
+        webView.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.isControlDown()) {
+                switch (event.getCode()) {
+                    case B:
+                        editor.format(FormatType.BOLD);
+                        event.consume();
+                        break;
+                    case I:
+                        editor.format(FormatType.ITALIC);
+                        event.consume();
+                        break;
+                    case U:
+                        editor.format(FormatType.UNDERLINE);
+                        event.consume();
+                        break;
+                }
+            }
+        });
     }
 
     private void addTabToPane(Tab tab) {
