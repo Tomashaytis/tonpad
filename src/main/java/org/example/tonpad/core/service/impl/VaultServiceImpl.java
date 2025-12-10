@@ -1,7 +1,9 @@
 package org.example.tonpad.core.service.impl;
 
 import org.example.tonpad.TonpadConfig;
+import org.example.tonpad.core.dto.RecentTabsConfig;
 import org.example.tonpad.core.exceptions.CustomIOException;
+import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.directory.DirectoryService;
 import org.example.tonpad.core.service.VaultService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,15 +32,18 @@ public class VaultServiceImpl implements VaultService {
 
     private final DirectoryService directoryService;
 
+    private final FileSystemService fileSystemService;
+
     private final String changelogPath;
 
     private final String validateDbSchemaPath;
 
     @Autowired
-    public VaultServiceImpl(DirectoryService directoryService, TonpadConfig config) {
+    public VaultServiceImpl(DirectoryService directoryService, TonpadConfig config, FileSystemService fileSystemService) {
         this.directoryService = directoryService;
         changelogPath = config.changelogPath();
         validateDbSchemaPath = config.validateDbSchemaPath();
+        this.fileSystemService = fileSystemService;
     }
 
     @Override
@@ -46,6 +51,8 @@ public class VaultServiceImpl implements VaultService {
         directoryService.createDir(path, "notes");
         directoryService.createDir(path, "images");
         directoryService.createDir(path, "snippets");
+        fileSystemService.makeFile(path.resolve(RecentTabsConfig.getRtConfigName()));
+        
 
         String url = DRIVER_STRING + path.resolve(DATABASE_NAME);
         try (Connection conn = DriverManager.getConnection(url);
@@ -72,6 +79,7 @@ public class VaultServiceImpl implements VaultService {
         directoryService.exists(path.resolve("images"));
         directoryService.exists(path.resolve("snippets"));
         directoryService.exists(path.resolve("database.db"));
+        fileSystemService.exists(path.resolve(RecentTabsConfig.getRtConfigName()));
 
         String url = DRIVER_STRING + path.resolve(DATABASE_NAME);
         try (Connection conn = DriverManager.getConnection(url);

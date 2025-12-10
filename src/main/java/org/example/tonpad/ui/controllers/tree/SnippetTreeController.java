@@ -937,13 +937,13 @@ public class SnippetTreeController extends AbstractController {
     private void setupShortCuts() {
         fileTreeVBox.sceneProperty().addListener((obs, oldS, newS) -> {
             if (newS != null) {
-                attachAccelerator(newS, new KeyCodeCombination(KeyCode.DELETE), this::deleteSelected);
+                attachAccelerator(newS, new KeyCodeCombination(KeyCode.DELETE, KeyCodeCombination.CONTROL_DOWN), this::deleteSelected);
 
-                attachAccelerator(newS, new KeyCodeCombination(KeyCode.C, KeyCodeCombination.CONTROL_DOWN), () -> onCopy(getSelected()));
+                attachAccelerator(newS, new KeyCodeCombination(KeyCode.C, KeyCodeCombination.CONTROL_DOWN, KeyCodeCombination.ALT_DOWN), () -> onCopy(getSelected()));
 
-                attachAccelerator(newS, new KeyCodeCombination(KeyCode.V, KeyCodeCombination.CONTROL_DOWN), () -> onPaste(getSelected()));
+                attachAccelerator(newS, new KeyCodeCombination(KeyCode.V, KeyCodeCombination.CONTROL_DOWN, KeyCodeCombination.ALT_DOWN), () -> onPaste(getSelected()));
 
-                attachAccelerator(newS, new KeyCodeCombination(KeyCode.X, KeyCodeCombination.CONTROL_DOWN), () -> onCut(getSelected()));
+                attachAccelerator(newS, new KeyCodeCombination(KeyCode.X, KeyCodeCombination.CONTROL_DOWN, KeyCodeCombination.ALT_DOWN), () -> onCut(getSelected()));
 
             }
         });

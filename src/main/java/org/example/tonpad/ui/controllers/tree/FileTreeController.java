@@ -19,6 +19,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import org.example.tonpad.core.editor.enums.EditorMode;
+import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.exceptions.IllegalInputException;
 import org.example.tonpad.core.exceptions.TonpadBaseException;
 import org.example.tonpad.core.extentions.TriConsumer;
@@ -26,6 +27,8 @@ import org.example.tonpad.core.files.Buffer;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.FileTree;
 import org.example.tonpad.core.service.SearchService;
+import org.example.tonpad.core.service.crypto.Encryptor;
+import org.example.tonpad.core.service.crypto.EncryptorFactory;
 import org.example.tonpad.core.sort.SortKey;
 import org.example.tonpad.core.sort.SortOptions;
 import org.example.tonpad.ui.controllers.AbstractController;
@@ -121,6 +124,8 @@ public class FileTreeController extends AbstractController {
     private final Map<String, Boolean> expandedState = new HashMap<>();
 
     private final SelectFileActionController selectFileActionController;
+
+    private final EncryptorFactory encryptorFactory;
 
     ContextMenu actionMenu;
 
@@ -809,12 +814,16 @@ public class FileTreeController extends AbstractController {
         }
 
         Path newAbs = parent.resolve(newName);
-
-        fileSystemService.rename(oldAbs.toString(), newAbs.toString());
-
-        refreshTree();
-        selectItem(newAbs, false);
-        noteRenameHandler.accept(oldAbs, newAbs);
+        Encryptor encoder = encryptorFactory.encryptorForKey();
+        if (encoder.isActionWithNoPasswordAllowed(oldAbs)) {
+            fileSystemService.rename(oldAbs.toString(), newAbs.toString());
+            refreshTree();
+            selectItem(newAbs, false);
+            noteRenameHandler.accept(oldAbs, newAbs);
+        }
+        else {
+            throw new DecryptionException("Invalid password");
+        }
     }
 
     private static String norm(String s) {

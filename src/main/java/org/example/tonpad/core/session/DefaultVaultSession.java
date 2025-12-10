@@ -1,13 +1,16 @@
 package org.example.tonpad.core.session;
 
 import java.lang.reflect.Field;
+import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.example.tonpad.core.exceptions.FingerPrintException;
 import org.example.tonpad.core.service.crypto.DerivationService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -18,6 +21,9 @@ import lombok.RequiredArgsConstructor;
 @Lazy
 @RequiredArgsConstructor
 public class DefaultVaultSession implements VaultSession {
+    private final static String BAD_KEY_ERROR = "key is null or empty";
+    private final static String GUEST_FINGER_PRINT = "guest";
+
     private final DerivationService derivationService;
 
     private enum Mode { LOCKED, UNLOCKED_NO_KEY, UNLOCKED_WITH_KEY }
@@ -137,5 +143,29 @@ public class DefaultVaultSession implements VaultSession {
         Arrays.fill(ka, (byte) 0);
         Arrays.fill(kb, (byte) 0);
         return r == 0;
+    }
+
+    @Override
+    public String getFingerPrint() {
+        Optional<SecretKey> keyOpt = getKeyIfPresent();
+        try {
+            return keyOpt.isPresent() ? getFingerprintFromKey(keyOpt.get()) : GUEST_FINGER_PRINT;
+        }
+        catch (IllegalStateException ex) {
+            throw new FingerPrintException(ex);
+        }
+    }
+
+    private String getFingerprintFromKey(SecretKey key) {
+        byte[] bytes = key.getEncoded();
+        if (bytes == null || bytes.length == 0) throw new IllegalStateException(BAD_KEY_ERROR);
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(bytes);
+            return HexFormat.of().withUpperCase().formatHex(digest);
+        }
+        catch (Exception ex) {
+            throw new IllegalStateException("can't compute fingerprint");
+        }
     }
 }
