@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="151.0" styleClass="editor-toolbar" xmlns="http://javafx.com/javafx/24.0.1" fx:id="root" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.tonpad.ui.controllers.toolbar.EditorToolbarController">
+
+   <children>
+      <!-- Верхний уровень: Add note link -->
+      <Button fx:id="addNoteLinkButton" alignment="TOP_LEFT" maxWidth="1.7976931348623157E308" minHeight="25.0" styleClass="action-button" text="Add note link">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="link-icon" />
+         </graphic>
+         <padding>
+            <Insets left="5.0" right="5.0" />
+         </padding>
+      </Button>
+
+      <!-- Верхний уровень: Add external link -->
+      <Button fx:id="addExternalLinkButton" alignment="TOP_LEFT" maxWidth="1.7976931348623157E308" minHeight="25.0" styleClass="action-button" text="Add external link">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="link-icon" />
+         </graphic>
+         <padding>
+            <Insets left="5.0" right="5.0" />
+         </padding>
+      </Button>
+
+      <Separator prefWidth="200.0" />
+
+      <!-- Секция: Formatting (MenuButton) -->
+      <MenuButton fx:id="formatMenuButton" maxWidth="1.7976931348623157E308" minHeight="25.0" popupSide="RIGHT" prefHeight="25.0" styleClass="menu-button" text="Format">
+         <items>
+            <MenuItem fx:id="boldMenuItem" text="Bold (Ctrl+B)">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="bold-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="italicMenuItem" text="Italic (Ctrl+I)">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="italic-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="underlineMenuItem" text="Underline (Ctrl+U)">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="underline-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="strikethroughMenuItem" text="Strikethrough">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="strikethrough-icon" />
+               </graphic>
+            </MenuItem>
+            <SeparatorMenuItem />
+            <MenuItem fx:id="highlightMenuItem" text="Highlight">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="highlight-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="commentMenuItem" text="Comment">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="comment-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="codeMenuItem" text="Code">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="code-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="mathMenuItem" text="Math">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="math-icon" />
+               </graphic>
+            </MenuItem>
+            <SeparatorMenuItem />
+            <MenuItem fx:id="clearFormattingMenuItem" text="Clear formatting">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="clear-formatting-icon" />
+               </graphic>
+            </MenuItem>
+         </items>
+         <padding>
+            <Insets left="-3.0" right="5.0" />
+         </padding>
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="format-icon" />
+         </graphic>
+         <styleClass>
+            <String fx:value="menu-button" />
+         </styleClass>
+      </MenuButton>
+
+      <!-- Секция: Paragraph (MenuButton) -->
+      <MenuButton fx:id="paragraphMenuButton" maxWidth="1.7976931348623157E308" minHeight="25.0" popupSide="RIGHT" prefHeight="25.0" styleClass="menu-button" text="Paragraph">
+         <items>
+            <MenuItem fx:id="bulletListMenuItem" text="Bullet list">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="bullet-list-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="orderedListMenuItem" text="Ordered list">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="ordered-list-icon" />
+               </graphic>
+            </MenuItem>
+            <SeparatorMenuItem />
+            <MenuItem fx:id="heading1MenuItem" text="Heading 1">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="heading1-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="heading2MenuItem" text="Heading 2">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="heading2-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="heading3MenuItem" text="Heading 3">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="heading3-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="heading4MenuItem" text="Heading 4">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="heading4-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="heading5MenuItem" text="Heading 5">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="heading5-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="heading6MenuItem" text="Heading 6">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="heading6-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="bodyTextMenuItem" text="Body text">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="body-icon" />
+               </graphic>
+            </MenuItem>
+            <SeparatorMenuItem />
+            <MenuItem fx:id="quoteMenuItem" text="Quote">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="quote-icon" />
+               </graphic>
+            </MenuItem>
+         </items>
+         <padding>
+            <Insets left="-3.0" right="5.0" />
+         </padding>
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="paragraph-icon" />
+         </graphic>
+         <styleClass>
+            <String fx:value="menu-button" />
+         </styleClass>
+      </MenuButton>
+
+      <!-- Секция: Insert (MenuButton) -->
+      <MenuButton fx:id="insertMenuButton" maxWidth="1.7976931348623157E308" minHeight="25.0" popupSide="RIGHT" prefHeight="25.0" styleClass="menu-button" text="Insert">
+         <items>
+            <MenuItem fx:id="insertSnippetMenuItem" text="Snippet">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="insert-snippet-icon" />
+               </graphic>
+            </MenuItem>
+            <MenuItem fx:id="insertHorizontalRuleMenuItem" text="Horizontal rule">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="horizontal-rule-icon" />
+               </graphic>
+            </MenuItem>
+         </items>
+         <padding>
+            <Insets left="-3.0" right="5.0" />
+         </padding>
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="insert-icon" />
+         </graphic>
+         <styleClass>
+            <String fx:value="menu-button" />
+         </styleClass>
+      </MenuButton>
+
+      <Separator prefWidth="200.0" />
+
+      <!-- Верхний уровень: Edit actions -->
+      <Button fx:id="cutButton" alignment="TOP_LEFT" maxWidth="1.7976931348623157E308" minHeight="25.0" styleClass="action-button" text="Cut (Ctrl+X)">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="cut-icon" />
+         </graphic>
+         <padding>
+            <Insets left="5.0" right="5.0" />
+         </padding>
+      </Button>
+
+      <Button fx:id="copyButton" alignment="TOP_LEFT" maxWidth="1.7976931348623157E308" minHeight="25.0" styleClass="action-button" text="Copy (Ctrl+C)">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="copy-icon" />
+         </graphic>
+         <padding>
+            <Insets left="5.0" right="5.0" />
+         </padding>
+      </Button>
+
+      <Button fx:id="pasteButton" alignment="TOP_LEFT" maxWidth="1.7976931348623157E308" minHeight="25.0" styleClass="action-button" text="Paste (Ctrl+V)">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="paste-icon" />
+         </graphic>
+         <padding>
+            <Insets left="5.0" right="5.0" />
+         </padding>
+      </Button>
+
+      <Button fx:id="selectAllButton" alignment="TOP_LEFT" maxWidth="1.7976931348623157E308" minHeight="25.0" styleClass="action-button" text="Select all (Ctrl+A)">
+         <graphic>
+            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="select-all-icon" />
+         </graphic>
+         <padding>
+            <Insets left="5.0" right="5.0" />
+         </padding>
+      </Button>
+   </children>
+
+   <padding>
+      <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+   </padding>
+</VBox>

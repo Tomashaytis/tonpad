@@ -1,0 +1,113 @@
+/* editor-action-icons.css - иконки для операций с редактором, светлая тема */
+
+.link-icon {
+    -fx-image: url(/ui/icons/light/link.png);
+}
+
+.format-icon {
+    -fx-image: url(/ui/icons/light/format.png);
+}
+
+.paragraph-icon {
+    -fx-image: url(/ui/icons/light/paragraph.png);
+}
+
+.insert-icon{
+    -fx-image: url(/ui/icons/light/insert.png);
+}
+
+.copy-icon {
+    -fx-image: url(/ui/icons/light/copy.png);
+}
+
+.cut-icon {
+    -fx-image: url(/ui/icons/light/cut.png);
+}
+
+.paste-icon {
+    -fx-image: url(/ui/icons/light/paste.png);
+}
+
+.select-all-icon {
+    -fx-image: url(/ui/icons/light/select-all.png);
+}
+
+.bold-icon {
+    -fx-image: url(/ui/icons/light/bold.png);
+}
+
+.italic-icon {
+    -fx-image: url(/ui/icons/light/italic.png);
+}
+
+.strikethrough-icon {
+    -fx-image: url(/ui/icons/light/strikethrough.png);
+}
+
+.highlight-icon {
+    -fx-image: url(/ui/icons/light/highlight.png);
+}
+
+.underline-icon {
+    -fx-image: url(/ui/icons/light/underline.png);
+}
+
+.comment-icon {
+    -fx-image: url(/ui/icons/light/comment.png);
+}
+
+.code-icon {
+    -fx-image: url(/ui/icons/light/code.png);
+}
+
+.math-icon {
+    -fx-image: url(/ui/icons/light/math.png);
+}
+
+.clear-formatting-icon {
+    -fx-image: url(/ui/icons/light/clear-formatting.png);
+}
+
+.bullet-list-icon {
+    -fx-image: url(/ui/icons/light/bullet-list.png);
+}
+
+.ordered-list-icon {
+    -fx-image: url(/ui/icons/light/ordered-list.png);
+}
+
+.heading1-icon {
+    -fx-image: url(/ui/icons/light/heading1.png);
+}
+
+.heading2-icon {
+    -fx-image: url(/ui/icons/light/heading2.png);
+}
+
+.heading3-icon {
+    -fx-image: url(/ui/icons/light/heading3.png);
+}
+
+.heading4-icon {
+    -fx-image: url(/ui/icons/light/heading4.png);
+}
+
+.heading5-icon {
+    -fx-image: url(/ui/icons/light/heading5.png);
+}
+
+.heading6-icon {
+    -fx-image: url(/ui/icons/light/heading6.png);
+}
+
+.body-icon {
+    -fx-image: url(/ui/icons/light/body.png);
+}
+
+.quote-icon {
+    -fx-image: url(/ui/icons/light/quote.png);
+}
+
+.horizontal-rule-icon {
+    -fx-image: url(/ui/icons/light/horizontal-rule.png);
+}

@@ -28,9 +28,14 @@ export const markdownSchema = new Schema({
             },
         },
         horizontal_rule: {
+            content: "text*",
             group: "block",
-            parseDOM: [{ tag: "hr" }],
-            toDOM() { return ["div", ["hr"]]; },
+            parseDOM: [{ tag: "div.horizontal-rule" }],
+            toDOM(node) {
+                return ["div", {
+                    class: "horizontal-rule"
+                }, 0];
+            },
         },
         heading: {
             attrs: {
@@ -183,7 +188,8 @@ export const markdownSchema = new Schema({
         spec: {
             attrs: {
                 specClass: { default: "mark-spec" },
-                type: {default: "format"},
+                type: { default: "format" },
+                formatType: { default: "none" }
             },
             parseDOM: [
                 {
@@ -227,6 +233,7 @@ export const markdownSchema = new Schema({
         marker: {
             attrs: {
                 specClass: { default: "marker" },
+                type: { default: "bullet" },
             },
             parseDOM: [
                 {
@@ -303,6 +310,7 @@ export const markdownSchema = new Schema({
                 href: { default: "#" },
                 title: { default: null },
                 linkClass: { default: "" },
+                hidden: { default: false },
             },
             inclusive: false,
             parseDOM: [

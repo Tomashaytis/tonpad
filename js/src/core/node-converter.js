@@ -74,6 +74,15 @@ export class NodeConverter {
         return blockquoteNode;
     }
 
+    static constructHorizontalRule(spaces) {
+        const horizontalRule = markdownSchema.nodes.horizontal_rule.create(
+            {},
+            [markdownSchema.text(`---${spaces}`)]
+        );
+
+        return horizontalRule;
+    }
+
     static constructTabListItem(contentNodes, tabs) {
         let specOffset = 0;
         const level = tabs.length;
@@ -120,7 +129,9 @@ export class NodeConverter {
             specOffset += tab.length;
         });
 
-        children.push(markdownSchema.text(marker + " ", [markdownSchema.marks.marker.create()]));
+        children.push(markdownSchema.text(marker + " ", [markdownSchema.marks.marker.create({
+            type: 'bullet'
+        })]));
 
         if (contentNodes && contentNodes.forEach) {
             contentNodes.forEach(node => children.push(node));
@@ -155,7 +166,9 @@ export class NodeConverter {
             specOffset += tab.length;
         });
 
-        children.push(markdownSchema.text(`${number}. `, [markdownSchema.marks.marker.create()]));
+        children.push(markdownSchema.text(`${number}. `, [markdownSchema.marks.marker.create({
+            type: 'ordered'
+        })]));
 
         if (contentNodes && contentNodes.forEach) {
             contentNodes.forEach(node => children.push(node));
@@ -176,52 +189,52 @@ export class NodeConverter {
 
     static constructEm(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark');
+            return this.createWrappedMarkFragment(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark', 'em');
         }
-        return Fragment.from(this.createWrappedMark(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark'));
+        return Fragment.from(this.createWrappedMark(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark', 'em'));
     }
 
     static constructItalic(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark');
+            return this.createWrappedMarkFragment(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark', 'italic');
         }
-        return Fragment.from(this.createWrappedMark(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark'));
+        return Fragment.from(this.createWrappedMark(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark', 'italic'));
     }
 
     static constructStrong(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark');
+            return this.createWrappedMarkFragment(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark', 'strong');
         }
-        return Fragment.from(this.createWrappedMark(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark'));
+        return Fragment.from(this.createWrappedMark(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark', 'strong'));
     }
 
     static constructStrike(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark');
+            return this.createWrappedMarkFragment(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark', 'strike');
         }
-        return Fragment.from(this.createWrappedMark(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark'));
+        return Fragment.from(this.createWrappedMark(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark', 'strike'));
     }
 
     static constructHighlight(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark');
+            return this.createWrappedMarkFragment(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark', 'highlight');
         }
-        return Fragment.from(this.createWrappedMark(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark'));
+        return Fragment.from(this.createWrappedMark(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark', 'highlight'));
     }
 
     static constructUnderline(content) {
         if (content instanceof Fragment) {
-            return this.createWrappedMarkFragment(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark');
+            return this.createWrappedMarkFragment(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark', 'underline');
         }
-        return Fragment.from(this.createWrappedMark(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark'));
+        return Fragment.from(this.createWrappedMark(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark', 'underline'));
     }
 
     static constructCode(text) {
-        return Fragment.from(this.createWrappedMark(["`", "`"], text, markdownSchema.marks.code, 'code-mark-spec-left', 'code-mark-spec-right'));
+        return Fragment.from(this.createWrappedMark(["`", "`"], text, markdownSchema.marks.code, 'code-mark-spec-left', 'code-mark-spec-right', 'code'));
     }
 
     static constructComment(text) {
-        return Fragment.from(this.createWrappedMark(["%%", "%%"], text, markdownSchema.marks.comment, 'comment', 'comment'));
+        return Fragment.from(this.createWrappedMark(["%%", "%%"], text, markdownSchema.marks.comment, 'comment', 'comment', 'comment'));
     }
 
     static constructMath(text) {
@@ -229,13 +242,7 @@ export class NodeConverter {
 
         const components = this.parseMathComponents(processedText);
 
-        return Fragment.from(this.createWrappedMark(
-            ["$", "$"],
-            components,
-            markdownSchema.marks.math,
-            'math-delimiter',
-            'math-delimiter'
-        ));
+        return Fragment.from(this.createWrappedMark(["$", "$"], components, markdownSchema.marks.math, 'math-delimiter', 'math-delimiter', 'math'));
     }
 
     static replaceMathSymbols(text) {
@@ -306,10 +313,11 @@ export class NodeConverter {
         return nodes;
     }
 
-    static createWrappedMarkFragment(delimiters, content, mark, leftMarkClass = 'mark-spec', rightMarkClass = 'mark-spec') {
+    static createWrappedMarkFragment(delimiters, content, mark, leftMarkClass = 'mark-spec', rightMarkClass = 'mark-spec', formatType = 'none') {
         const nodes = [
             markdownSchema.text(delimiters[0], [markdownSchema.marks.spec.create({
-                specClass: leftMarkClass
+                specClass: leftMarkClass,
+                formatType: formatType
             })])
         ];
 
@@ -327,7 +335,8 @@ export class NodeConverter {
         }
 
         nodes.push(markdownSchema.text(delimiters[1], [markdownSchema.marks.spec.create({
-            specClass: rightMarkClass
+            specClass: rightMarkClass,
+            formatType: formatType
         })]));
 
         return Fragment.from(nodes);
@@ -367,9 +376,11 @@ export class NodeConverter {
         ]);
     }
 
-    static constructNoteLink(text) {        
+    static constructNoteLink(text) {
         const nodes = [
-            markdownSchema.text("[[", [markdownSchema.marks.spec.create()])
+            markdownSchema.text("[[", [markdownSchema.marks.spec.create({
+                formatType: 'note_link'
+            })])
         ];
 
         if (text && text !== '') {
@@ -382,11 +393,15 @@ export class NodeConverter {
 
                 if (beforeSeparator.length > 0) {
                     nodes.push(markdownSchema.text(beforeSeparator, [markdownSchema.marks.link.create({
-                        href: 'tonpad://' + href
+                        href: 'tonpad://' + href,
+                        hidden: true
                     })]));
                 }
 
-                nodes.push(markdownSchema.text("|", [markdownSchema.marks.spec.create()]));
+                nodes.push(markdownSchema.text("|", [markdownSchema.marks.link.create({
+                    href: 'tonpad://' + href,
+                    hidden: true
+                })]));
 
                 if (afterSeparator.length > 0) {
                     nodes.push(markdownSchema.text(afterSeparator, [markdownSchema.marks.link.create({
@@ -400,14 +415,18 @@ export class NodeConverter {
             }
         }
 
-        nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create()]));
+        nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create({
+            formatType: 'note_link'
+        })]));
 
         return Fragment.from(nodes);
     }
 
-    static constructEmbeddedLink(text) {        
+    static constructEmbeddedLink(text) {
         const nodes = [
-            markdownSchema.text("![[", [markdownSchema.marks.spec.create()])
+            markdownSchema.text("![[", [markdownSchema.marks.spec.create({
+                formatType: 'embedded_link'
+            })])
         ];
 
         if (text && text !== '') {
@@ -420,11 +439,15 @@ export class NodeConverter {
 
                 if (beforeSeparator.length > 0) {
                     nodes.push(markdownSchema.text(beforeSeparator, [markdownSchema.marks.link.create({
-                        href: 'tonpad://' + href
+                        href: 'tonpad://' + href,
+                        hidden: true
                     })]));
                 }
 
-                nodes.push(markdownSchema.text("|", [markdownSchema.marks.spec.create()]));
+                nodes.push(markdownSchema.text("|", [markdownSchema.marks.link.create({
+                    href: 'tonpad://' + href,
+                    hidden: true
+                })]));
 
                 if (afterSeparator.length > 0) {
                     nodes.push(markdownSchema.text(afterSeparator, [markdownSchema.marks.link.create({
@@ -438,21 +461,27 @@ export class NodeConverter {
             }
         }
 
-        nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create()]));
+        nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create({
+            formatType: 'embedded_link'
+        })]));
 
         return Fragment.from(nodes);
     }
 
     static constructEmptyLink(text) {
         const nodes = [
-            markdownSchema.text("[", [markdownSchema.marks.spec.create()])
+            markdownSchema.text("[", [markdownSchema.marks.spec.create({
+                formatType: 'link'
+            })])
         ];
 
         if (text && text !== "") {
             nodes.push(markdownSchema.text(text, [markdownSchema.marks.link.create()]));
         }
 
-        nodes.push(markdownSchema.text("]", [markdownSchema.marks.spec.create()]));
+        nodes.push(markdownSchema.text("]", [markdownSchema.marks.spec.create({
+            formatType: 'link'
+        })]));
 
         return Fragment.from(nodes);
     }
@@ -460,7 +489,9 @@ export class NodeConverter {
 
     static constructLink(text, href = "") {
         const nodes = [
-            markdownSchema.text("[", [markdownSchema.marks.spec.create()])
+            markdownSchema.text("[", [markdownSchema.marks.spec.create({
+                formatType: 'link'
+            })])
         ];
 
         if (text && text !== "") {
@@ -469,17 +500,24 @@ export class NodeConverter {
             })]));
         }
 
-        nodes.push(markdownSchema.text("]", [markdownSchema.marks.spec.create()]));
+        nodes.push(markdownSchema.text("]", [markdownSchema.marks.spec.create({
+            formatType: 'link'
+        })]));
 
-        nodes.push(markdownSchema.text("(", [markdownSchema.marks.spec.create()]));
+        nodes.push(markdownSchema.text("(", [markdownSchema.marks.spec.create({
+            formatType: 'hidden-link'
+        })]));
 
         if (href && href !== "") {
             nodes.push(markdownSchema.text(href, [markdownSchema.marks.link.create({
-                href: href === "" ? "#" : href
+                href: href === "" ? "#" : href,
+                hidden: true
             })]));
         }
 
-        nodes.push(markdownSchema.text(")", [markdownSchema.marks.spec.create()]));
+        nodes.push(markdownSchema.text(")", [markdownSchema.marks.spec.create({
+            formatType: 'hidden-link'
+        })]));
 
         return Fragment.from(nodes);
     }
@@ -524,10 +562,11 @@ export class NodeConverter {
         };
     }
 
-    static createWrappedMark(delimiters, text, mark, leftMarkClass = 'mark-spec', rightMarkClass = 'mark-spec') {
+    static createWrappedMark(delimiters, text, mark, leftMarkClass = 'mark-spec', rightMarkClass = 'mark-spec', formatType = 'none') {
         const nodes = [
             markdownSchema.text(delimiters[0], [markdownSchema.marks.spec.create({
-                specClass: leftMarkClass
+                specClass: leftMarkClass,
+                formatType: formatType
             })])
         ];
 
@@ -538,7 +577,8 @@ export class NodeConverter {
         }
 
         nodes.push(markdownSchema.text(delimiters[1], [markdownSchema.marks.spec.create({
-            specClass: rightMarkClass
+            specClass: rightMarkClass,
+            formatType: formatType
         })]));
         return nodes;
     }

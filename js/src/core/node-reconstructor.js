@@ -22,6 +22,11 @@ export class NodeReconstructor {
                 handler: this.reconstructBlockquote.bind(this)
             },
             {
+                name: 'horizontal_rule',
+                pattern: /^---(\s*)$/,
+                handler: this.reconstructHorizontalRule.bind(this)
+            },
+            {
                 name: 'bullet_list',
                 pattern: /^((?:(?:    )|\t)*)([+-]) (.*)$/,
                 handler: this.reconstructBulletListItem.bind(this)
@@ -352,6 +357,12 @@ export class NodeReconstructor {
         const textNodes = this.reconstructTextContent(content);
 
         return NodeConverter.constructBlockquote(textNodes);
+    }
+
+    reconstructHorizontalRule(match, originalParagraph, pos) {
+        const [_, spaces] = match;
+
+        return NodeConverter.constructHorizontalRule(spaces);
     }
 
     reconstructTabListItem(match, originalParagraph, pos) {
