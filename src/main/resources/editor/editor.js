@@ -13734,9 +13734,14 @@
               },
           },
           horizontal_rule: {
+              content: "text*",
               group: "block",
-              parseDOM: [{ tag: "hr" }],
-              toDOM() { return ["div", ["hr"]]; },
+              parseDOM: [{ tag: "div.horizontal-rule" }],
+              toDOM(node) {
+                  return ["div", {
+                      class: "horizontal-rule"
+                  }, 0];
+              },
           },
           heading: {
               attrs: {
@@ -13889,7 +13894,8 @@
           spec: {
               attrs: {
                   specClass: { default: "mark-spec" },
-                  type: {default: "format"},
+                  type: { default: "format" },
+                  formatType: { default: "none" }
               },
               parseDOM: [
                   {
@@ -13933,6 +13939,7 @@
           marker: {
               attrs: {
                   specClass: { default: "marker" },
+                  type: { default: "bullet" },
               },
               parseDOM: [
                   {
@@ -14009,6 +14016,7 @@
                   href: { default: "#" },
                   title: { default: null },
                   linkClass: { default: "" },
+                  hidden: { default: false },
               },
               inclusive: false,
               parseDOM: [
@@ -14142,6 +14150,15 @@
           return blockquoteNode;
       }
 
+      static constructHorizontalRule(spaces) {
+          const horizontalRule = markdownSchema.nodes.horizontal_rule.create(
+              {},
+              [markdownSchema.text(`---${spaces}`)]
+          );
+
+          return horizontalRule;
+      }
+
       static constructTabListItem(contentNodes, tabs) {
           let specOffset = 0;
           const level = tabs.length;
@@ -14188,7 +14205,9 @@
               specOffset += tab.length;
           });
 
-          children.push(markdownSchema.text(marker + " ", [markdownSchema.marks.marker.create()]));
+          children.push(markdownSchema.text(marker + " ", [markdownSchema.marks.marker.create({
+              type: 'bullet'
+          })]));
 
           if (contentNodes && contentNodes.forEach) {
               contentNodes.forEach(node => children.push(node));
@@ -14223,7 +14242,9 @@
               specOffset += tab.length;
           });
 
-          children.push(markdownSchema.text(`${number}. `, [markdownSchema.marks.marker.create()]));
+          children.push(markdownSchema.text(`${number}. `, [markdownSchema.marks.marker.create({
+              type: 'ordered'
+          })]));
 
           if (contentNodes && contentNodes.forEach) {
               contentNodes.forEach(node => children.push(node));
@@ -14244,52 +14265,52 @@
 
       static constructEm(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark');
+              return this.createWrappedMarkFragment(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark', 'em');
           }
-          return Fragment.from(this.createWrappedMark(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark'));
+          return Fragment.from(this.createWrappedMark(["*", "*"], content, markdownSchema.marks.em, 'em-mark', 'em-mark', 'em'));
       }
 
       static constructItalic(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark');
+              return this.createWrappedMarkFragment(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark', 'italic');
           }
-          return Fragment.from(this.createWrappedMark(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark'));
+          return Fragment.from(this.createWrappedMark(["_", "_"], content, markdownSchema.marks.italic, 'em-mark', 'em-mark', 'italic'));
       }
 
       static constructStrong(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark');
+              return this.createWrappedMarkFragment(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark', 'strong');
           }
-          return Fragment.from(this.createWrappedMark(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark'));
+          return Fragment.from(this.createWrappedMark(["**", "**"], content, markdownSchema.marks.strong, 'strong-mark', 'strong-mark', 'strong'));
       }
 
       static constructStrike(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark');
+              return this.createWrappedMarkFragment(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark', 'strike');
           }
-          return Fragment.from(this.createWrappedMark(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark'));
+          return Fragment.from(this.createWrappedMark(["~~", "~~"], content, markdownSchema.marks.strike, 'strike-mark', 'strike-mark', 'strike'));
       }
 
       static constructHighlight(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark');
+              return this.createWrappedMarkFragment(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark', 'highlight');
           }
-          return Fragment.from(this.createWrappedMark(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark'));
+          return Fragment.from(this.createWrappedMark(["==", "=="], content, markdownSchema.marks.highlight, 'highlight-mark', 'highlight-mark', 'highlight'));
       }
 
       static constructUnderline(content) {
           if (content instanceof Fragment) {
-              return this.createWrappedMarkFragment(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark');
+              return this.createWrappedMarkFragment(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark', 'underline');
           }
-          return Fragment.from(this.createWrappedMark(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark'));
+          return Fragment.from(this.createWrappedMark(["__", "__"], content, markdownSchema.marks.underline, 'underline-mark', 'underline-mark', 'underline'));
       }
 
       static constructCode(text) {
-          return Fragment.from(this.createWrappedMark(["`", "`"], text, markdownSchema.marks.code, 'code-mark-spec-left', 'code-mark-spec-right'));
+          return Fragment.from(this.createWrappedMark(["`", "`"], text, markdownSchema.marks.code, 'code-mark-spec-left', 'code-mark-spec-right', 'code'));
       }
 
       static constructComment(text) {
-          return Fragment.from(this.createWrappedMark(["%%", "%%"], text, markdownSchema.marks.comment, 'comment', 'comment'));
+          return Fragment.from(this.createWrappedMark(["%%", "%%"], text, markdownSchema.marks.comment, 'comment', 'comment', 'comment'));
       }
 
       static constructMath(text) {
@@ -14297,13 +14318,7 @@
 
           const components = this.parseMathComponents(processedText);
 
-          return Fragment.from(this.createWrappedMark(
-              ["$", "$"],
-              components,
-              markdownSchema.marks.math,
-              'math-delimiter',
-              'math-delimiter'
-          ));
+          return Fragment.from(this.createWrappedMark(["$", "$"], components, markdownSchema.marks.math, 'math-delimiter', 'math-delimiter', 'math'));
       }
 
       static replaceMathSymbols(text) {
@@ -14374,10 +14389,11 @@
           return nodes;
       }
 
-      static createWrappedMarkFragment(delimiters, content, mark, leftMarkClass = 'mark-spec', rightMarkClass = 'mark-spec') {
+      static createWrappedMarkFragment(delimiters, content, mark, leftMarkClass = 'mark-spec', rightMarkClass = 'mark-spec', formatType = 'none') {
           const nodes = [
               markdownSchema.text(delimiters[0], [markdownSchema.marks.spec.create({
-                  specClass: leftMarkClass
+                  specClass: leftMarkClass,
+                  formatType: formatType
               })])
           ];
 
@@ -14395,7 +14411,8 @@
           }
 
           nodes.push(markdownSchema.text(delimiters[1], [markdownSchema.marks.spec.create({
-              specClass: rightMarkClass
+              specClass: rightMarkClass,
+              formatType: formatType
           })]));
 
           return Fragment.from(nodes);
@@ -14435,9 +14452,11 @@
           ]);
       }
 
-      static constructNoteLink(text) {        
+      static constructNoteLink(text) {
           const nodes = [
-              markdownSchema.text("[[", [markdownSchema.marks.spec.create()])
+              markdownSchema.text("[[", [markdownSchema.marks.spec.create({
+                  formatType: 'note_link'
+              })])
           ];
 
           if (text && text !== '') {
@@ -14450,11 +14469,15 @@
 
                   if (beforeSeparator.length > 0) {
                       nodes.push(markdownSchema.text(beforeSeparator, [markdownSchema.marks.link.create({
-                          href: 'tonpad://' + href
+                          href: 'tonpad://' + href,
+                          hidden: true
                       })]));
                   }
 
-                  nodes.push(markdownSchema.text("|", [markdownSchema.marks.spec.create()]));
+                  nodes.push(markdownSchema.text("|", [markdownSchema.marks.link.create({
+                      href: 'tonpad://' + href,
+                      hidden: true
+                  })]));
 
                   if (afterSeparator.length > 0) {
                       nodes.push(markdownSchema.text(afterSeparator, [markdownSchema.marks.link.create({
@@ -14468,14 +14491,18 @@
               }
           }
 
-          nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create()]));
+          nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create({
+              formatType: 'note_link'
+          })]));
 
           return Fragment.from(nodes);
       }
 
-      static constructEmbeddedLink(text) {        
+      static constructEmbeddedLink(text) {
           const nodes = [
-              markdownSchema.text("![[", [markdownSchema.marks.spec.create()])
+              markdownSchema.text("![[", [markdownSchema.marks.spec.create({
+                  formatType: 'embedded_link'
+              })])
           ];
 
           if (text && text !== '') {
@@ -14488,11 +14515,15 @@
 
                   if (beforeSeparator.length > 0) {
                       nodes.push(markdownSchema.text(beforeSeparator, [markdownSchema.marks.link.create({
-                          href: 'tonpad://' + href
+                          href: 'tonpad://' + href,
+                          hidden: true
                       })]));
                   }
 
-                  nodes.push(markdownSchema.text("|", [markdownSchema.marks.spec.create()]));
+                  nodes.push(markdownSchema.text("|", [markdownSchema.marks.link.create({
+                      href: 'tonpad://' + href,
+                      hidden: true
+                  })]));
 
                   if (afterSeparator.length > 0) {
                       nodes.push(markdownSchema.text(afterSeparator, [markdownSchema.marks.link.create({
@@ -14506,21 +14537,27 @@
               }
           }
 
-          nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create()]));
+          nodes.push(markdownSchema.text("]]", [markdownSchema.marks.spec.create({
+              formatType: 'embedded_link'
+          })]));
 
           return Fragment.from(nodes);
       }
 
       static constructEmptyLink(text) {
           const nodes = [
-              markdownSchema.text("[", [markdownSchema.marks.spec.create()])
+              markdownSchema.text("[", [markdownSchema.marks.spec.create({
+                  formatType: 'link'
+              })])
           ];
 
           if (text && text !== "") {
               nodes.push(markdownSchema.text(text, [markdownSchema.marks.link.create()]));
           }
 
-          nodes.push(markdownSchema.text("]", [markdownSchema.marks.spec.create()]));
+          nodes.push(markdownSchema.text("]", [markdownSchema.marks.spec.create({
+              formatType: 'link'
+          })]));
 
           return Fragment.from(nodes);
       }
@@ -14528,7 +14565,9 @@
 
       static constructLink(text, href = "") {
           const nodes = [
-              markdownSchema.text("[", [markdownSchema.marks.spec.create()])
+              markdownSchema.text("[", [markdownSchema.marks.spec.create({
+                  formatType: 'link'
+              })])
           ];
 
           if (text && text !== "") {
@@ -14537,17 +14576,24 @@
               })]));
           }
 
-          nodes.push(markdownSchema.text("]", [markdownSchema.marks.spec.create()]));
+          nodes.push(markdownSchema.text("]", [markdownSchema.marks.spec.create({
+              formatType: 'link'
+          })]));
 
-          nodes.push(markdownSchema.text("(", [markdownSchema.marks.spec.create()]));
+          nodes.push(markdownSchema.text("(", [markdownSchema.marks.spec.create({
+              formatType: 'hidden-link'
+          })]));
 
           if (href && href !== "") {
               nodes.push(markdownSchema.text(href, [markdownSchema.marks.link.create({
-                  href: href === "" ? "#" : href
+                  href: href === "" ? "#" : href,
+                  hidden: true
               })]));
           }
 
-          nodes.push(markdownSchema.text(")", [markdownSchema.marks.spec.create()]));
+          nodes.push(markdownSchema.text(")", [markdownSchema.marks.spec.create({
+              formatType: 'hidden-link'
+          })]));
 
           return Fragment.from(nodes);
       }
@@ -14592,10 +14638,11 @@
           };
       }
 
-      static createWrappedMark(delimiters, text, mark, leftMarkClass = 'mark-spec', rightMarkClass = 'mark-spec') {
+      static createWrappedMark(delimiters, text, mark, leftMarkClass = 'mark-spec', rightMarkClass = 'mark-spec', formatType = 'none') {
           const nodes = [
               markdownSchema.text(delimiters[0], [markdownSchema.marks.spec.create({
-                  specClass: leftMarkClass
+                  specClass: leftMarkClass,
+                  formatType: formatType
               })])
           ];
 
@@ -14606,7 +14653,8 @@
           }
 
           nodes.push(markdownSchema.text(delimiters[1], [markdownSchema.marks.spec.create({
-              specClass: rightMarkClass
+              specClass: rightMarkClass,
+              formatType: formatType
           })]));
           return nodes;
       }
@@ -14709,6 +14757,11 @@
                   name: 'blockquote',
                   pattern: /^> (.*)$/,
                   handler: this.reconstructBlockquote.bind(this)
+              },
+              {
+                  name: 'horizontal_rule',
+                  pattern: /^---(\s*)$/,
+                  handler: this.reconstructHorizontalRule.bind(this)
               },
               {
                   name: 'bullet_list',
@@ -15043,6 +15096,12 @@
           return NodeConverter.constructBlockquote(textNodes);
       }
 
+      reconstructHorizontalRule(match, originalParagraph, pos) {
+          const [_, spaces] = match;
+
+          return NodeConverter.constructHorizontalRule(spaces);
+      }
+
       reconstructTabListItem(match, originalParagraph, pos) {
           const [_, spaces, content] = match;
 
@@ -15284,7 +15343,6 @@
           for (const rule of markRules) {
               if (rule.pattern.test(textBefore + text)) {
                   if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && (!textAfter.startsWith(' ') && !textAfter.startsWith('\t') && !textAfter.startsWith(rule.rightDelimiter))) {
-                      console.log(1);
                       break;
                   }
                   if (["_"].includes(rule.leftDelimiter) && textBefore.length > 0 && (!textBefore.endsWith(' ') || !textBefore.endsWith('\t'))) {
@@ -24635,6 +24693,66 @@
       }
   );
 
+  class NodeSelector {
+      static createDeleteSelectionTransaction(view) {
+          const { state } = view;
+          const { selection } = state;
+          const { $from, $to } = selection;
+
+          if (selection.empty) {
+              return state.tr;
+          }
+
+          const fromPos = $from.pos;
+
+          const firstNode = $from.parent;
+          const lastNode = $to.parent;
+
+          const firstNodePos = $from.before();
+          const lastNodePos = $to.before();
+
+          const textBeforeSelection = firstNode.textContent.slice(0, $from.parentOffset);
+          const textAfterSelection = lastNode.textContent.slice($to.parentOffset);
+
+          const newText = textBeforeSelection + textAfterSelection;
+          let newNode = NodeConverter.constructParagraph(newText);
+
+          const reconstructor = new NodeReconstructor();
+          const reconstructed = reconstructor.applyBlockRules([newNode], firstNodePos);
+          newNode = reconstructed[0];
+
+          const tr = state.tr.replaceWith(firstNodePos, lastNodePos + lastNode.nodeSize, newNode);
+
+          const cursorPos = fromPos;
+          tr.setSelection(TextSelection.create(tr.doc, cursorPos));
+
+          return tr;
+      }
+
+      static copySelectionToClipboard(view, event) {
+          const { state } = view;
+          const { selection, doc } = state;
+          const { $from, $to } = selection;
+
+          const fragment = doc.content.cut($from.pos, $to.pos);
+
+          const tempDoc = state.schema.topNodeType.create({}, fragment);
+          const markdownText = markdownSerializer.serialize(tempDoc);
+          const cleanedText = markdownText.replace(/\n{3,}/g, '\n\n').trim();
+
+          if (event.clipboardData) {
+              event.clipboardData.setData('text/plain', cleanedText);
+              event.clipboardData.setData('text/markdown', cleanedText);
+              event.preventDefault();
+          } else if (event.dataTransfer) {
+              event.dataTransfer.setData('text/plain', cleanedText);
+              event.dataTransfer.setData('text/markdown', cleanedText);
+          }
+
+          return cleanedText;
+      }
+  }
+
   function blockNavigationPlugin() {
       return new Plugin({
           props: {
@@ -25624,66 +25742,6 @@
       }
   }
 
-  class NodeSelector {
-      static createDeleteSelectionTransaction(view) {
-          const { state } = view;
-          const { selection } = state;
-          const { $from, $to } = selection;
-
-          if (selection.empty) {
-              return state.tr;
-          }
-
-          const fromPos = $from.pos;
-
-          const firstNode = $from.parent;
-          const lastNode = $to.parent;
-
-          const firstNodePos = $from.before();
-          const lastNodePos = $to.before();
-
-          const textBeforeSelection = firstNode.textContent.slice(0, $from.parentOffset);
-          const textAfterSelection = lastNode.textContent.slice($to.parentOffset);
-
-          const newText = textBeforeSelection + textAfterSelection;
-          let newNode = NodeConverter.constructParagraph(newText);
-
-          const reconstructor = new NodeReconstructor();
-          const reconstructed = reconstructor.applyBlockRules([newNode], firstNodePos);
-          newNode = reconstructed[0];
-
-          const tr = state.tr.replaceWith(firstNodePos, lastNodePos + lastNode.nodeSize, newNode);
-
-          const cursorPos = fromPos;
-          tr.setSelection(TextSelection.create(tr.doc, cursorPos));
-
-          return tr;
-      }
-
-      static copySelectionToClipboard(view, event) {
-          const { state } = view;
-          const { selection, doc } = state;
-          const { $from, $to } = selection;
-
-          const fragment = doc.content.cut($from.pos, $to.pos);
-
-          const tempDoc = state.schema.topNodeType.create({}, fragment);
-          const markdownText = markdownSerializer.serialize(tempDoc);
-          const cleanedText = markdownText.replace(/\n{3,}/g, '\n\n').trim();
-
-          if (event.clipboardData) {
-              event.clipboardData.setData('text/plain', cleanedText);
-              event.clipboardData.setData('text/markdown', cleanedText);
-              event.preventDefault();
-          } else if (event.dataTransfer) {
-              event.dataTransfer.setData('text/plain', cleanedText);
-              event.dataTransfer.setData('text/markdown', cleanedText);
-          }
-
-          return cleanedText;
-      }
-  }
-
   function keymapPlugin(editor) {
       return keymap({
           ...baseKeymap,
@@ -26111,7 +26169,7 @@
               const searchState = searchPluginKey.getState(state);
               return searchState.getCurrentResult();
           }
-      }
+      },
   };
 
   function findInDocument(doc, query, caseSensitive = false) {
@@ -26139,6 +26197,722 @@
       });
 
       return results;
+  }
+
+  function hideSpecPlugin() {
+      const pluginKey = new PluginKey("hideSpecPlugin");
+
+      return new Plugin({
+          key: pluginKey,
+          state: {
+              init(_, { doc }) {
+                  return getDecorations(doc, null, -1, new Set(), null, null, null, -1);
+              },
+              apply(tr, oldDecoSet, oldState, newState) {
+                  const focusedNode = getFocusedNode(newState);
+                  const bulletMarkPos = getBulletMarkPosition(newState);
+                  const formatMarkPositions = getFormatMarkPositions(newState);
+                  const selectionRange = getSelectionRange(newState);
+                  const linkMarkPositions = getLinkMarkPositions(newState);
+
+                  const searchState = searchPluginKey ?
+                      searchPluginKey.getState(newState) : null;
+
+                  const oldFocusedNode = getFocusedNode(oldState);
+                  const oldBulletMarkPos = getBulletMarkPosition(oldState);
+                  const oldFormatMarkPositions = getFormatMarkPositions(oldState);
+                  const oldSelectionRange = getSelectionRange(oldState);
+                  const oldLinkMarkPositions = getLinkMarkPositions(oldState);
+                  const oldSearchState = searchPluginKey ?
+                      searchPluginKey.getState(oldState) : null;
+
+                  const searchChanged = !searchStatesEqual(searchState, oldSearchState);
+
+                  if (tr.docChanged || tr.selectionSet ||
+                      focusedNode !== oldFocusedNode ||
+                      bulletMarkPos !== oldBulletMarkPos ||
+                      !areSetsEqual(formatMarkPositions, oldFormatMarkPositions) ||
+                      !areSetsEqual(linkMarkPositions, oldLinkMarkPositions) ||
+                      !areRangesEqual(selectionRange, oldSelectionRange) ||
+                      searchChanged) {
+                      return getDecorations(
+                          newState.doc,
+                          focusedNode,
+                          bulletMarkPos,
+                          formatMarkPositions,
+                          selectionRange,
+                          linkMarkPositions,
+                          searchState,
+                          newState.selection.$from.pos
+                      );
+                  }
+                  return oldDecoSet;
+              }
+          },
+          props: {
+              decorations(state) {
+                  return pluginKey.getState(state);
+              }
+          }
+      });
+  }
+
+  function getDecorations(doc, focusedNode, cursorBulletPos, formatMarkPositions, selectionRange, linkMarkPositions, searchState, cursorPos) {
+      const decorations = [];
+
+      const currentSearchResult = searchState &&
+          searchState.isActive &&
+          searchState.getCurrentResult ?
+          searchState.getCurrentResult() : null;
+
+      const allFormatMarks = [];
+      const allLinkMarks = [];
+
+      doc.descendants((node, pos) => {
+          if (node.isText && node.marks) {
+              for (const mark of node.marks) {
+                  if (mark.type.name === "spec" && mark.attrs.type === "format") {
+                      allFormatMarks.push({
+                          mark,
+                          node,
+                          pos,
+                          endPos: pos + node.nodeSize,
+                          formatType: mark.attrs.formatType,
+                          text: node.text
+                      });
+                  }
+                  if (mark.type.name === "link") {
+                      allLinkMarks.push({
+                          mark,
+                          node,
+                          pos,
+                          endPos: pos + node.nodeSize,
+                          href: mark.attrs.href,
+                          hidden: mark.attrs.hidden
+                      });
+                  }
+              }
+          }
+
+          if (node.type.name === "horizontal_rule") {
+              doc.resolve(pos);
+              let isInFocusedNode = false;
+              let isInSelection = false;
+              let isInSearchResult = false;
+
+              if (focusedNode && focusedNode === node) {
+                  isInFocusedNode = true;
+              }
+
+              if (selectionRange) {
+                  const nodeEnd = pos + node.nodeSize;
+                  if (pos < selectionRange.to && nodeEnd > selectionRange.from) {
+                      isInSelection = true;
+                  }
+              }
+
+              if (currentSearchResult) {
+                  const nodeEnd = pos + node.nodeSize;
+                  if (pos < currentSearchResult.to && nodeEnd > currentSearchResult.from) {
+                      isInSearchResult = true;
+                  }
+              }
+
+              if (!isInFocusedNode && !isInSelection && !isInSearchResult) {
+                  decorations.push(
+                      Decoration.node(pos, pos + node.nodeSize, {
+                          class: "horizontal-rule-hidden"
+                      })
+                  );
+              }
+          }
+          return true;
+      });
+
+      const markerPairs = findAllMarkerPairs(allFormatMarks);
+      const linkConstructions = findLinkConstructions(allFormatMarks, allLinkMarks);
+
+      // Находим конструкцию, в которой находится курсор (если есть)
+      const cursorInLinkConstruction = linkConstructions.find(construction =>
+          cursorPos >= construction.startPos && cursorPos <= construction.endPos
+      );
+
+      doc.descendants((node, pos) => {
+          if (node.isText && node.marks) {
+              // Проверяем, находится ли этот узел в link конструкции с курсором
+              let isInLinkConstructionWithCursor = false;
+              if (cursorInLinkConstruction) {
+                  if (pos >= cursorInLinkConstruction.startPos && pos < cursorInLinkConstruction.endPos) {
+                      isInLinkConstructionWithCursor = true;
+                  }
+              }
+
+              for (const mark of node.marks) {
+                  if (mark.type.name === "spec") {
+                      if (mark.attrs.type !== "format") {
+                          // Обработка heading и blockquote
+                          if (mark.attrs.type === 'heading' || mark.attrs.type === 'blockquote') {
+                              const $pos = doc.resolve(pos);
+                              let isInFocusedNode = false;
+                              let isInSelection = false;
+                              let isInSearchResult = false;
+
+                              if (focusedNode) {
+                                  for (let i = 0; i <= $pos.depth; i++) {
+                                      if ($pos.node(i) === focusedNode) {
+                                          isInFocusedNode = true;
+                                          break;
+                                      }
+                                  }
+                              }
+
+                              if (selectionRange) {
+                                  const nodeEnd = pos + node.nodeSize;
+                                  if (pos < selectionRange.to && nodeEnd > selectionRange.from) {
+                                      isInSelection = true;
+                                  }
+                              }
+
+                              if (currentSearchResult) {
+                                  const nodeEnd = pos + node.nodeSize;
+                                  if (pos < currentSearchResult.to && nodeEnd > currentSearchResult.from) {
+                                      isInSearchResult = true;
+                                  }
+                              }
+
+                              // Не скрываем если в link конструкции с курсором
+                              if (!isInFocusedNode && !isInSelection && !isInSearchResult && !isInLinkConstructionWithCursor) {
+                                  const cssClass = mark.attrs.type === 'heading'
+                                      ? 'heading-hidden'
+                                      : 'blockquote-hidden';
+                                  decorations.push(
+                                      Decoration.inline(pos, pos + node.nodeSize, {
+                                          class: cssClass
+                                      })
+                                  );
+                              }
+                          }
+                      } else {
+                          // Обработка format spec маркеров
+                          let shouldHide = true;
+
+                          // Не скрываем если в link конструкции с курсором
+                          if (isInLinkConstructionWithCursor) {
+                              shouldHide = false;
+                          }
+
+                          if (shouldHide && formatMarkPositions.has(pos)) {
+                              shouldHide = false;
+                          }
+
+                          if (shouldHide) {
+                              for (const pair of markerPairs) {
+                                  if (pair.leftPos === pos || pair.rightPos === pos) {
+                                      if (cursorPos >= pair.leftPos && cursorPos <= pair.rightPos) {
+                                          shouldHide = false;
+                                          break;
+                                      }
+                                  }
+                              }
+                          }
+
+                          if (shouldHide && selectionRange) {
+                              const nodeEnd = pos + node.nodeSize;
+                              if (pos < selectionRange.to && nodeEnd > selectionRange.from) {
+                                  shouldHide = false;
+                              }
+                          }
+
+                          if (shouldHide && currentSearchResult) {
+                              const nodeEnd = pos + node.nodeSize;
+                              if (pos < currentSearchResult.to && nodeEnd > currentSearchResult.from) {
+                                  shouldHide = false;
+                              }
+                          }
+
+                          if (shouldHide) {
+                              decorations.push(
+                                  Decoration.inline(pos, pos + node.nodeSize, {
+                                      class: 'format-hidden'
+                                  })
+                              );
+                          }
+                      }
+                      break;
+                  } else if (mark.type.name === "marker" && mark.attrs.type === "bullet") {
+                      // Обработка bullet маркеров
+                      let isInSelection = false;
+                      let isInSearchResult = false;
+
+                      if (selectionRange) {
+                          const nodeEnd = pos + node.nodeSize;
+                          if (pos < selectionRange.to && nodeEnd > selectionRange.from) {
+                              isInSelection = true;
+                          }
+                      }
+
+                      if (currentSearchResult) {
+                          const nodeEnd = pos + node.nodeSize;
+                          if (pos < currentSearchResult.to && nodeEnd > currentSearchResult.from) {
+                              isInSearchResult = true;
+                          }
+                      }
+
+                      // Не скрываем если в link конструкции с курсором
+                      if (pos !== cursorBulletPos && !isInSelection && !isInSearchResult && !isInLinkConstructionWithCursor) {
+                          decorations.push(
+                              Decoration.inline(pos, pos + node.nodeSize, {
+                                  class: 'bullet-list-hidden'
+                              })
+                          );
+                      }
+                      break;
+                  } else if (mark.type.name === "link") {
+                      // Обработка link маркеров
+                      let isInSelection = false;
+                      let isInSearchResult = false;
+                      let isCursorInside = linkMarkPositions.has(pos);
+
+                      if (selectionRange) {
+                          const nodeEnd = pos + node.nodeSize;
+                          if (pos < selectionRange.to && nodeEnd > selectionRange.from) {
+                              isInSelection = true;
+                          }
+                      }
+
+                      if (currentSearchResult) {
+                          const nodeEnd = pos + node.nodeSize;
+                          if (pos < currentSearchResult.to && nodeEnd > currentSearchResult.from) {
+                              isInSearchResult = true;
+                          }
+                      }
+
+                      // Для скрытых link маркеров
+                      if (mark.attrs.hidden) {
+                          // Не скрываем если: курсор внутри, в выделении, в результатах поиска или в link конструкции с курсором
+                          if (!isCursorInside && !isInSelection && !isInSearchResult && !isInLinkConstructionWithCursor) {
+                              decorations.push(
+                                  Decoration.inline(pos, pos + node.nodeSize, {
+                                      class: 'link-hidden'
+                                  })
+                              );
+                          }
+                      }
+                      break;
+                  }
+              }
+          }
+          return true;
+      });
+
+      return DecorationSet.create(doc, decorations);
+  }
+
+  function findLinkConstructions(allFormatMarks, allLinkMarks) {
+      const constructions = [];
+
+      const linkSpecs = allFormatMarks.filter(m =>
+          m.mark.attrs.formatType === 'link' ||
+          m.mark.attrs.formatType === 'hidden-link' ||
+          m.mark.attrs.formatType === 'note_link' ||
+          m.mark.attrs.formatType === 'embedded_link'
+      );
+
+      const sortedSpecs = [...linkSpecs].sort((a, b) => a.pos - b.pos);
+
+      let i = 0;
+      while (i < sortedSpecs.length) {
+          const current = sortedSpecs[i];
+
+          if (current.mark.attrs.formatType === 'link') {
+              if (i + 3 < sortedSpecs.length) {
+                  const next1 = sortedSpecs[i + 1];
+                  const next2 = sortedSpecs[i + 2];
+                  const next3 = sortedSpecs[i + 3];
+                  
+                  if (next1.mark.attrs.formatType === 'link' && 
+                      next2.mark.attrs.formatType === 'hidden-link' && 
+                      next3.mark.attrs.formatType === 'hidden-link') {
+                      
+                      const linksInRange = allLinkMarks.filter(l =>
+                          l.pos >= current.pos && l.pos <= next3.endPos
+                      );
+
+                      constructions.push({
+                          type: 'external',
+                          startPos: current.pos,
+                          endPos: next3.endPos,
+                          links: linksInRange,
+                          specMarkers: [current, next1, next2, next3]
+                      });
+
+                      i += 4;
+                      continue;
+                  }
+              }
+              
+              if (i + 2 < sortedSpecs.length) {
+                  const next1 = sortedSpecs[i + 1];
+                  const next2 = sortedSpecs[i + 2];
+                  
+                  if (next1.mark.attrs.formatType === 'link' && 
+                      next2.mark.attrs.formatType === 'hidden-link') {
+                      
+                      const linksInRange = allLinkMarks.filter(l =>
+                          l.pos >= current.pos && l.pos <= next2.endPos
+                      );
+
+                      constructions.push({
+                          type: 'external',
+                          startPos: current.pos,
+                          endPos: next2.endPos,
+                          links: linksInRange,
+                          specMarkers: [current, next1, next2]
+                      });
+
+                      i += 3;
+                      continue;
+                  }
+              }
+              
+              if (i + 1 < sortedSpecs.length) {
+                  const next1 = sortedSpecs[i + 1];
+                  
+                  if (next1.mark.attrs.formatType === 'hidden-link') {
+                      const linksInRange = allLinkMarks.filter(l =>
+                          l.pos >= current.pos && l.pos <= next1.endPos
+                      );
+
+                      constructions.push({
+                          type: 'external',
+                          startPos: current.pos,
+                          endPos: next1.endPos,
+                          links: linksInRange,
+                          specMarkers: [current, next1]
+                      });
+
+                      i += 2;
+                      continue;
+                  }
+              }
+              
+              const linksInRange = allLinkMarks.filter(l =>
+                  l.pos >= current.pos && l.pos <= current.endPos
+              );
+              
+              if (linksInRange.length > 0 || current.text?.includes('[')) {
+                  constructions.push({
+                      type: 'external',
+                      startPos: current.pos,
+                      endPos: current.endPos,
+                      links: linksInRange,
+                      specMarkers: [current]
+                  });
+              }
+          }
+          else if (current.mark.attrs.formatType === 'note_link') {
+              if (i + 1 < sortedSpecs.length && 
+                  sortedSpecs[i + 1].mark.attrs.formatType === 'note_link') {
+                  
+                  const closing = sortedSpecs[i + 1];
+                  const linksInRange = allLinkMarks.filter(l =>
+                      l.pos >= current.pos && l.pos <= closing.endPos
+                  );
+
+                  constructions.push({
+                      type: 'note',
+                      startPos: current.pos,
+                      endPos: closing.endPos,
+                      links: linksInRange,
+                      specMarkers: [current, closing]
+                  });
+
+                  i += 2;
+                  continue;
+              }
+          }
+          else if (current.mark.attrs.formatType === 'embedded_link') {
+              if (i + 1 < sortedSpecs.length && 
+                  sortedSpecs[i + 1].mark.attrs.formatType === 'embedded_link') {
+                  
+                  const closing = sortedSpecs[i + 1];
+                  const linksInRange = allLinkMarks.filter(l =>
+                      l.pos >= current.pos && l.pos <= closing.endPos
+                  );
+
+                  constructions.push({
+                      type: 'embedded',
+                      startPos: current.pos,
+                      endPos: closing.endPos,
+                      links: linksInRange,
+                      specMarkers: [current, closing]
+                  });
+
+                  i += 2;
+                  continue;
+              }
+          }
+
+          i++;
+      }
+
+      return constructions;
+  }
+
+  function getLinkMarkPositions(state) {
+      const { $from, $to } = state.selection;
+      const positions = new Set();
+
+      if ($from.pos !== $to.pos) return positions;
+
+      const cursorPos = $from.pos;
+      const doc = state.doc;
+
+      doc.descendants((node, pos) => {
+          if (node.isText && node.marks) {
+              if (pos <= cursorPos && cursorPos <= pos + node.nodeSize) {
+                  for (const mark of node.marks) {
+                      if (mark.type.name === "link" && mark.attrs.hidden === true) {
+                          positions.add(pos);
+                          break;
+                      }
+                  }
+              }
+          }
+          return true;
+      });
+
+      return positions;
+  }
+
+  function searchStatesEqual(state1, state2) {
+      if (!state1 && !state2) return true;
+      if (!state1 || !state2) return false;
+
+      return state1.isActive === state2.isActive &&
+          state1.currentIndex === state2.currentIndex &&
+          state1.query === state2.query &&
+          state1.total === state2.total;
+  }
+
+  function findAllMarkerPairs(allFormatMarks) {
+      const pairs = [];
+      const stack = [];
+
+      const sortedMarks = [...allFormatMarks].sort((a, b) => a.pos - b.pos);
+
+      for (const mark of sortedMarks) {
+          if (stack.length === 0) {
+              stack.push(mark);
+          } else {
+              const last = stack[stack.length - 1];
+
+              if (last.formatType === mark.formatType) {
+                  pairs.push({
+                      formatType: mark.formatType,
+                      leftPos: last.pos,
+                      rightPos: mark.pos,
+                      leftText: last.text,
+                      rightText: mark.text,
+                      depth: stack.length
+                  });
+                  stack.pop();
+              } else {
+                  stack.push(mark);
+              }
+          }
+      }
+
+      return pairs;
+  }
+
+  function getFormatMarkPositions(state) {
+      const { $from, $to } = state.selection;
+      const positions = new Set();
+
+      if ($from.pos !== $to.pos) return positions;
+
+      const cursorPos = $from.pos;
+      const doc = state.doc;
+
+      const allFormatMarks = [];
+      doc.descendants((node, pos) => {
+          if (node.isText && node.marks) {
+              for (const mark of node.marks) {
+                  if (mark.type.name === "spec" && mark.attrs.type === "format") {
+                      allFormatMarks.push({
+                          mark,
+                          node,
+                          pos,
+                          endPos: pos + node.nodeSize,
+                          formatType: mark.attrs.formatType
+                      });
+                  }
+              }
+          }
+          return true;
+      });
+
+      const markerPairs = findAllMarkerPairs(allFormatMarks);
+
+      let cursorMarkInfo = null;
+      doc.descendants((node, pos) => {
+          if (node.isText && node.marks) {
+              if (pos <= cursorPos && cursorPos <= pos + node.nodeSize) {
+                  for (const mark of node.marks) {
+                      if (mark.type.name === "spec" && mark.attrs.type === "format") {
+                          cursorMarkInfo = { mark, pos, formatType: mark.attrs.formatType };
+                          positions.add(pos);
+                          break;
+                      }
+                  }
+                  if (cursorMarkInfo) return false;
+              }
+          }
+          return true;
+      });
+
+      if (cursorMarkInfo) {
+          for (const pair of markerPairs) {
+              if (pair.leftPos === cursorMarkInfo.pos) {
+                  positions.add(pair.rightPos);
+              } else if (pair.rightPos === cursorMarkInfo.pos) {
+                  positions.add(pair.leftPos);
+              }
+          }
+      }
+
+      return positions;
+  }
+
+  function areSetsEqual(set1, set2) {
+      if (set1.size !== set2.size) return false;
+      for (const item of set1) {
+          if (!set2.has(item)) return false;
+      }
+      return true;
+  }
+
+  function getFocusedNode(state) {
+      const { $from } = state.selection;
+
+      for (let i = $from.depth; i >= 0; i--) {
+          const node = $from.node(i);
+          if (node.type.name !== "doc" && !node.isText) {
+              return node;
+          }
+      }
+
+      return null;
+  }
+
+  function getBulletMarkPosition(state) {
+      const { $from, $to } = state.selection;
+
+      if ($from.pos !== $to.pos) return -1;
+
+      const doc = state.doc;
+      let markerPos = -1;
+
+      doc.descendants((node, pos) => {
+          if (node.isText && node.marks) {
+              if (pos <= $from.pos && $from.pos <= pos + node.nodeSize) {
+                  for (const mark of node.marks) {
+                      if (mark.type.name === "marker" && mark.attrs.type === "bullet") {
+                          markerPos = pos;
+                          return false;
+                      }
+                  }
+              }
+          }
+          return true;
+      });
+
+      return markerPos;
+  }
+
+  function getSelectionRange(state) {
+      const { from, to } = state.selection;
+
+      if (from === to) return null;
+
+      return { from, to };
+  }
+
+  function areRangesEqual(range1, range2) {
+      if (!range1 && !range2) return true;
+      if (!range1 || !range2) return false;
+      return range1.from === range2.from && range1.to === range2.to;
+  }
+
+  function doubleClickPlugin() {
+      let clickCount = 0;
+      let clickTimer = null;
+      
+      return new Plugin({
+          props: {
+              handleDOMEvents: {
+                  mousedown: (view, event) => {
+                      clickCount++;
+                      
+                      if (clickCount === 1) {
+                          clickTimer = setTimeout(() => {
+                              clickCount = 0;
+                              clickTimer = null;
+                          }, 300);
+                      } else if (clickCount === 2) {
+                          clearTimeout(clickTimer);
+                          clickCount = 0;
+                          clickTimer = null;
+                          
+                          const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+                          if (!pos) return false;
+
+                          const $pos = view.state.doc.resolve(pos.pos);
+                          const text = $pos.parent.textContent;
+                          const offset = $pos.parentOffset;
+
+                          const isLetterOrDigit = (char) => {
+                              if (!char) return false;
+                              return /[\p{L}\p{N}]/u.test(char);
+                          };
+
+                          let start = offset;
+                          let end = offset;
+
+                          while (start > 0 && isLetterOrDigit(text[start - 1])) {
+                              start--;
+                          }
+
+                          while (end < text.length && isLetterOrDigit(text[end])) {
+                              end++;
+                          }
+
+                          if (start < end) {
+                              const nodeStart = $pos.start();
+                              const from = nodeStart + start;
+                              const to = nodeStart + end;
+
+                              const tr = view.state.tr.setSelection(
+                                  TextSelection.create(view.state.doc, from, to)
+                              );
+                              view.dispatch(tr);
+                              
+                              event.preventDefault();
+                              event.stopPropagation();
+                              return true;
+                          }
+                      }
+                      return false;
+                  },
+                  dblclick: (view, event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      return true;
+                  }
+              }
+          }
+      });
   }
 
   let sourceNodePos = null;
@@ -26270,6 +27044,75 @@
       tr = tr.replaceWith(nodePos, nodePos + node.nodeSize, reconstructed[0]);
 
       dispatch(tr);
+  }
+
+  function wordCounterPlugin() {
+      let debounceTimer = null;
+      
+      return new Plugin({
+          view(editorView) {
+              const wordCountEl = document.getElementById('word-count');
+              const charCountEl = document.getElementById('char-count');
+              
+              if (!wordCountEl || !charCountEl) {
+                  return {};
+              }
+              
+              const isValidWord = (str) => {
+                  return /[\p{L}\p{N}]/u.test(str);
+              };
+              
+              const updateStats = () => {
+                  const doc = editorView.state.doc;
+                  let words = 0;
+                  let chars = 0;
+                  
+                  doc.descendants((node) => {
+                      if (node.isText && node.text) {
+                          const text = node.text;
+                          chars += text.length;
+                          
+                          const trimmed = text.trim();
+                          if (trimmed) {
+                              // Разбиваем по пробельным символам
+                              const potentialWords = trimmed.split(/\s+/);
+                              
+                              for (const word of potentialWords) {
+                                  if (isValidWord(word)) {
+                                      words++;
+                                  }
+                              }
+                          }
+                      }
+                  });
+                  
+                  wordCountEl.textContent = words;
+                  charCountEl.textContent = chars;
+              };
+              
+              const debouncedUpdate = () => {
+                  clearTimeout(debounceTimer);
+                  debounceTimer = setTimeout(updateStats, 300);
+              };
+              
+              updateStats();
+              
+              const originalDispatch = editorView.dispatch;
+              editorView.dispatch = function(transaction) {
+                  const result = originalDispatch.call(this, transaction);
+                  if (transaction.docChanged) {
+                      debouncedUpdate();
+                  }
+                  return result;
+              };
+              
+              return {
+                  destroy() {
+                      clearTimeout(debounceTimer);
+                  }
+              };
+          }
+      });
   }
 
   /*! js-yaml 4.1.0 https://github.com/nodeca/js-yaml @license MIT */
@@ -30228,8 +31071,10 @@
               blockNavigationPlugin(),
               inputPlugin(),
               disableInsertPlugin(),
-              //hideSpecPlugin(),
               searchPlugin(),
+              hideSpecPlugin(),
+              doubleClickPlugin(),
+              wordCounterPlugin(),
           ];
       }
 
@@ -30790,7 +31635,17 @@
       insertSnippet(snippetContent) {
           if (snippetContent) {
               const { state, dispatch } = this.view;
-              NodeInputter.handlePasteInNode(this.view, state, dispatch, snippetContent, null, false);
+              const { selection } = state;
+
+              if (!selection.empty) {
+                  const deleteTr = NodeSelector.createDeleteSelectionTransaction(this.view);
+                  if (deleteTr) {
+                      const newState = state.apply(deleteTr);
+                      return NodeInputter.handlePasteInNode(this.view, newState, dispatch, snippetContent, deleteTr, false);
+                  }
+              }
+
+              return NodeInputter.handlePasteInNode(this.view, state, dispatch, snippetContent, null, false);
           }
       }
 
@@ -30825,8 +31680,6 @@
                       return true;
                   });
 
-                  console.log(`Block ${index}: markerTextLength = ${markerTextLength}`);
-
                   selectedNodes.push({
                       node: child,
                       pos: childPos,
@@ -30834,6 +31687,7 @@
                       blockStart,
                       blockEnd,
                       markerTextLength,
+                      realIntersectsFrom: Math.max(from, blockStart + 1),
                       intersectsFrom: Math.max(from, blockStart + 1 + markerTextLength),
                       intersectsTo: Math.min(to, blockEnd),
                       type: child.type.name,
@@ -30843,6 +31697,59 @@
                   });
               }
           });
+
+          if (style === 'clear') {
+              const paragraphs = [];
+
+              selectedNodes.forEach(nodeInfo => {
+                  let nodeText = nodeInfo.text;
+
+                  const textStart = nodeInfo.blockStart + 1;
+                  const markStartInText = nodeInfo.intersectsFrom - textStart;
+                  const markEndInText = nodeInfo.intersectsTo - textStart;
+
+                  const safeMarkStart = Math.max(0, Math.min(markStartInText, nodeText.length));
+                  const safeMarkEnd = Math.max(0, Math.min(markEndInText, nodeText.length));
+
+                  const selectedText = nodeText.slice(safeMarkStart, safeMarkEnd);
+
+                  const markers = [
+                      '_', '*', '~~', '**', '__', '==', '%%', '$', '`',
+                  ];
+
+                  let cleanedSelectedText = selectedText;
+                  markers.forEach(marker => {
+                      if (marker.length === 1) {
+                          const regex = new RegExp(`\\${marker}([^\\${marker}]*?)\\${marker}`, 'g');
+                          cleanedSelectedText = cleanedSelectedText.replace(regex, '$1');
+                      } else {
+                          const escapedMarker = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                          const regex = new RegExp(`${escapedMarker}(.*?)${escapedMarker}`, 'gs');
+                          cleanedSelectedText = cleanedSelectedText.replace(regex, '$1');
+                      }
+                  });
+
+                  const beforeText = nodeText.slice(0, safeMarkStart);
+                  const afterText = nodeText.slice(safeMarkEnd);
+                  const finalText = beforeText + cleanedSelectedText + afterText;
+
+                  const paragraph = NodeConverter.constructParagraph(finalText);
+                  paragraphs.push(paragraph);
+              });
+
+              const reconstructor = new NodeReconstructor();
+              const reconstructed = reconstructor.applyBlockRules(paragraphs, 0);
+
+              let tr = state.tr;
+              let startReplacePos = selectedNodes[0].blockStart;
+              let endReplacePos = selectedNodes[selectedNodes.length - 1].blockEnd;
+              tr = tr.replaceWith(startReplacePos, endReplacePos, reconstructed);
+
+              const cursorPos = from;
+              tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
+              dispatch(tr);
+              return;
+          }
 
           let marker = '';
           switch (style) {
@@ -30870,16 +31777,29 @@
               case 'code':
                   marker = '`';
                   break;
+              default:
+                  return;
           }
 
           const paragraphs = [];
           selectedNodes.forEach(nodeInfo => {
+              if (!nodeInfo.hasText && selectedNodes.length > 1) {
+                  let paragraph = NodeConverter.constructParagraph();
+                  paragraphs.push(paragraph);
+                  return;
+              }
+
               const nodeText = nodeInfo.text;
 
               const textStart = nodeInfo.blockStart + 1;
 
-              const markStartInText = nodeInfo.intersectsFrom - textStart;
+              let markStartInText = nodeInfo.intersectsFrom - textStart;
               const markEndInText = nodeInfo.intersectsTo - textStart;
+
+              if (style === 'comment') {
+                  markStartInText = nodeInfo.realIntersectsFrom - textStart;
+              }
+
 
               const safeMarkStart = Math.max(0, Math.min(markStartInText, nodeText.length));
               const safeMarkEnd = Math.max(0, Math.min(markEndInText, nodeText.length));
@@ -30912,6 +31832,215 @@
 
           tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
           dispatch(tr);
+      }
+
+      paragraph(type) {
+          const { state, dispatch } = this.view;
+          const { from, to } = state.selection;
+
+          const selectedNodes = [];
+          state.doc.content.forEach((child, offset, index) => {
+              const childPos = offset;
+              const blockStart = childPos;
+              const blockEnd = childPos + child.nodeSize;
+
+              if (from < blockEnd && to > blockStart) {
+                  let markerTextLength = 0;
+                  let tabs = '';
+                  let tabLevel = 0;
+
+                  child.descendants((node, pos) => {
+                      if (node.isText) {
+                          const hasNonFormatMark = node.marks.some(mark =>
+                              mark.type.name === 'spec' && mark.attrs.type !== 'format'
+                          );
+                          const hasMarker = node.marks.some(mark => mark.type.name === 'marker');
+                          const hasTab = node.marks.some(mark => mark.type.name === 'tab');
+
+                          if (hasNonFormatMark || hasMarker || hasTab) {
+                              markerTextLength += node.text.length;
+                              if (hasTab) {
+                                  tabs += node.text;
+                                  tabLevel += 1;
+                              }
+                              return true;
+                          } else {
+                              return false;
+                          }
+                      }
+                      return true;
+                  });
+
+                  selectedNodes.push({
+                      node: child,
+                      pos: childPos,
+                      index: index,
+                      blockStart,
+                      blockEnd,
+                      markerTextLength,
+                      type: child.type.name,
+                      hasText: child.textContent.length > 0,
+                      isEmpty: child.childCount === 0,
+                      text: child.textContent,
+                      tabs,
+                      tabLevel
+                  });
+              }
+          });
+
+          let marker = '';
+          let useTabs = false;
+          switch (type) {
+              case 'heading1':
+                  marker = '# ';
+                  break;
+              case 'heading2':
+                  marker = '## ';
+                  break;
+              case 'heading3':
+                  marker = '### ';
+                  break;
+              case 'heading4':
+                  marker = '#### ';
+                  break;
+              case 'heading5':
+                  marker = '##### ';
+                  break;
+              case 'heading6':
+                  marker = '###### ';
+                  break;
+              case 'quote':
+                  marker = '> ';
+                  break;
+              case 'bullet-list':
+                  marker = '- ';
+                  useTabs = true;
+                  break;
+              case 'ordered-list':
+                  marker = '';
+                  useTabs = true;
+                  break;
+              case 'body':
+                  marker = '';
+                  useTabs = true;
+                  break;
+              default:
+                  return;
+          }
+
+          let prevTabLevel = 0;
+          let number = 0;
+          let first = true;
+          let cursorPos = from;
+
+          const paragraphs = [];
+          selectedNodes.forEach(nodeInfo => {
+              if (type == 'ordered-list') {
+                  if (nodeInfo.tabLevel == prevTabLevel) {
+                      number += 1;
+                  } else {
+                      number = 1;
+                  }
+
+                  marker = `${number}. `;
+              }
+              prevTabLevel = nodeInfo.tabLevel;
+
+              const nodeText = nodeInfo.text;
+
+              const afterText = nodeText.slice(nodeInfo.markerTextLength);
+
+              const beforeText = useTabs ? nodeInfo.tabs : '';
+
+              let paragraph = NodeConverter.constructParagraph(beforeText + marker + afterText);
+              paragraphs.push(paragraph);
+
+              if (first) {
+                  cursorPos = nodeInfo.blockStart + nodeInfo.tabs.length + marker.length + 1;
+                  first = false;
+              }
+          });
+
+          const reconstructor = new NodeReconstructor();
+          const reconstructed = reconstructor.applyBlockRules(paragraphs, 0);
+
+          let tr = state.tr;
+          let startReplacePos = selectedNodes[0].blockStart;
+          let endReplacePos = selectedNodes[selectedNodes.length - 1].blockEnd;
+          tr = tr.replaceWith(startReplacePos, endReplacePos, reconstructed);
+
+          tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
+          dispatch(tr);
+      }
+
+      link(type) {
+          const { state, dispatch } = this.view;
+          const { from, to, $from, $to } = state.selection;
+
+          if ($from.parent !== $to.parent) {
+              return;
+          }
+
+          const currentNode = $from.parent;
+          const nodeStart = $from.start();
+          const nodeEnd = $from.end();
+          const nodeText = currentNode.textContent;
+
+          const relativeFrom = from - nodeStart;
+          const relativeTo = to - nodeStart;
+
+          const beforeText = nodeText.slice(0, relativeFrom);
+          const linkText = nodeText.slice(relativeFrom, relativeTo);
+          const afterText = nodeText.slice(relativeTo);
+
+          console.log(beforeText, linkText, afterText);
+
+          let newNodeText = '';
+          let cursorPos = nodeStart + beforeText.length;
+          switch (type) {
+              case 'note':
+                  newNodeText = beforeText + '[[' + linkText + ']]' + afterText;
+                  cursorPos += linkText.length + 2;
+                  break;
+              case 'external':
+                  newNodeText = beforeText + '[' + linkText + ']()' + afterText;
+                  cursorPos += linkText.length + 3;
+                  break;
+              default:
+                  return;
+          }
+
+          const paragraph = NodeConverter.constructParagraph(newNodeText);
+
+          const reconstructor = new NodeReconstructor();
+          const reconstructed = reconstructor.applyBlockRules([paragraph], 0);
+
+          let tr = state.tr;
+          tr = tr.replaceWith(nodeStart - 1, nodeEnd, reconstructed);
+
+          tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
+          dispatch(tr);
+      }
+
+      canCreateLinks() {
+          const { state } = this.view;
+          const { $from, $to } = state.selection;
+          return $from.parent === $to.parent;
+      }
+
+      selectAll() {
+          const { state, dispatch } = this.view;
+
+          const selection = state.selection.constructor.between(
+              state.doc.resolve(0),
+              state.doc.resolve(state.doc.content.size)
+          );
+
+          if (dispatch) {
+              dispatch(state.tr.setSelection(selection));
+          }
+
+          return true;
       }
 
       getMarkdown() {
@@ -31251,6 +32380,6 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
 
   })();
 
-  // window.createEditor('note');
+  window.createEditor('note');
 
 })();

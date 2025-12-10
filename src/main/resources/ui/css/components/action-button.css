@@ -15,6 +15,28 @@
     -fx-background-color: -color-button-pressed;
 }
 
+.menu-button {
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-background-color: transparent;
+}
+
+.menu-button .label {
+    -fx-text-fill: -color-main-text;
+}
+
+.menu-button:hover {
+    -fx-background-color: -color-button-hover;
+}
+
+.menu-button:pressed {
+    -fx-background-color: -color-button-pressed;
+}
+
+.menu-button:showing {
+    -fx-background-color: -color-button-pressed;
+}
+
 /* Стили для контекстного меню */
 .context-menu {
     -fx-background-color: -color-actions-panel;

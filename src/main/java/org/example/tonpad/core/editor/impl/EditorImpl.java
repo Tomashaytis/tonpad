@@ -10,6 +10,9 @@ import org.example.tonpad.core.editor.Editor;
 import org.example.tonpad.core.editor.dto.SearchResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.tonpad.core.editor.enums.EditorMode;
+import org.example.tonpad.core.editor.enums.FormatType;
+import org.example.tonpad.core.editor.enums.LinkType;
+import org.example.tonpad.core.editor.enums.ParagraphType;
 import org.example.tonpad.core.editor.event.FrontMatterChangeEvent;
 import org.example.tonpad.core.editor.listener.FrontMatterChangeListener;
 import org.yaml.snakeyaml.Yaml;
@@ -135,6 +138,51 @@ public class EditorImpl implements Editor {
 
     public CompletableFuture<String> getMarkdown() {
         return executeJs("editor.getMarkdown();");
+    }
+
+    public void format(FormatType format) {
+        switch (format) {
+            case BOLD -> executeJs("editor.format('bold');");
+            case ITALIC -> executeJs("editor.format('italic');");
+            case STRIKETHROUGH -> executeJs("editor.format('strikethrough');");
+            case HIGHLIGHT -> executeJs("editor.format('highlight');");
+            case UNDERLINE -> executeJs("editor.format('underline');");
+            case COMMENT -> executeJs("editor.format('comment');");
+            case CODE -> executeJs("editor.format('code');");
+            case MATH -> executeJs("editor.format('math');");
+            case CLEAR -> executeJs("editor.format('clear');");
+        }
+    }
+
+    public void paragraph(ParagraphType paragraph) {
+        switch (paragraph) {
+            case BULLET_LIST -> executeJs("editor.paragraph('bullet-list');");
+            case ORDERED_LIST -> executeJs("editor.paragraph('ordered-list');");
+            case HEADING_1 -> executeJs("editor.paragraph('heading1');");
+            case HEADING_2 -> executeJs("editor.paragraph('heading2');");
+            case HEADING_3 -> executeJs("editor.paragraph('heading3');");
+            case HEADING_4 -> executeJs("editor.paragraph('heading4');");
+            case HEADING_5 -> executeJs("editor.paragraph('heading5');");
+            case HEADING_6 -> executeJs("editor.paragraph('heading6');");
+            case QUOTE -> executeJs("editor.paragraph('quote');");
+            case BODY -> executeJs("editor.paragraph('body');");
+        }
+    }
+
+    public void link(LinkType link) {
+        switch (link) {
+            case NOTE_LINK -> executeJs("editor.link('note');");
+            case EXTERNAL_LINK -> executeJs("editor.link('external');");
+        }
+    }
+
+    public CompletableFuture<Boolean> canCreateLinks() {
+        return executeJs("editor.canCreateLinks()")
+                .thenApply("true"::equals);
+    }
+
+    public void selectAll() {
+        executeJs("editor.selectAll();");
     }
 
     public void focus() {

@@ -11,7 +11,7 @@
 @import url('components/separator.css');
 @import url('icons/tonpad-icons.css');
 
-/*@import url('themes/dark.css');*/
+@import url('themes/dark.css');
 
 
 /* Стилизация фона для шапки приложения */
@@ -62,6 +62,13 @@
 
 /* Стилизация панели действий */
 .actions-panel {
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-background-color: -color-actions-panel;
+}
+
+/* Стилизация панели редактора */
+.editor-toolbar {
     -fx-background-radius: 5px;
     -fx-border-radius: 5px;
     -fx-background-color: -color-actions-panel;

@@ -207,7 +207,6 @@ export class NodeInputter {
         for (const rule of markRules) {
             if (rule.pattern.test(textBefore + text)) {
                 if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && (!textAfter.startsWith(' ') && !textAfter.startsWith('\t') && !textAfter.startsWith(rule.rightDelimiter))) {
-                    console.log(1);
                     break;
                 }
                 if (["_"].includes(rule.leftDelimiter) && textBefore.length > 0 && (!textBefore.endsWith(' ') || !textBefore.endsWith('\t'))) {

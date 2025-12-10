@@ -7,14 +7,17 @@ import { markdownSchema } from "./schema/markdown-schema.js";
 import { NodeConverter } from "./core/node-converter.js";
 import { NodeInputter } from "./core/node-inputter.js";
 import { NodeReconstructor } from "./core/node-reconstructor.js";
+import { NodeSelector } from "./core/node-selector.js";
 import { markdownSerializer } from "./serializer/markdown-serializer.js";
 import { blockNavigationPlugin } from "./plugins/block-navigation.js"
 import { keymapPlugin } from "./plugins/keymap.js";
 import { inputPlugin } from "./plugins/input.js"
 import { disableInsertPlugin } from "./plugins/disable-insert.js"
 import { hideSpecPlugin } from "./plugins/hide-spec.js"
+import { doubleClickPlugin } from "./plugins/double-click.js"
 import { searchPlugin, searchCommands } from "./plugins/search.js"
 import { clipboardPlugin } from "./plugins/clipboard.js"
+import { wordCounterPlugin } from "./plugins/word-counter.js"
 import jsYAML from 'js-yaml';
 
 export class Editor {
@@ -125,8 +128,10 @@ export class Editor {
             blockNavigationPlugin(),
             inputPlugin(),
             disableInsertPlugin(),
-            //hideSpecPlugin(),
             searchPlugin(),
+            hideSpecPlugin(),
+            doubleClickPlugin(),
+            wordCounterPlugin(),
         ];
     }
 
@@ -687,7 +692,17 @@ export class Editor {
     insertSnippet(snippetContent) {
         if (snippetContent) {
             const { state, dispatch } = this.view;
-            NodeInputter.handlePasteInNode(this.view, state, dispatch, snippetContent, null, false);
+            const { selection } = state;
+
+            if (!selection.empty) {
+                const deleteTr = NodeSelector.createDeleteSelectionTransaction(this.view);
+                if (deleteTr) {
+                    const newState = state.apply(deleteTr);
+                    return NodeInputter.handlePasteInNode(this.view, newState, dispatch, snippetContent, deleteTr, false);
+                }
+            }
+
+            return NodeInputter.handlePasteInNode(this.view, state, dispatch, snippetContent, null, false);
         }
     }
 
@@ -722,8 +737,6 @@ export class Editor {
                     return true;
                 });
 
-                console.log(`Block ${index}: markerTextLength = ${markerTextLength}`);
-
                 selectedNodes.push({
                     node: child,
                     pos: childPos,
@@ -731,6 +744,7 @@ export class Editor {
                     blockStart,
                     blockEnd,
                     markerTextLength,
+                    realIntersectsFrom: Math.max(from, blockStart + 1),
                     intersectsFrom: Math.max(from, blockStart + 1 + markerTextLength),
                     intersectsTo: Math.min(to, blockEnd),
                     type: child.type.name,
@@ -740,6 +754,59 @@ export class Editor {
                 });
             }
         });
+
+        if (style === 'clear') {
+            const paragraphs = [];
+
+            selectedNodes.forEach(nodeInfo => {
+                let nodeText = nodeInfo.text;
+
+                const textStart = nodeInfo.blockStart + 1;
+                const markStartInText = nodeInfo.intersectsFrom - textStart;
+                const markEndInText = nodeInfo.intersectsTo - textStart;
+
+                const safeMarkStart = Math.max(0, Math.min(markStartInText, nodeText.length));
+                const safeMarkEnd = Math.max(0, Math.min(markEndInText, nodeText.length));
+
+                const selectedText = nodeText.slice(safeMarkStart, safeMarkEnd);
+
+                const markers = [
+                    '_', '*', '~~', '**', '__', '==', '%%', '$', '`',
+                ];
+
+                let cleanedSelectedText = selectedText;
+                markers.forEach(marker => {
+                    if (marker.length === 1) {
+                        const regex = new RegExp(`\\${marker}([^\\${marker}]*?)\\${marker}`, 'g');
+                        cleanedSelectedText = cleanedSelectedText.replace(regex, '$1');
+                    } else {
+                        const escapedMarker = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(`${escapedMarker}(.*?)${escapedMarker}`, 'gs');
+                        cleanedSelectedText = cleanedSelectedText.replace(regex, '$1');
+                    }
+                });
+
+                const beforeText = nodeText.slice(0, safeMarkStart);
+                const afterText = nodeText.slice(safeMarkEnd);
+                const finalText = beforeText + cleanedSelectedText + afterText;
+
+                const paragraph = NodeConverter.constructParagraph(finalText);
+                paragraphs.push(paragraph);
+            });
+
+            const reconstructor = new NodeReconstructor();
+            const reconstructed = reconstructor.applyBlockRules(paragraphs, 0);
+
+            let tr = state.tr;
+            let startReplacePos = selectedNodes[0].blockStart;
+            let endReplacePos = selectedNodes[selectedNodes.length - 1].blockEnd;
+            tr = tr.replaceWith(startReplacePos, endReplacePos, reconstructed);
+
+            const cursorPos = from;
+            tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
+            dispatch(tr);
+            return;
+        }
 
         let marker = '';
         switch (style) {
@@ -767,16 +834,29 @@ export class Editor {
             case 'code':
                 marker = '`';
                 break;
+            default:
+                return;
         }
 
-        const paragraphs = []
+        const paragraphs = [];
         selectedNodes.forEach(nodeInfo => {
+            if (!nodeInfo.hasText && selectedNodes.length > 1) {
+                let paragraph = NodeConverter.constructParagraph();
+                paragraphs.push(paragraph);
+                return;
+            }
+
             const nodeText = nodeInfo.text;
 
             const textStart = nodeInfo.blockStart + 1;
 
-            const markStartInText = nodeInfo.intersectsFrom - textStart;
+            let markStartInText = nodeInfo.intersectsFrom - textStart;
             const markEndInText = nodeInfo.intersectsTo - textStart;
+
+            if (style === 'comment') {
+                markStartInText = nodeInfo.realIntersectsFrom - textStart;
+            }
+
 
             const safeMarkStart = Math.max(0, Math.min(markStartInText, nodeText.length));
             const safeMarkEnd = Math.max(0, Math.min(markEndInText, nodeText.length));
@@ -809,6 +889,215 @@ export class Editor {
 
         tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
         dispatch(tr);
+    }
+
+    paragraph(type) {
+        const { state, dispatch } = this.view;
+        const { from, to } = state.selection;
+
+        const selectedNodes = [];
+        state.doc.content.forEach((child, offset, index) => {
+            const childPos = offset;
+            const blockStart = childPos;
+            const blockEnd = childPos + child.nodeSize;
+
+            if (from < blockEnd && to > blockStart) {
+                let markerTextLength = 0;
+                let tabs = '';
+                let tabLevel = 0;
+
+                child.descendants((node, pos) => {
+                    if (node.isText) {
+                        const hasNonFormatMark = node.marks.some(mark =>
+                            mark.type.name === 'spec' && mark.attrs.type !== 'format'
+                        );
+                        const hasMarker = node.marks.some(mark => mark.type.name === 'marker');
+                        const hasTab = node.marks.some(mark => mark.type.name === 'tab');
+
+                        if (hasNonFormatMark || hasMarker || hasTab) {
+                            markerTextLength += node.text.length;
+                            if (hasTab) {
+                                tabs += node.text;
+                                tabLevel += 1;
+                            }
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                    return true;
+                });
+
+                selectedNodes.push({
+                    node: child,
+                    pos: childPos,
+                    index: index,
+                    blockStart,
+                    blockEnd,
+                    markerTextLength,
+                    type: child.type.name,
+                    hasText: child.textContent.length > 0,
+                    isEmpty: child.childCount === 0,
+                    text: child.textContent,
+                    tabs,
+                    tabLevel
+                });
+            }
+        });
+
+        let marker = '';
+        let useTabs = false;
+        switch (type) {
+            case 'heading1':
+                marker = '# ';
+                break;
+            case 'heading2':
+                marker = '## ';
+                break;
+            case 'heading3':
+                marker = '### ';
+                break;
+            case 'heading4':
+                marker = '#### ';
+                break;
+            case 'heading5':
+                marker = '##### ';
+                break;
+            case 'heading6':
+                marker = '###### ';
+                break;
+            case 'quote':
+                marker = '> ';
+                break;
+            case 'bullet-list':
+                marker = '- ';
+                useTabs = true;
+                break;
+            case 'ordered-list':
+                marker = '';
+                useTabs = true;
+                break;
+            case 'body':
+                marker = '';
+                useTabs = true;
+                break;
+            default:
+                return;
+        }
+
+        let prevTabLevel = 0;
+        let number = 0;
+        let first = true;
+        let cursorPos = from;
+
+        const paragraphs = [];
+        selectedNodes.forEach(nodeInfo => {
+            if (type == 'ordered-list') {
+                if (nodeInfo.tabLevel == prevTabLevel) {
+                    number += 1;
+                } else {
+                    number = 1;
+                }
+
+                marker = `${number}. `;
+            }
+            prevTabLevel = nodeInfo.tabLevel;
+
+            const nodeText = nodeInfo.text;
+
+            const afterText = nodeText.slice(nodeInfo.markerTextLength);
+
+            const beforeText = useTabs ? nodeInfo.tabs : '';
+
+            let paragraph = NodeConverter.constructParagraph(beforeText + marker + afterText);
+            paragraphs.push(paragraph);
+
+            if (first) {
+                cursorPos = nodeInfo.blockStart + nodeInfo.tabs.length + marker.length + 1;
+                first = false;
+            }
+        });
+
+        const reconstructor = new NodeReconstructor();
+        const reconstructed = reconstructor.applyBlockRules(paragraphs, 0);
+
+        let tr = state.tr;
+        let startReplacePos = selectedNodes[0].blockStart;
+        let endReplacePos = selectedNodes[selectedNodes.length - 1].blockEnd;
+        tr = tr.replaceWith(startReplacePos, endReplacePos, reconstructed);
+
+        tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
+        dispatch(tr);
+    }
+
+    link(type) {
+        const { state, dispatch } = this.view;
+        const { from, to, $from, $to } = state.selection;
+
+        if ($from.parent !== $to.parent) {
+            return;
+        }
+
+        const currentNode = $from.parent;
+        const nodeStart = $from.start();
+        const nodeEnd = $from.end();
+        const nodeText = currentNode.textContent;
+
+        const relativeFrom = from - nodeStart;
+        const relativeTo = to - nodeStart;
+
+        const beforeText = nodeText.slice(0, relativeFrom);
+        const linkText = nodeText.slice(relativeFrom, relativeTo);
+        const afterText = nodeText.slice(relativeTo);
+
+        console.log(beforeText, linkText, afterText);
+
+        let newNodeText = '';
+        let cursorPos = nodeStart + beforeText.length;
+        switch (type) {
+            case 'note':
+                newNodeText = beforeText + '[[' + linkText + ']]' + afterText;
+                cursorPos += linkText.length + 2;
+                break;
+            case 'external':
+                newNodeText = beforeText + '[' + linkText + ']()' + afterText;
+                cursorPos += linkText.length + 3;
+                break;
+            default:
+                return;
+        }
+
+        const paragraph = NodeConverter.constructParagraph(newNodeText);
+
+        const reconstructor = new NodeReconstructor();
+        const reconstructed = reconstructor.applyBlockRules([paragraph], 0);
+
+        let tr = state.tr;
+        tr = tr.replaceWith(nodeStart - 1, nodeEnd, reconstructed);
+
+        tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(cursorPos)));
+        dispatch(tr);
+    }
+
+    canCreateLinks() {
+        const { state } = this.view;
+        const { $from, $to } = state.selection;
+        return $from.parent === $to.parent;
+    }
+
+    selectAll() {
+        const { state, dispatch } = this.view;
+
+        const selection = state.selection.constructor.between(
+            state.doc.resolve(0),
+            state.doc.resolve(state.doc.content.size)
+        );
+
+        if (dispatch) {
+            dispatch(state.tr.setSelection(selection));
+        }
+
+        return true;
     }
 
     getMarkdown() {

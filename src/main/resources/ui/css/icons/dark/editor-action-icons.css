@@ -1,0 +1,113 @@
+/* editor-action-icons.css - иконки для операций с редактором, тёмная тема */
+
+.link-icon {
+    -fx-image: url(/ui/icons/dark/link.png);
+}
+
+.format-icon {
+    -fx-image: url(/ui/icons/dark/format.png);
+}
+
+.paragraph-icon {
+    -fx-image: url(/ui/icons/dark/paragraph.png);
+}
+
+.insert-icon{
+    -fx-image: url(/ui/icons/dark/insert.png);
+}
+
+.copy-icon {
+    -fx-image: url(/ui/icons/dark/copy.png);
+}
+
+.cut-icon {
+    -fx-image: url(/ui/icons/dark/cut.png);
+}
+
+.paste-icon {
+    -fx-image: url(/ui/icons/dark/paste.png);
+}
+
+.select-all-icon {
+    -fx-image: url(/ui/icons/dark/select-all.png);
+}
+
+.bold-icon {
+    -fx-image: url(/ui/icons/dark/bold.png);
+}
+
+.italic-icon {
+    -fx-image: url(/ui/icons/dark/italic.png);
+}
+
+.strikethrough-icon {
+    -fx-image: url(/ui/icons/dark/strikethrough.png);
+}
+
+.highlight-icon {
+    -fx-image: url(/ui/icons/dark/highlight.png);
+}
+
+.underline-icon {
+    -fx-image: url(/ui/icons/dark/underline.png);
+}
+
+.comment-icon {
+    -fx-image: url(/ui/icons/dark/comment.png);
+}
+
+.code-icon {
+    -fx-image: url(/ui/icons/dark/code.png);
+}
+
+.math-icon {
+    -fx-image: url(/ui/icons/dark/math.png);
+}
+
+.clear-formatting-icon {
+    -fx-image: url(/ui/icons/dark/clear-formatting.png);
+}
+
+.bullet-list-icon {
+    -fx-image: url(/ui/icons/dark/bullet-list.png);
+}
+
+.ordered-list-icon {
+    -fx-image: url(/ui/icons/dark/ordered-list.png);
+}
+
+.heading1-icon {
+    -fx-image: url(/ui/icons/dark/heading1.png);
+}
+
+.heading2-icon {
+    -fx-image: url(/ui/icons/dark/heading2.png);
+}
+
+.heading3-icon {
+    -fx-image: url(/ui/icons/dark/heading3.png);
+}
+
+.heading4-icon {
+    -fx-image: url(/ui/icons/dark/heading4.png);
+}
+
+.heading5-icon {
+    -fx-image: url(/ui/icons/dark/heading5.png);
+}
+
+.heading6-icon {
+    -fx-image: url(/ui/icons/dark/heading6.png);
+}
+
+.body-icon {
+    -fx-image: url(/ui/icons/dark/body.png);
+}
+
+.quote-icon {
+    -fx-image: url(/ui/icons/dark/quote.png);
+}
+
+.horizontal-rule-icon {
+    -fx-image: url(/ui/icons/dark/horizontal-rule.png);
+}

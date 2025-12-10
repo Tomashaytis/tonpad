@@ -201,7 +201,7 @@ export const searchCommands = {
             const searchState = searchPluginKey.getState(state);
             return searchState.getCurrentResult();
         }
-    }
+    },
 };
 
 function findInDocument(doc, query, caseSensitive = false) {

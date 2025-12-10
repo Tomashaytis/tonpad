@@ -4,6 +4,8 @@ import javafx.animation.PauseTransition;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.web.WebView;
 import javafx.util.Duration;
@@ -20,6 +22,7 @@ import org.example.tonpad.core.service.crypto.EncryptorFactory;
 import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.editor.Editor;
+import org.example.tonpad.ui.controllers.toolbar.EditorToolbarController;
 import org.example.tonpad.ui.extentions.TabParams;
 import org.springframework.stereotype.Component;
 
@@ -44,6 +47,8 @@ public class TabController {
 
     @Getter
     private final Map<Path, Tab> pathMap = new ConcurrentHashMap<>();
+
+    private final EditorToolbarController editorToolbarController;
 
     private final RegularFileService fileSystemService;
 
@@ -191,6 +196,8 @@ public class TabController {
         Editor editor = new EditorImpl(webView.getEngine(), editorMode, false);
         editor.setNoteContent(noteContent);
 
+        setupContextMenuForWebView(webView, editor);
+
         tab.setContent(content);
         tab.setUserData(webView);
 
@@ -247,6 +254,18 @@ public class TabController {
         if (tab.getTabPane() != null) {
             tab.getTabPane().getTabs().remove(tab);
         }
+    }
+
+    private void setupContextMenuForWebView(WebView webView, Editor editor) {
+        webView.setContextMenuEnabled(false);
+
+        webView.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                editorToolbarController.setEditor(editor);
+                editorToolbarController.showAt(event.getScreenX(), event.getScreenY());
+                event.consume();
+            }
+        });
     }
 
     private void saveToFile(boolean protectedMode) {
