@@ -49,7 +49,7 @@ export class NodeSelector {
         const tempDoc = state.schema.topNodeType.create({}, fragment);
         const markdownText = markdownSerializer.serialize(tempDoc);
         const cleanedText = markdownText.replace(/\n{3,}/g, '\n\n').trim();
-
+        
         if (event.clipboardData) {
             event.clipboardData.setData('text/plain', cleanedText);
             event.clipboardData.setData('text/markdown', cleanedText);

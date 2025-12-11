@@ -169,7 +169,7 @@
          <items>
             <MenuItem fx:id="insertSnippetMenuItem" text="Snippet">
                <graphic>
-                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="insert-snippet-icon" />
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="snippet-insert-icon" />
                </graphic>
             </MenuItem>
             <MenuItem fx:id="insertHorizontalRuleMenuItem" text="Horizontal rule">

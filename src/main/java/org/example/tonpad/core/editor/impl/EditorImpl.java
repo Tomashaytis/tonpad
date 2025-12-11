@@ -5,6 +5,7 @@ import javafx.concurrent.Worker;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.web.WebEngine;
+import lombok.Getter;
 import netscape.javascript.JSObject;
 import org.example.tonpad.core.editor.Editor;
 import org.example.tonpad.core.editor.dto.SearchResult;
@@ -119,6 +120,11 @@ public class EditorImpl implements Editor {
         return executeJs("editor.clearSearch();").thenApply(this::parseSearchResult);
     }
 
+    public CompletableFuture<SearchResult> goTo(int number) {
+        String jsCode = String.format("editor.goTo(%d);", number);
+        return executeJs(jsCode).thenApply(this::parseSearchResult);
+    }
+
     public CompletableFuture<String> getNoteContent() {
         return executeJs("editor.getNoteContent();");
     }
@@ -176,9 +182,28 @@ public class EditorImpl implements Editor {
         }
     }
 
+    public void insert(String content) {
+        String jsCode = String.format("editor.insert(%s);",
+                toJsString(content));
+
+        executeJs(jsCode);
+    }
+
     public CompletableFuture<Boolean> canCreateLinks() {
         return executeJs("editor.canCreateLinks()")
                 .thenApply("true"::equals);
+    }
+
+    public void copy() {
+        executeJs("editor.copy();");
+    }
+
+    public void cut() {
+        executeJs("editor.cut();");
+    }
+
+    public void paste() {
+        executeJs("editor.paste();");
     }
 
     public void selectAll() {

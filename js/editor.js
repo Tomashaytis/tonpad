@@ -24581,7 +24581,7 @@
           },
 
           text: (state, node) => {
-              state.text(node.text);
+              state.text(node.text, false, true);
           }
       },
       {
@@ -24739,7 +24739,7 @@
           const tempDoc = state.schema.topNodeType.create({}, fragment);
           const markdownText = markdownSerializer.serialize(tempDoc);
           const cleanedText = markdownText.replace(/\n{3,}/g, '\n\n').trim();
-
+          
           if (event.clipboardData) {
               event.clipboardData.setData('text/plain', cleanedText);
               event.clipboardData.setData('text/markdown', cleanedText);
@@ -24750,6 +24750,76 @@
           }
 
           return cleanedText;
+      }
+  }
+
+  class ClipboardManager {
+      constructor(view, editorBridge) {
+          this.view = view;
+          this.editorBridge = editorBridge;
+      }
+
+      copy() {
+          const { state } = this.view;
+          const { selection, doc } = state;
+          const { $from, $to } = selection;
+
+          if ($from.pos === $to.pos) {
+              return false;
+          }
+
+          const fragment = doc.content.cut($from.pos, $to.pos);
+          const tempDoc = state.schema.topNodeType.create({}, fragment);
+          const markdownText = markdownSerializer.serialize(tempDoc);
+          const cleanedText = markdownText.replace(/\n{3,}/g, '\n\n').trim();
+
+          if (this.editorBridge && this.editorBridge.setClipboardText) {
+              this.editorBridge.setClipboardText(cleanedText);
+          }
+
+          return cleanedText;
+      }
+
+      cut() {
+          const copied = this.copy();
+          if (!copied) return false;
+
+          const deleteTr = NodeSelector.createDeleteSelectionTransaction(this.view);
+          if (deleteTr) {
+              this.view.dispatch(deleteTr);
+              return true;
+          }
+          return false;
+      }
+
+      paste() {
+          let clipboardText = "";
+          if (this.editorBridge && this.editorBridge.getClipboardText) {
+              clipboardText = this.editorBridge.getClipboardText();
+          }
+
+          if (!clipboardText) return false;
+
+          const { state, dispatch } = this.view;
+          const { selection } = state;
+
+          if (clipboardText.length > 1) {
+              return NodeInputter.handlePasteInNode(this.view, state, dispatch, clipboardText);
+          }
+          if (clipboardText.length === 1) {
+              return NodeInputter.handleInputInNode(state, dispatch, clipboardText);
+          }
+          return false;
+      }
+
+      async copyToSystemClipboard(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+              try {
+                  await navigator.clipboard.writeText(text);
+              } catch (err) {
+                  console.warn('Failed to copy to system clipboard:', err);
+              }
+          }
       }
   }
 
@@ -26049,6 +26119,19 @@
               hasResults: this.total > 0
           };
       }
+
+      goTo(index, doc) {
+          if (this.results.length === 0 || index < 0 || index >= this.results.length) {
+              return this;
+          }
+          const decorations = this.createDecorations(this.results, index, doc);
+          return new SearchState(
+              decorations,
+              this.query,
+              this.results,
+              index
+          );
+      }
   }
 
   function searchPlugin() {
@@ -26077,6 +26160,10 @@
 
                   if (action?.type === 'PREVIOUS') {
                       return prev.previous(tr.doc);
+                  }
+
+                  if (action?.type === 'GOTO') {
+                      return prev.goTo(action.index, tr.doc);
                   }
 
                   return prev;
@@ -26169,6 +26256,27 @@
               const searchState = searchPluginKey.getState(state);
               return searchState.getCurrentResult();
           }
+      },
+
+      goToResult(index) {
+          return (state, dispatch) => {
+              const searchState = searchPluginKey.getState(state);
+              if (!searchState?.isActive || searchState.results.length === 0) {
+                  return false;
+              }
+
+              const normalizedIndex = ((index % searchState.results.length) +
+                  searchState.results.length) % searchState.results.length;
+
+              if (dispatch) {
+                  dispatch(state.tr.setMeta(searchPluginKey, {
+                      type: 'GOTO',
+                      index: normalizedIndex
+                  }));
+              }
+
+              return true;
+          };
       },
   };
 
@@ -31001,6 +31109,8 @@
               });
 
               this.rebuildTree();
+
+              this.clipboardManager = new ClipboardManager(this.view, window.editorBridge);
           }
       }
 
@@ -31559,6 +31669,41 @@
           return JSON.stringify(null);
       }
 
+      goTo(number) {
+          const command = searchCommands.goToResult(number);
+          const executed = command(this.view.state, this.view.dispatch);
+
+          if (executed) {
+              setTimeout(() => {
+                  const currentResultCommand = searchCommands.getCurrentResult();
+                  const currentResult = currentResultCommand(this.view.state);
+
+                  if (currentResult) {
+                      this.view.focus();
+
+                      const cursorPos = currentResult.from;
+
+                      const cursorElement = this.view.domAtPos(cursorPos).node;
+                      if (cursorElement.nodeType === Node.TEXT_NODE) {
+                          cursorElement.parentNode.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                          });
+                      } else {
+                          cursorElement.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                          });
+                      }
+                  }
+              }, 0);
+
+              return JSON.stringify(this.getSearchInfo());
+          }
+          return JSON.stringify(null);
+      }
       findPrevious() {
           const command = searchCommands.findPrevious();
           const executed = command(this.view.state, this.view.dispatch);
@@ -31646,6 +31791,23 @@
               }
 
               return NodeInputter.handlePasteInNode(this.view, state, dispatch, snippetContent, null, false);
+          }
+      }
+
+      insert(content) {
+          if (content) {
+              const { state, dispatch } = this.view;
+              const { selection } = state;
+
+              if (!selection.empty) {
+                  const deleteTr = NodeSelector.createDeleteSelectionTransaction(this.view);
+                  if (deleteTr) {
+                      const newState = state.apply(deleteTr);
+                      return NodeInputter.handlePasteInNode(this.view, newState, dispatch, content, deleteTr, false);
+                  }
+              }
+
+              return NodeInputter.handlePasteInNode(this.view, state, dispatch, content);
           }
       }
 
@@ -32028,6 +32190,24 @@
           return $from.parent === $to.parent;
       }
 
+      copy() {
+          if (this.clipboardManager) {
+              return this.clipboardManager.copy();
+          }
+      }
+
+      cut() {
+          if (this.clipboardManager) {
+              return this.clipboardManager.cut();
+          }
+      }
+
+      paste() {
+          if (this.clipboardManager) {
+              return this.clipboardManager.paste();
+          }
+      }
+
       selectAll() {
           const { state, dispatch } = this.view;
 
@@ -32380,6 +32560,6 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
 
   })();
 
-  window.createEditor('note');
+  /*window.createEditor('note');*/
 
 })();

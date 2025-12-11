@@ -1,20 +1,22 @@
 package org.example.tonpad.ui.controllers.core;
 
 import javafx.animation.PauseTransition;
+import javafx.application.Platform;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.web.WebView;
 import javafx.util.Duration;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import org.example.tonpad.core.editor.enums.EditorMode;
+import org.example.tonpad.core.editor.enums.FormatType;
 import org.example.tonpad.core.editor.impl.EditorImpl;
+import org.example.tonpad.core.exceptions.TonpadBaseException;
 import org.example.tonpad.core.files.regularFiles.RegularFileService;
 import org.example.tonpad.core.service.RecentTabService;
 import org.example.tonpad.core.service.crypto.Encryptor;
@@ -23,6 +25,7 @@ import org.example.tonpad.core.exceptions.DecryptionException;
 import org.example.tonpad.core.exceptions.ObjectNotFoundException;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.editor.Editor;
+import org.example.tonpad.ui.controllers.search.SearchInTextController;
 import org.example.tonpad.ui.controllers.toolbar.EditorToolbarController;
 import org.example.tonpad.ui.extentions.TabParams;
 import org.springframework.stereotype.Component;
@@ -31,9 +34,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Key;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -52,6 +53,9 @@ public class TabController {
     @Getter
     private final Map<Path, Tab> pathMap = new ConcurrentHashMap<>();
 
+    @Setter
+    private Runnable showSearchPaneHandler;
+
     private final EditorToolbarController editorToolbarController;
     
     private final Map<Tab, Boolean> dirtyMap = new ConcurrentHashMap<>();
@@ -64,6 +68,8 @@ public class TabController {
 
     private final EncryptorFactory encryptorFactory;
 
+    private final SearchInTextController searchInTextController;
+
     public void init(URI fileUri, EditorMode editorMode, boolean protectedMode) {
         createInitialTab(fileUri, editorMode, protectedMode);
     }
@@ -71,7 +77,6 @@ public class TabController {
     public void setTabPane(TabPane tabPane) {
         this.tabPane = tabPane;
 
-        //эта хрнеь слушает смену активной вкладки
         this.tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
             if (vaultChanging) {
                 return;
@@ -111,8 +116,7 @@ public class TabController {
         boolean[] lastActiveOpened = new boolean[1];
         lastActiveOpened[0] = false;
         try {
-            recentTabService.getRecentTabs()
-                            .stream().forEach(tabOpt -> {
+            recentTabService.getRecentTabs().forEach(tabOpt -> {
                                 if (tabOpt.isEmpty()) return;
                                 Path notePath = tabOpt.get();
                                 try {
@@ -132,7 +136,7 @@ public class TabController {
             vaultChanging = false;
         }
         if (!badPaths.isEmpty()) {
-            badPaths.stream().forEach(recentTabService::deleteClosedTab);
+            badPaths.forEach(recentTabService::deleteClosedTab);
         }
 
         if (lastActiveOpened[0]) {
@@ -157,7 +161,7 @@ public class TabController {
         }
 
         if (!sb.isEmpty()) {
-            throw new ObjectNotFoundException("not all tabs restored: couldn't open files: " + sb);
+            throw new ObjectNotFoundException("Not all tabs restored: couldn't open files: " + sb);
         }
     }
 
@@ -201,6 +205,70 @@ public class TabController {
             createTabWithContent(getTabName(filePath), noteContent, filePath, editorMode, protectedMode);
         }
         recentTabService.addOpenedTab(filePath);
+    }
+
+    public void openFileInTabWithSearch(Path filePath, String query, int searchIndex) {
+        if (pathMap.containsKey(filePath)) {
+            Tab existingTab = pathMap.get(filePath);
+            tabPane.getSelectionModel().select(existingTab);
+
+            Platform.runLater(() -> {
+                new Timer().schedule(
+                        new TimerTask() {
+                            @Override
+                            public void run() {
+                                Platform.runLater(() -> {
+                                    showSearchPaneHandler.run();
+                                    searchInTextController.searchAndGoTo(query, searchIndex);
+                                    searchInTextController.focus();
+                                });
+                            }
+                        },
+                        100
+                );
+            });
+            return;
+        }
+
+        String noteContent;
+
+        if(vaultSession.isOpendWithNoPassword()) {
+            Encryptor encoder = encryptorFactory.encryptorForKey();
+            if (encoder.isActionWithNoPasswordAllowed(filePath)) {
+                noteContent = fileSystemService.readFile(filePath);
+            }
+            else {
+                throw new DecryptionException("Invalid password");
+            }
+        } else {
+            try {
+                byte[] key = vaultSession.getKeyIfPresent().map(Key::getEncoded).orElse(null);
+                Encryptor encoder = encryptorFactory.encryptorForKey(key);
+                noteContent = encoder.decrypt(fileSystemService.readFile(filePath), null);
+            }
+            catch(DecryptionException e) {
+                throw new DecryptionException("Invalid password", e);
+            }
+        }
+
+        createTabWithContent(getTabName(filePath), noteContent, filePath, EditorMode.NOTE, true);
+        recentTabService.addOpenedTab(filePath);
+
+        Platform.runLater(() -> {
+            new Timer().schedule(
+                    new TimerTask() {
+                        @Override
+                        public void run() {
+                            Platform.runLater(() -> {
+                                showSearchPaneHandler.run();
+                                searchInTextController.searchAndGoTo(query, searchIndex);
+                                searchInTextController.focus();
+                            });
+                        }
+                    },
+                    100
+            );
+        });
     }
 
     public void clearAllTabs() {
@@ -314,12 +382,35 @@ public class TabController {
         Editor editor = new EditorImpl(webView.getEngine(), editorMode, false);
         editor.setNoteContent(noteContent);
 
+        setupKeyboardShortcutsForWebView(webView, editor);
+
         setupContextMenuForWebView(webView, editor);
 
         tab.setContent(content);
         tab.setUserData(webView);
 
         return editor;
+    }
+
+    private void setupKeyboardShortcutsForWebView(WebView webView, Editor editor) {
+        webView.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.isControlDown()) {
+                switch (event.getCode()) {
+                    case B:
+                        editor.format(FormatType.BOLD);
+                        event.consume();
+                        break;
+                    case I:
+                        editor.format(FormatType.ITALIC);
+                        event.consume();
+                        break;
+                    case U:
+                        editor.format(FormatType.UNDERLINE);
+                        event.consume();
+                        break;
+                }
+            }
+        });
     }
 
     private void addTabToPane(Tab tab) {
@@ -378,6 +469,19 @@ public class TabController {
         if (!isVaultChanging) recentTabService.deleteClosedTab(path);
     }
 
+    private void setupContextMenuForWebView(WebView webView, Editor editor) {
+        webView.setContextMenuEnabled(false);
+
+        webView.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                editorToolbarController.setEditor(editor);
+                editorToolbarController.setWebView(webView);
+                editorToolbarController.showAt(event.getScreenX(), event.getScreenY());
+                event.consume();
+            }
+        });
+    }
+
     private void saveToFile(Tab tab, boolean protectedMode) {
         Boolean dirty = dirtyMap.get(tab);
         if (dirty == null || !dirty) {
@@ -408,7 +512,7 @@ public class TabController {
                 }
                 dirtyMap.put(tab, false);
             } catch (Exception e) {
-                System.out.println(e.getMessage());
+                throw new TonpadBaseException("Editor not responds");
             }
         }).start();
     }

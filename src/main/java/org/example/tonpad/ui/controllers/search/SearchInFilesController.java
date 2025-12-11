@@ -37,6 +37,8 @@ import java.security.Key;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @Component
@@ -69,6 +71,9 @@ public class SearchInFilesController extends AbstractController {
 
     @Setter
     private TriConsumer<Path, Boolean, EditorMode> fileOpenHandler;
+
+    @Setter
+    private TriConsumer<Path, String, Integer> fileOpenWithSearchHandler;
 
     @Setter
     private java.util.function.Consumer<String> onQueryChanged;
@@ -123,7 +128,7 @@ public class SearchInFilesController extends AbstractController {
 
             if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
                 var ti = searchTreeView.getSelectionModel().getSelectedItem();
-                onOpenFile(ti);
+                onOpenFile((SearchTreeItem) ti);
                 e.consume();
             } else if ((e.getButton() == MouseButton.PRIMARY || e.getButton() == MouseButton.SECONDARY) &&
                     e.getClickCount() == 1) {
@@ -135,7 +140,7 @@ public class SearchInFilesController extends AbstractController {
         });
     }
 
-    private void onOpenFile(TreeItem<String> target) {
+    private void onOpenFile(SearchTreeItem target) {
         if (target != null) {
             Path filePath;
 
@@ -145,8 +150,14 @@ public class SearchInFilesController extends AbstractController {
                 filePath = vaultPathsContainer.getNotesPath().resolve(target.getValue());
             }
 
-            if (fileOpenHandler != null) {
-                fileOpenHandler.accept(filePath, false, EditorMode.NOTE);
+            if (target.isLeaf() && target.getFirstMatchIndex() != -1) {
+                if (fileOpenWithSearchHandler != null) {
+                    fileOpenWithSearchHandler.accept(filePath, target.getQuery(), target.getFirstMatchIndex());
+                }
+            } else {
+                if (fileOpenHandler != null) {
+                    fileOpenHandler.accept(filePath, false, EditorMode.NOTE);
+                }
             }
         }
     }
@@ -205,6 +216,7 @@ public class SearchInFilesController extends AbstractController {
             }
         }
     }
+
     private void performSearch(String query) {
         FileTree fileTree = fileSystemService.getFileTree(vaultPathsContainer.getNotesPath());
 
@@ -226,19 +238,77 @@ public class SearchInFilesController extends AbstractController {
             boolean hasMatches = false;
 
             String fileContent = openFile(fullPath);
-            List<String> lines = Arrays.asList(fileContent.split("\n"));
+
+            FrontmatterInfo frontmatterInfo = parseFrontmatter(fileContent);
+            String searchContent = frontmatterInfo.content;
+            int frontmatterOffset = frontmatterInfo.frontmatterLineCount;
+
+            // 1. СНАЧАЛА обрабатываем frontmatter (если есть)
+            if (frontmatterInfo.hasFrontmatter) {
+                List<String> allLines = Arrays.asList(fileContent.split("\n", -1));
+                for (int i = 0; i < frontmatterOffset; i++) {
+                    String line = allLines.get(i);
+
+                    String lineLower = line.toLowerCase();
+                    String queryLower = query.toLowerCase();
+
+                    List<Integer> matchPositions = new ArrayList<>();
+                    int index = 0;
+                    while ((index = lineLower.indexOf(queryLower, index)) != -1) {
+                        matchPositions.add(index);
+                        index += 1;
+                    }
+
+                    if (!matchPositions.isEmpty()) {
+                        SearchTreeItem matchItem = new SearchTreeItem(
+                                String.format("%d: %s", i + 1, line.trim()),
+                                false
+                        );
+
+                        matchItem.setFirstMatchIndex(-1);
+                        matchItem.setQuery(query);
+
+                        fileNode.getChildren().add(matchItem);
+                        hasMatches = true;
+                        totalMatches += matchPositions.size();
+                    }
+                }
+            }
+
+            // 2. ПОТОМ обрабатываем нормальный контент
+            List<String> lines = Arrays.asList(searchContent.split("\n", -1));
+            int normalContentMatchCounter = 0;
+
             for (int i = 0; i < lines.size(); i++) {
                 if (searchCancelled) break;
 
                 String line = lines.get(i);
-                if (line.toLowerCase().contains(query.toLowerCase())) {
+                String lineLower = line.toLowerCase();
+                String queryLower = query.toLowerCase();
+
+                List<Integer> matchPositions = new ArrayList<>();
+                int index = 0;
+                while ((index = lineLower.indexOf(queryLower, index)) != -1) {
+                    matchPositions.add(index);
+                    index += 1;
+                }
+
+                if (!matchPositions.isEmpty()) {
+                    int firstMatchGlobalIndex = normalContentMatchCounter;
+                    int realLineNumber = i + 1 + frontmatterOffset;
+
                     SearchTreeItem matchItem = new SearchTreeItem(
-                            String.format("%d: %s", i + 1, line.trim()),
+                            String.format("%d: %s", realLineNumber, line.trim()),
                             false
                     );
+
+                    matchItem.setFirstMatchIndex(firstMatchGlobalIndex);
+                    matchItem.setQuery(query);
+
                     fileNode.getChildren().add(matchItem);
                     hasMatches = true;
-                    totalMatches++;
+                    totalMatches += matchPositions.size();
+                    normalContentMatchCounter += matchPositions.size();
                 }
             }
 
@@ -260,26 +330,55 @@ public class SearchInFilesController extends AbstractController {
                     fileNode.setExpanded(true);
                 }
 
-                if (finalTotalMatches == 0) {
-                    searchResultsField.setText("No matches found");
-                } else {
-                    if (finalFilesWithMatches == 1) {
-                        searchResultsField.setText(String.format("Found %d matches in %d file",
-                                finalTotalMatches, finalFilesWithMatches));
-
-                        if (finalTotalMatches == 1) {
-                            searchResultsField.setText(String.format("Found %d match in %d file",
-                                    finalTotalMatches, finalFilesWithMatches));
-                        } else {
-                            searchResultsField.setText(String.format("Found %d matches in %d file",
-                                    finalTotalMatches, finalFilesWithMatches));
-                        }
-                    } else {
-                        searchResultsField.setText(String.format("Found %d matches in %d files",
-                                finalTotalMatches, finalFilesWithMatches));
-                    }
-                }
+                updateResultsText(finalTotalMatches, finalFilesWithMatches);
             });
+        }
+    }
+
+    private FrontmatterInfo parseFrontmatter(String fileContent) {
+        Pattern pattern = Pattern.compile("^---\\s*\\n([\\s\\S]*?)\\n---\\s*\\n([\\s\\S]*)$", Pattern.MULTILINE);
+        Matcher matcher = pattern.matcher(fileContent);
+
+        if (matcher.find()) {
+            String frontmatter = matcher.group(1);
+            String content = matcher.group(2);
+
+            int frontmatterLines = frontmatter.split("\n", -1).length + 2;
+
+            return new FrontmatterInfo(true, frontmatterLines, content);
+        }
+
+        return new FrontmatterInfo(false, 0, fileContent);
+    }
+
+    private static class FrontmatterInfo {
+        boolean hasFrontmatter;
+        int frontmatterLineCount;
+        String content;
+
+        FrontmatterInfo(boolean hasFrontmatter, int frontmatterLineCount, String content) {
+            this.hasFrontmatter = hasFrontmatter;
+            this.frontmatterLineCount = frontmatterLineCount;
+            this.content = content;
+        }
+    }
+
+    private void updateResultsText(int totalMatches, int filesWithMatches) {
+        if (totalMatches == 0) {
+            searchResultsField.setText("No matches found");
+        } else {
+            if (filesWithMatches == 1) {
+                if (totalMatches == 1) {
+                    searchResultsField.setText(String.format("Found %d match in %d file",
+                            totalMatches, filesWithMatches));
+                } else {
+                    searchResultsField.setText(String.format("Found %d matches in %d file",
+                            totalMatches, filesWithMatches));
+                }
+            } else {
+                searchResultsField.setText(String.format("Found %d matches in %d files",
+                        totalMatches, filesWithMatches));
+            }
         }
     }
 

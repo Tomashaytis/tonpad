@@ -13,7 +13,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -88,7 +87,7 @@ public class QuickStartDialogController extends AbstractController {
     public void init() {
         this.stage = new Stage();
         setupEventHandlers();
-        setStage(stage, quickStartDialogMainHBox, StageStyle.TRANSPARENT);
+        setStage(stage, quickStartDialogMainHBox);
         setupDragHandlers();
         recentVaults.setAll(recentVaultService.load());
         recentVaultService.bindAutoSave(recentVaults);
