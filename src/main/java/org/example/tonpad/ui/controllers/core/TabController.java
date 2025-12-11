@@ -49,6 +49,8 @@ public class TabController {
     @Getter
     private final Map<Path, Tab> pathMap = new ConcurrentHashMap<>();
 
+    private final Map<Tab, Boolean> dirtyMap = new ConcurrentHashMap<>();
+
     private final RegularFileService fileSystemService;
 
     private final RecentTabService recentTabService;
@@ -281,6 +283,7 @@ public class TabController {
         Editor editor = initTabContent(newTab, noteContent, content, webView, editorMode);
         tabMap.put(newTab, new TabParams(editor, path));
 
+        dirtyMap.put(newTab, false);
         addTabToPane(newTab);
 
         PauseTransition debounce = new PauseTransition(Duration.millis(1500));
@@ -290,7 +293,10 @@ public class TabController {
             saveToFile(newTab, protectedMode);
             closeTab(newTab, false);
         });
-        content.addEventFilter(KeyEvent.KEY_TYPED, event -> debounce.playFromStart());
+        content.addEventFilter(KeyEvent.KEY_TYPED, event -> {
+            dirtyMap.put(newTab, true);
+            debounce.playFromStart();
+        });
     }
 
     private Editor initTabContent(Tab tab, String noteContent, AnchorPane content, WebView webView, EditorMode editorMode) {
@@ -335,6 +341,8 @@ public class TabController {
         Editor editor = initTabContent(tab, noteContent, content, webView, editorMode);
         tabMap.put(tab, new TabParams(editor, path));
 
+        dirtyMap.put(tab, false);
+
         PauseTransition debounce = new PauseTransition(Duration.millis(1500));
         debounce.setOnFinished(event -> saveToFile(tab, protectedMode));
 
@@ -355,6 +363,7 @@ public class TabController {
         Path path = tabMap.get(tab).path();
         tabMap.remove(tab);
         pathMap.remove(path);
+        dirtyMap.remove(tab);
 
         if (tab.getTabPane() != null) {
             tab.getTabPane().getTabs().remove(tab);
@@ -363,6 +372,11 @@ public class TabController {
     }
 
     private void saveToFile(Tab tab, boolean protectedMode) {
+        Boolean dirty = dirtyMap.get(tab);
+        if (dirty == null || !dirty) {
+            return;
+        }
+
         byte[] key = vaultSession.getKeyIfPresent()
                         .map(Key::getEncoded)
                         .orElse(null);
@@ -385,6 +399,7 @@ public class TabController {
                     Encryptor encoder = encryptorFactory.encryptorForKey(key);
                     fileSystemService.writeFile(path, encoder.encrypt(noteContent, null));
                 }
+                dirtyMap.put(tab, false);
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
