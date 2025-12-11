@@ -120,6 +120,11 @@ public class EditorImpl implements Editor {
         return executeJs("editor.clearSearch();").thenApply(this::parseSearchResult);
     }
 
+    public CompletableFuture<SearchResult> goTo(int number) {
+        String jsCode = String.format("editor.goTo(%d);", number);
+        return executeJs(jsCode).thenApply(this::parseSearchResult);
+    }
+
     public CompletableFuture<String> getNoteContent() {
         return executeJs("editor.getNoteContent();");
     }

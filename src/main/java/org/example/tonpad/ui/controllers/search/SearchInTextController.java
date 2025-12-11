@@ -83,6 +83,23 @@ public class SearchInTextController extends AbstractController {
         editor.findNext().thenAccept(this::handleSearchResult);
     }
 
+    public void searchAndGoTo(String query, int positionIndex) {
+        focus();
+        setQuery(query);
+
+        Editor editor = getActiveEditorHandler.get();
+        if (editor == null)
+            return;
+
+        editor.find(query).thenAccept(searchResult -> {
+            if (searchResult != null && searchResult.isActive()) {
+                editor.goTo(positionIndex).thenAccept(this::handleSearchResult);
+            } else {
+                clearResults();
+            }
+        });
+    }
+
     public void showSearchBar() {
         focus();
         Platform.runLater(() -> {
@@ -105,7 +122,8 @@ public class SearchInTextController extends AbstractController {
 
     private void runSearch() {
         Editor editor = getActiveEditorHandler.get();
-        if (editor == null) return;
+        if (editor == null)
+            return;
 
         String query = getQuery();
         editor.find(query).thenAccept(this::handleSearchResult);

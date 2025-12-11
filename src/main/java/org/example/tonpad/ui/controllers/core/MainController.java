@@ -130,6 +130,12 @@ public class MainController extends AbstractController {
     }
 
     private void setupEventHandlers() {
+        tabController.setShowSearchPaneHandler(() -> {
+            if (!searchInTextPane.isVisible()) {
+                searchInTextPane.setVisible(true);
+            }
+        });
+
         fileTreeController.setNoteOpenHandler(this::openInEditorProtected);
         fileTreeController.setNoteCloseHandler(this::closeInEditor);
         fileTreeController.setNoteRenameHandler(this::renameInEditor);
@@ -140,6 +146,7 @@ public class MainController extends AbstractController {
         snippetTreeController.setSnippetInsertHandler(this::insertSnippetInEditor);
 
         searchInFilesController.setFileOpenHandler(this::openInEditorProtected);
+        searchInFilesController.setFileOpenWithSearchHandler(this::openInEditorWithSearch);
 
         showFilesButton.setOnAction(event -> togglePane(
                 leftStackPane, fileTreePane, showFilesButton, () -> {}, () -> {}
@@ -300,12 +307,16 @@ public class MainController extends AbstractController {
         }
     }
 
+    private void openInEditor(Path path, boolean openInCurrent, EditorMode editorMode) {
+        tabController.openFileInTab(path, openInCurrent, editorMode, false);
+    }
+
     private void openInEditorProtected(Path path, boolean openInCurrent, EditorMode editorMode) {
         tabController.openFileInTab(path, openInCurrent, editorMode, true);
     }
 
-    private void openInEditor(Path path, boolean openInCurrent, EditorMode editorMode) {
-        tabController.openFileInTab(path, openInCurrent, editorMode, false);
+    private void openInEditorWithSearch(Path path, String query, int searchIndex) {
+        tabController.openFileInTabWithSearch(path, query, searchIndex);
     }
 
     private Editor getActiveEditor() {
@@ -326,17 +337,41 @@ public class MainController extends AbstractController {
 
     private void setupGlobalClickHandler() {
         mainVBox.getScene().addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
-            if (searchInTextPane.isVisible() &&
-                    !searchInTextPane.contains(event.getX(), event.getY())) {
-                hideSearchOverlay();
+            Object target = event.getTarget();
+
+            if (!(target instanceof Node targetNode)) {
+                if (searchInTextPane.isVisible()) {
+                    hideSearchOverlay();
+                }
+                if (fileTreePane.isVisible() && searchInFileTreePane.isVisible()) {
+                    hideSearchInFileTreeOverlay();
+                }
+                return;
             }
 
-            if (fileTreePane.isVisible() && searchInFileTreePane.isVisible() &&
-                    !fileTreePane.getBoundsInParent().contains(event.getX(), event.getY()) &&
-                    !searchInFileTreePane.contains(event.getX(), event.getY())) {
-                hideSearchInFileTreeOverlay();
+            if (searchInTextPane.isVisible()) {
+                if (isNotNodeOrParent(targetNode, searchInTextPane)) {
+                    hideSearchOverlay();
+                }
+            }
+
+            if (fileTreePane.isVisible() && searchInFileTreePane.isVisible()) {
+                if (isNotNodeOrParent(targetNode, fileTreePane) &&
+                        isNotNodeOrParent(targetNode, searchInFileTreePane)) {
+                    hideSearchInFileTreeOverlay();
+                }
             }
         });
+    }
+
+    private boolean isNotNodeOrParent(Node node, javafx.scene.Parent pane) {
+        while (node != null) {
+            if (node == pane) {
+                return false;
+            }
+            node = node.getParent();
+        }
+        return true;
     }
 
     private void resetLeftToolButtons() {

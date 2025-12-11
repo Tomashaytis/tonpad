@@ -31,6 +31,8 @@ public interface Editor {
 
     CompletableFuture<SearchResult> clearSearch();
 
+    CompletableFuture<SearchResult> goTo(int number);
+
     CompletableFuture<String> getNoteContent();
 
     CompletableFuture<String> getFrontMatter(boolean jsonFormat);

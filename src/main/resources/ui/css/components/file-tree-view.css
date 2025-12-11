@@ -26,6 +26,14 @@
     -fx-background-color: -color-tree-thumb;
 }
 
+.file-tree-view .scroll-bar:horizontal {
+    -fx-background-color: -color-tree-scrollbar;
+}
+
+.file-tree-view .scroll-bar:horizontal .thumb {
+    -fx-background-color: -color-tree-thumb;
+}
+
 .file-tree-view .arrow {
     -fx-background-color: -color-main-text;
 }

@@ -24581,7 +24581,7 @@
           },
 
           text: (state, node) => {
-              state.text(node.text);
+              state.text(node.text, false, true);
           }
       },
       {
@@ -26119,6 +26119,19 @@
               hasResults: this.total > 0
           };
       }
+
+      goTo(index, doc) {
+          if (this.results.length === 0 || index < 0 || index >= this.results.length) {
+              return this;
+          }
+          const decorations = this.createDecorations(this.results, index, doc);
+          return new SearchState(
+              decorations,
+              this.query,
+              this.results,
+              index
+          );
+      }
   }
 
   function searchPlugin() {
@@ -26147,6 +26160,10 @@
 
                   if (action?.type === 'PREVIOUS') {
                       return prev.previous(tr.doc);
+                  }
+
+                  if (action?.type === 'GOTO') {
+                      return prev.goTo(action.index, tr.doc);
                   }
 
                   return prev;
@@ -26239,6 +26256,27 @@
               const searchState = searchPluginKey.getState(state);
               return searchState.getCurrentResult();
           }
+      },
+
+      goToResult(index) {
+          return (state, dispatch) => {
+              const searchState = searchPluginKey.getState(state);
+              if (!searchState?.isActive || searchState.results.length === 0) {
+                  return false;
+              }
+
+              const normalizedIndex = ((index % searchState.results.length) +
+                  searchState.results.length) % searchState.results.length;
+
+              if (dispatch) {
+                  dispatch(state.tr.setMeta(searchPluginKey, {
+                      type: 'GOTO',
+                      index: normalizedIndex
+                  }));
+              }
+
+              return true;
+          };
       },
   };
 
@@ -31631,6 +31669,41 @@
           return JSON.stringify(null);
       }
 
+      goTo(number) {
+          const command = searchCommands.goToResult(number);
+          const executed = command(this.view.state, this.view.dispatch);
+
+          if (executed) {
+              setTimeout(() => {
+                  const currentResultCommand = searchCommands.getCurrentResult();
+                  const currentResult = currentResultCommand(this.view.state);
+
+                  if (currentResult) {
+                      this.view.focus();
+
+                      const cursorPos = currentResult.from;
+
+                      const cursorElement = this.view.domAtPos(cursorPos).node;
+                      if (cursorElement.nodeType === Node.TEXT_NODE) {
+                          cursorElement.parentNode.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                          });
+                      } else {
+                          cursorElement.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest'
+                          });
+                      }
+                  }
+              }, 0);
+
+              return JSON.stringify(this.getSearchInfo());
+          }
+          return JSON.stringify(null);
+      }
       findPrevious() {
           const command = searchCommands.findPrevious();
           const executed = command(this.view.state, this.view.dispatch);

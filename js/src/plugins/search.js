@@ -81,6 +81,19 @@ class SearchState {
             hasResults: this.total > 0
         };
     }
+
+    goTo(index, doc) {
+        if (this.results.length === 0 || index < 0 || index >= this.results.length) {
+            return this;
+        }
+        const decorations = this.createDecorations(this.results, index, doc);
+        return new SearchState(
+            decorations,
+            this.query,
+            this.results,
+            index
+        );
+    }
 }
 
 export function searchPlugin() {
@@ -109,6 +122,10 @@ export function searchPlugin() {
 
                 if (action?.type === 'PREVIOUS') {
                     return prev.previous(tr.doc);
+                }
+
+                if (action?.type === 'GOTO') {
+                    return prev.goTo(action.index, tr.doc);
                 }
 
                 return prev;
@@ -201,6 +218,27 @@ export const searchCommands = {
             const searchState = searchPluginKey.getState(state);
             return searchState.getCurrentResult();
         }
+    },
+
+    goToResult(index) {
+        return (state, dispatch) => {
+            const searchState = searchPluginKey.getState(state);
+            if (!searchState?.isActive || searchState.results.length === 0) {
+                return false;
+            }
+
+            const normalizedIndex = ((index % searchState.results.length) +
+                searchState.results.length) % searchState.results.length;
+
+            if (dispatch) {
+                dispatch(state.tr.setMeta(searchPluginKey, {
+                    type: 'GOTO',
+                    index: normalizedIndex
+                }));
+            }
+
+            return true;
+        };
     },
 };
 

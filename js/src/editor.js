@@ -8,7 +8,7 @@ import { NodeConverter } from "./core/node-converter.js";
 import { NodeInputter } from "./core/node-inputter.js";
 import { NodeReconstructor } from "./core/node-reconstructor.js";
 import { NodeSelector } from "./core/node-selector.js";
-import { ClipboardManager } from "./core/clipboard-manager.js"; 
+import { ClipboardManager } from "./core/clipboard-manager.js";
 import { markdownSerializer } from "./serializer/markdown-serializer.js";
 import { blockNavigationPlugin } from "./plugins/block-navigation.js"
 import { keymapPlugin } from "./plugins/keymap.js";
@@ -619,6 +619,41 @@ export class Editor {
         return JSON.stringify(null);
     }
 
+    goTo(number) {
+        const command = searchCommands.goToResult(number);
+        const executed = command(this.view.state, this.view.dispatch);
+
+        if (executed) {
+            setTimeout(() => {
+                const currentResultCommand = searchCommands.getCurrentResult();
+                const currentResult = currentResultCommand(this.view.state);
+
+                if (currentResult) {
+                    this.view.focus();
+
+                    const cursorPos = currentResult.from;
+
+                    const cursorElement = this.view.domAtPos(cursorPos).node;
+                    if (cursorElement.nodeType === Node.TEXT_NODE) {
+                        cursorElement.parentNode.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    } else {
+                        cursorElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    }
+                }
+            }, 0);
+
+            return JSON.stringify(this.getSearchInfo());
+        }
+        return JSON.stringify(null);
+    }
     findPrevious() {
         const command = searchCommands.findPrevious();
         const executed = command(this.view.state, this.view.dispatch);

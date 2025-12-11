@@ -32,7 +32,7 @@ public class SearchResultCell extends TreeCell<String> {
 
         iconView.getStyleClass().remove("note-colored-icon");
 
-        List<TextRange> matches = findMatches(item, currentQuery);
+        List<TextRange> matches = findAllMatchesIncludingOverlapping(item, currentQuery);
 
         boolean showIcon = !getTreeItem().isLeaf();
         if (showIcon) {
@@ -61,16 +61,17 @@ public class SearchResultCell extends TreeCell<String> {
         }
     }
 
-    private List<TextRange> findMatches(String text, String query) {
+    private List<TextRange> findAllMatchesIncludingOverlapping(String text, String query) {
         List<TextRange> matches = new ArrayList<>();
         if (query == null || query.isEmpty()) return matches;
 
         String lowerText = text.toLowerCase();
         String lowerQuery = query.toLowerCase();
+
         int index = 0;
         while ((index = lowerText.indexOf(lowerQuery, index)) != -1) {
-            matches.add(new TextRange(index, index + lowerQuery.length()));
-            index += lowerQuery.length();
+            matches.add(new TextRange(index, index + query.length()));
+            index += 1; // Ключевое изменение: сдвигаем на 1 символ для пересекающихся
         }
         return matches;
     }

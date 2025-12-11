@@ -83,7 +83,7 @@ export const markdownSerializer = new ExtendedMarkdownSerializer(
         },
 
         text: (state, node) => {
-            state.text(node.text);
+            state.text(node.text, false, true);
         }
     },
     {
