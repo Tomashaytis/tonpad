@@ -1,4 +1,4 @@
-package org.example.tonpad.core.dto;
+package org.example.tonpad.core.session;
 
 import java.util.LinkedHashSet;
 import java.util.Set;

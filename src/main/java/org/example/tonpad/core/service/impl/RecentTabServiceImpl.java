@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.example.tonpad.core.dto.RecentTabsConfig;
-import org.example.tonpad.core.dto.RecentTabsSession;
 import org.example.tonpad.core.exceptions.FingerPrintException;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.service.RecentTabService;
+import org.example.tonpad.core.session.RecentTabsConfig;
+import org.example.tonpad.core.session.RecentTabsSession;
 import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.springframework.stereotype.Service;
