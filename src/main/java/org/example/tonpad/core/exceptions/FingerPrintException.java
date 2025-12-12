@@ -1,6 +1,6 @@
 package org.example.tonpad.core.exceptions;
 
-public class FingerPrintException extends RuntimeException {
+public class FingerPrintException extends TonpadBaseException {
     public FingerPrintException(String message) {
         super(message);
     }
@@ -10,6 +10,6 @@ public class FingerPrintException extends RuntimeException {
     }
     
     public FingerPrintException(Throwable cause) {
-        super(cause);
+        super(cause.getMessage(), cause);
     }
 }
