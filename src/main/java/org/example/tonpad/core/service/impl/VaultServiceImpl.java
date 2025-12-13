@@ -1,7 +1,7 @@
 package org.example.tonpad.core.service.impl;
 
 import org.example.tonpad.TonpadConfig;
-import org.example.tonpad.core.dto.RecentTabsConfig;
+import org.example.tonpad.core.session.RecentTabsConfig;
 import org.example.tonpad.core.exceptions.CustomIOException;
 import org.example.tonpad.core.files.FileSystemService;
 import org.example.tonpad.core.files.directory.DirectoryService;
