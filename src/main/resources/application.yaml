@@ -1,9 +1,6 @@
 spring:
   application:
     name: tonpad
-  datasource:
-    url: jdbc:sqlite:src/main/resources/db/database.db
-    driver-class-name: org.sqlite.JDBC
   sql:
     init:
       mode: never

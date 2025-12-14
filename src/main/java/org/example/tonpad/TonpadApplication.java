@@ -11,13 +11,18 @@ import org.example.tonpad.ui.controllers.core.TabController;
 import org.example.tonpad.ui.extentions.VaultPathsContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 
 
 @RequiredArgsConstructor
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+        DataSourceAutoConfiguration.class,
+        JooqAutoConfiguration.class
+})
 @EnableConfigurationProperties({TonpadConfig.class})
 public class TonpadApplication extends Application {
 
