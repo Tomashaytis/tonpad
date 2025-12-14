@@ -607,15 +607,19 @@ li {
     display: none;
     visibility: hidden;
     opacity: 0;
-    height: 0;
+    overflow: hidden;
+}
+
+.empty-heading-hidden {
     width: 0;
+    visibility: hidden;
+    opacity: 0;
     overflow: hidden;
 }
 
 .blockquote-hidden {
     visibility: hidden;
     opacity: 0;
-    height: 0;
     overflow: hidden;
 }
 

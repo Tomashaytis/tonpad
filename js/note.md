@@ -22,6 +22,6 @@ Lists:
 2. two
 3. thee
 
-Marks: *em* **strong** ~~strike~~ ==highlight== __underline__ \`code\`
+Marks: *em* **strong** ~~strike~~ ==highlight== __underline__ `code`
 
 Links: [note] [link](https://example.com) https://example.com my_email@mail.ru #tag

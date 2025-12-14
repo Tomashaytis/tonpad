@@ -13895,7 +13895,8 @@
               attrs: {
                   specClass: { default: "mark-spec" },
                   type: { default: "format" },
-                  formatType: { default: "none" }
+                  formatType: { default: "none" },
+                  isEmpty: { default: false },
               },
               parseDOM: [
                   {
@@ -14103,7 +14104,8 @@
           const children = [
               markdownSchema.text("#".repeat(level) + " ", [markdownSchema.marks.spec.create({
                   specClass: "heading-spec",
-                  type: "heading"
+                  type: "heading",
+                  isEmpty: contentNodes == null
               })])
           ];
 
@@ -14978,6 +14980,7 @@
           for (let i = 0; i < paragraphs.length; i++) {
               const paragraph = paragraphs[i];
               const text = paragraph.textContent;
+              
               let reconstructed = null;
 
               for (const rule of this.rules) {
@@ -15192,16 +15195,17 @@
           const paragraphs = [];
 
           lines.forEach((line, index) => {
+              const cleanLine = line.replace(/\r$/, '');
               let paragraphText = '';
 
               if (lines.length === 1) {
-                  paragraphText = beforeText + line + afterText;
+                  paragraphText = beforeText + cleanLine + afterText;
               } else if (index === 0) {
-                  paragraphText = beforeText + line;
+                  paragraphText = beforeText + cleanLine;
               } else if (index === lines.length - 1) {
-                  paragraphText = line + afterText;
+                  paragraphText = cleanLine + afterText;
               } else {
-                  paragraphText = line;
+                  paragraphText = cleanLine;
               }
 
               let paragraph = NodeConverter.constructParagraph(paragraphText);
@@ -26440,14 +26444,12 @@
       const markerPairs = findAllMarkerPairs(allFormatMarks);
       const linkConstructions = findLinkConstructions(allFormatMarks, allLinkMarks);
 
-      // Находим конструкцию, в которой находится курсор (если есть)
       const cursorInLinkConstruction = linkConstructions.find(construction =>
           cursorPos >= construction.startPos && cursorPos <= construction.endPos
       );
 
       doc.descendants((node, pos) => {
           if (node.isText && node.marks) {
-              // Проверяем, находится ли этот узел в link конструкции с курсором
               let isInLinkConstructionWithCursor = false;
               if (cursorInLinkConstruction) {
                   if (pos >= cursorInLinkConstruction.startPos && pos < cursorInLinkConstruction.endPos) {
@@ -26458,7 +26460,6 @@
               for (const mark of node.marks) {
                   if (mark.type.name === "spec") {
                       if (mark.attrs.type !== "format") {
-                          // Обработка heading и blockquote
                           if (mark.attrs.type === 'heading' || mark.attrs.type === 'blockquote') {
                               const $pos = doc.resolve(pos);
                               let isInFocusedNode = false;
@@ -26488,11 +26489,14 @@
                                   }
                               }
 
-                              // Не скрываем если в link конструкции с курсором
                               if (!isInFocusedNode && !isInSelection && !isInSearchResult && !isInLinkConstructionWithCursor) {
-                                  const cssClass = mark.attrs.type === 'heading'
-                                      ? 'heading-hidden'
-                                      : 'blockquote-hidden';
+                                  let cssClass;
+                                  if (mark.attrs.type === 'heading') {
+                                      cssClass = mark.attrs.isEmpty ? 'empty-heading-hidden' : 'heading-hidden';
+                                  } else {
+                                      cssClass = 'blockquote-hidden';
+                                  }
+                                  
                                   decorations.push(
                                       Decoration.inline(pos, pos + node.nodeSize, {
                                           class: cssClass
@@ -26501,10 +26505,8 @@
                               }
                           }
                       } else {
-                          // Обработка format spec маркеров
                           let shouldHide = true;
 
-                          // Не скрываем если в link конструкции с курсором
                           if (isInLinkConstructionWithCursor) {
                               shouldHide = false;
                           }
@@ -26548,7 +26550,6 @@
                       }
                       break;
                   } else if (mark.type.name === "marker" && mark.attrs.type === "bullet") {
-                      // Обработка bullet маркеров
                       let isInSelection = false;
                       let isInSearchResult = false;
 
@@ -26566,7 +26567,6 @@
                           }
                       }
 
-                      // Не скрываем если в link конструкции с курсором
                       if (pos !== cursorBulletPos && !isInSelection && !isInSearchResult && !isInLinkConstructionWithCursor) {
                           decorations.push(
                               Decoration.inline(pos, pos + node.nodeSize, {
@@ -26576,7 +26576,6 @@
                       }
                       break;
                   } else if (mark.type.name === "link") {
-                      // Обработка link маркеров
                       let isInSelection = false;
                       let isInSearchResult = false;
                       let isCursorInside = linkMarkPositions.has(pos);
@@ -26595,9 +26594,7 @@
                           }
                       }
 
-                      // Для скрытых link маркеров
                       if (mark.attrs.hidden) {
-                          // Не скрываем если: курсор внутри, в выделении, в результатах поиска или в link конструкции с курсором
                           if (!isCursorInside && !isInSelection && !isInSearchResult && !isInLinkConstructionWithCursor) {
                               decorations.push(
                                   Decoration.inline(pos, pos + node.nodeSize, {
@@ -31125,7 +31122,8 @@
           const paragraphs = [];
 
           for (const line of lines) {
-              paragraphs.push(NodeConverter.constructParagraph(line));
+              const cleanLine = line.replace(/\r$/, '');
+              paragraphs.push(NodeConverter.constructParagraph(cleanLine));
           }
 
           return markdownSchema.nodes.doc.create({}, paragraphs);
@@ -32560,6 +32558,6 @@ ${error ? formatErrorWithStack(error) : 'No stack trace available'}
 
   })();
 
-  /*window.createEditor('note');*/
+  //window.createEditor('note');
 
 })();

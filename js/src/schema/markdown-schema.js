@@ -189,7 +189,8 @@ export const markdownSchema = new Schema({
             attrs: {
                 specClass: { default: "mark-spec" },
                 type: { default: "format" },
-                formatType: { default: "none" }
+                formatType: { default: "none" },
+                isEmpty: { default: false },
             },
             parseDOM: [
                 {

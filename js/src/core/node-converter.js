@@ -27,7 +27,8 @@ export class NodeConverter {
         const children = [
             markdownSchema.text("#".repeat(level) + " ", [markdownSchema.marks.spec.create({
                 specClass: "heading-spec",
-                type: "heading"
+                type: "heading",
+                isEmpty: contentNodes == null
             })])
         ];
 

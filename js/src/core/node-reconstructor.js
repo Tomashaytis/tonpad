@@ -241,6 +241,7 @@ export class NodeReconstructor {
         for (let i = 0; i < paragraphs.length; i++) {
             const paragraph = paragraphs[i];
             const text = paragraph.textContent;
+            
             let reconstructed = null;
 
             for (const rule of this.rules) {
@@ -346,7 +347,7 @@ export class NodeReconstructor {
         const [_, hashes, content] = match;
         const level = hashes.length;
 
-        const textNodes = this.reconstructTextContent(content)
+        const textNodes = this.reconstructTextContent(content);
 
         return NodeConverter.constructHeading(textNodes, level);
     }

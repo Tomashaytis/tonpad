@@ -56,16 +56,17 @@ export class NodeInputter {
         const paragraphs = [];
 
         lines.forEach((line, index) => {
+            const cleanLine = line.replace(/\r$/, '');
             let paragraphText = '';
 
             if (lines.length === 1) {
-                paragraphText = beforeText + line + afterText;
+                paragraphText = beforeText + cleanLine + afterText;
             } else if (index === 0) {
-                paragraphText = beforeText + line;
+                paragraphText = beforeText + cleanLine;
             } else if (index === lines.length - 1) {
-                paragraphText = line + afterText;
+                paragraphText = cleanLine + afterText;
             } else {
-                paragraphText = line;
+                paragraphText = cleanLine;
             }
 
             let paragraph = NodeConverter.constructParagraph(paragraphText);
