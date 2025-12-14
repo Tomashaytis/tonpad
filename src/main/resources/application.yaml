@@ -13,6 +13,5 @@ app:
   reserved-names:
     templates-dir: "templates"
     notes-dir: "notes"
-  js-functions-directory: classpath:js
   changelog-path: db/changelog/schema.sql
   validate-db-schema-path: db/validate_db_schema.sql
