@@ -15349,7 +15349,7 @@
                   if (["[", "(", "{"].includes(rule.leftDelimiter) && textAfter.length > 0 && (!textAfter.startsWith(' ') && !textAfter.startsWith('\t') && !textAfter.startsWith(rule.rightDelimiter))) {
                       break;
                   }
-                  if (["_"].includes(rule.leftDelimiter) && textBefore.length > 0 && (!textBefore.endsWith(' ') || !textBefore.endsWith('\t'))) {
+                  if (["_"].includes(rule.leftDelimiter) && textBefore.length > 0 && (!textBefore.endsWith(' ') && !textBefore.endsWith('\t'))) {
                       break;
                   }
                   if (textAfter.startsWith(rule.rightDelimiter[0]) && !["[", "(", "{"].includes(rule.leftDelimiter)) {
