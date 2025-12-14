@@ -135,14 +135,12 @@ function getDecorations(doc, focusedNode, cursorBulletPos, formatMarkPositions, 
     const markerPairs = findAllMarkerPairs(allFormatMarks);
     const linkConstructions = findLinkConstructions(allFormatMarks, allLinkMarks);
 
-    // Находим конструкцию, в которой находится курсор (если есть)
     const cursorInLinkConstruction = linkConstructions.find(construction =>
         cursorPos >= construction.startPos && cursorPos <= construction.endPos
     );
 
     doc.descendants((node, pos) => {
         if (node.isText && node.marks) {
-            // Проверяем, находится ли этот узел в link конструкции с курсором
             let isInLinkConstructionWithCursor = false;
             if (cursorInLinkConstruction) {
                 if (pos >= cursorInLinkConstruction.startPos && pos < cursorInLinkConstruction.endPos) {
@@ -153,7 +151,6 @@ function getDecorations(doc, focusedNode, cursorBulletPos, formatMarkPositions, 
             for (const mark of node.marks) {
                 if (mark.type.name === "spec") {
                     if (mark.attrs.type !== "format") {
-                        // Обработка heading и blockquote
                         if (mark.attrs.type === 'heading' || mark.attrs.type === 'blockquote') {
                             const $pos = doc.resolve(pos);
                             let isInFocusedNode = false;
@@ -183,11 +180,14 @@ function getDecorations(doc, focusedNode, cursorBulletPos, formatMarkPositions, 
                                 }
                             }
 
-                            // Не скрываем если в link конструкции с курсором
                             if (!isInFocusedNode && !isInSelection && !isInSearchResult && !isInLinkConstructionWithCursor) {
-                                const cssClass = mark.attrs.type === 'heading'
-                                    ? 'heading-hidden'
-                                    : 'blockquote-hidden';
+                                let cssClass;
+                                if (mark.attrs.type === 'heading') {
+                                    cssClass = mark.attrs.isEmpty ? 'empty-heading-hidden' : 'heading-hidden';
+                                } else {
+                                    cssClass = 'blockquote-hidden';
+                                }
+                                
                                 decorations.push(
                                     Decoration.inline(pos, pos + node.nodeSize, {
                                         class: cssClass
@@ -196,10 +196,8 @@ function getDecorations(doc, focusedNode, cursorBulletPos, formatMarkPositions, 
                             }
                         }
                     } else {
-                        // Обработка format spec маркеров
                         let shouldHide = true;
 
-                        // Не скрываем если в link конструкции с курсором
                         if (isInLinkConstructionWithCursor) {
                             shouldHide = false;
                         }
@@ -243,7 +241,6 @@ function getDecorations(doc, focusedNode, cursorBulletPos, formatMarkPositions, 
                     }
                     break;
                 } else if (mark.type.name === "marker" && mark.attrs.type === "bullet") {
-                    // Обработка bullet маркеров
                     let isInSelection = false;
                     let isInSearchResult = false;
 
@@ -261,7 +258,6 @@ function getDecorations(doc, focusedNode, cursorBulletPos, formatMarkPositions, 
                         }
                     }
 
-                    // Не скрываем если в link конструкции с курсором
                     if (pos !== cursorBulletPos && !isInSelection && !isInSearchResult && !isInLinkConstructionWithCursor) {
                         decorations.push(
                             Decoration.inline(pos, pos + node.nodeSize, {
@@ -271,7 +267,6 @@ function getDecorations(doc, focusedNode, cursorBulletPos, formatMarkPositions, 
                     }
                     break;
                 } else if (mark.type.name === "link") {
-                    // Обработка link маркеров
                     let isInSelection = false;
                     let isInSearchResult = false;
                     let isCursorInside = linkMarkPositions.has(pos);
@@ -290,9 +285,7 @@ function getDecorations(doc, focusedNode, cursorBulletPos, formatMarkPositions, 
                         }
                     }
 
-                    // Для скрытых link маркеров
                     if (mark.attrs.hidden) {
-                        // Не скрываем если: курсор внутри, в выделении, в результатах поиска или в link конструкции с курсором
                         if (!isCursorInside && !isInSelection && !isInSearchResult && !isInLinkConstructionWithCursor) {
                             decorations.push(
                                 Decoration.inline(pos, pos + node.nodeSize, {

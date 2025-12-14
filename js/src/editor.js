@@ -75,7 +75,8 @@ export class Editor {
         const paragraphs = [];
 
         for (const line of lines) {
-            paragraphs.push(NodeConverter.constructParagraph(line));
+            const cleanLine = line.replace(/\r$/, '');
+            paragraphs.push(NodeConverter.constructParagraph(cleanLine));
         }
 
         return markdownSchema.nodes.doc.create({}, paragraphs);
