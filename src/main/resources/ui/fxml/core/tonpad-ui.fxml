@@ -91,68 +91,68 @@
                   <AnchorPane fx:id="toolbarContainer" pickOnBounds="false" />
                </children>
             </StackPane>
-            <VBox prefWidth="40.0">
-               <children>
-                  <VBox fx:id="rightToolsPane" spacing="5.0" styleClass="side-panel" VBox.vgrow="ALWAYS">
-                     <children>
-                        <Button fx:id="showSettingsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">
-                           <tooltip>
-                              <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Open settings">
-                                 <styleClass>
-                                    <String fx:value="custom-tooltip" />
-                                    <String fx:value="tooltip-left" />
-                                 </styleClass>
-                              </Tooltip>
-                           </tooltip>
-                           <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="more-options-icon" />
-                           </graphic>
-                           <padding>
-                              <Insets right="3.0" />
-                           </padding>
-                        </Button>
-                        <Button fx:id="enableReadingViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="R" textAlignment="CENTER">
-                           <padding>
-                              <Insets right="3.0" />
-                           </padding>
-                           <tooltip>
-                              <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Enable reading view">
-                                 <styleClass>
-                                    <String fx:value="custom-tooltip" />
-                                    <String fx:value="tooltip-left" />
-                                 </styleClass>
-                              </Tooltip>
-                           </tooltip>
-                           <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="reading-view-icon" />
-                           </graphic>
-                        </Button>
-                        <Button fx:id="enablePlainViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="P" textAlignment="CENTER">
-                           <padding>
-                              <Insets right="3.0" />
-                           </padding>
-                           <tooltip>
-                              <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Show plain text">
-                                 <styleClass>
-                                    <String fx:value="custom-tooltip" />
-                                    <String fx:value="tooltip-left" />
-                                 </styleClass>
-                              </Tooltip>
-                           </tooltip>
-                           <graphic>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="plain-view-icon" />
-                           </graphic>
-                           <VBox.margin>
-                              <Insets />
-                           </VBox.margin>
-                        </Button>
-                     </children>
-                     <padding>
-                        <Insets top="5.0" />
-                     </padding>
-                  </VBox>
-               </children>
-            </VBox>
+<!--            <VBox prefWidth="40.0">-->
+<!--               <children>-->
+<!--                  <VBox fx:id="rightToolsPane" spacing="5.0" styleClass="side-panel" VBox.vgrow="ALWAYS">-->
+<!--                     <children>-->
+<!--                        <Button fx:id="showSettingsButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="S" textAlignment="CENTER">-->
+<!--                           <tooltip>-->
+<!--                              <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Open settings">-->
+<!--                                 <styleClass>-->
+<!--                                    <String fx:value="custom-tooltip" />-->
+<!--                                    <String fx:value="tooltip-left" />-->
+<!--                                 </styleClass>-->
+<!--                              </Tooltip>-->
+<!--                           </tooltip>-->
+<!--                           <graphic>-->
+<!--                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="more-options-icon" />-->
+<!--                           </graphic>-->
+<!--                           <padding>-->
+<!--                              <Insets right="3.0" />-->
+<!--                           </padding>-->
+<!--                        </Button>-->
+<!--                        <Button fx:id="enableReadingViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="R" textAlignment="CENTER">-->
+<!--                           <padding>-->
+<!--                              <Insets right="3.0" />-->
+<!--                           </padding>-->
+<!--                           <tooltip>-->
+<!--                              <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Enable reading view">-->
+<!--                                 <styleClass>-->
+<!--                                    <String fx:value="custom-tooltip" />-->
+<!--                                    <String fx:value="tooltip-left" />-->
+<!--                                 </styleClass>-->
+<!--                              </Tooltip>-->
+<!--                           </tooltip>-->
+<!--                           <graphic>-->
+<!--                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="reading-view-icon" />-->
+<!--                           </graphic>-->
+<!--                        </Button>-->
+<!--                        <Button fx:id="enablePlainViewButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="24.0" prefWidth="24.0" styleClass="icon-button" text="P" textAlignment="CENTER">-->
+<!--                           <padding>-->
+<!--                              <Insets right="3.0" />-->
+<!--                           </padding>-->
+<!--                           <tooltip>-->
+<!--                              <Tooltip anchorLocation="CONTENT_TOP_RIGHT" text="Show plain text">-->
+<!--                                 <styleClass>-->
+<!--                                    <String fx:value="custom-tooltip" />-->
+<!--                                    <String fx:value="tooltip-left" />-->
+<!--                                 </styleClass>-->
+<!--                              </Tooltip>-->
+<!--                           </tooltip>-->
+<!--                           <graphic>-->
+<!--                              <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="plain-view-icon" />-->
+<!--                           </graphic>-->
+<!--                           <VBox.margin>-->
+<!--                              <Insets />-->
+<!--                           </VBox.margin>-->
+<!--                        </Button>-->
+<!--                     </children>-->
+<!--                     <padding>-->
+<!--                        <Insets top="5.0" />-->
+<!--                     </padding>-->
+<!--                  </VBox>-->
+<!--               </children>-->
+<!--            </VBox>-->
          </children>
       </HBox>
    </children>

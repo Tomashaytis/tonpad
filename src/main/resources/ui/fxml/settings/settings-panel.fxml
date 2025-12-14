@@ -62,7 +62,7 @@
             </VBox>
 
             <VBox spacing="6">
-                <Label text="Тема"/>
+                <Label text="Theme"/>
                 <HBox spacing="8">
                     <ChoiceBox fx:id="themeChoice" prefWidth="120.0">
                         <items>

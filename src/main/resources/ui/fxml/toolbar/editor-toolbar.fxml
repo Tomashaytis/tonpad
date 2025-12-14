@@ -167,11 +167,6 @@
       <!-- Секция: Insert (MenuButton) -->
       <MenuButton fx:id="insertMenuButton" maxWidth="1.7976931348623157E308" minHeight="25.0" popupSide="RIGHT" prefHeight="25.0" styleClass="menu-button" text="Insert">
          <items>
-            <MenuItem fx:id="insertSnippetMenuItem" text="Snippet">
-               <graphic>
-                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="snippet-insert-icon" />
-               </graphic>
-            </MenuItem>
             <MenuItem fx:id="insertHorizontalRuleMenuItem" text="Horizontal rule">
                <graphic>
                   <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="horizontal-rule-icon" />

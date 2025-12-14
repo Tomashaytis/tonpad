@@ -41,15 +41,19 @@ public class SearchInTextController extends AbstractController {
     @Setter
     private Supplier<Editor> getActiveEditorHandler;
 
+    private boolean programmaticUpdate = false;
+
     @FXML
     private void initialize() {
         var debounce = new PauseTransition(Duration.millis(400));
         searchField.textProperty().addListener((o, ov, nv) -> {
+            if (programmaticUpdate) {
+                return;
+            }
             debounce.stop();
             debounce.setOnFinished(e -> runSearch());
             debounce.playFromStart();
         });
-
         searchField.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
             var code = e.getCode();
             if ((code == KeyCode.F3 && e.isShiftDown()) || code == KeyCode.UP) {
@@ -151,7 +155,9 @@ public class SearchInTextController extends AbstractController {
     }
 
     public void setQuery(String q) {
+        programmaticUpdate = true;
         searchField.setText(q == null ? "" : q);
+        programmaticUpdate = false;
     }
 
     public String getQuery() {

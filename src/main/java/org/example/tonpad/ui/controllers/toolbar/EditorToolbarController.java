@@ -105,9 +105,6 @@ public class EditorToolbarController extends AbstractController {
     private MenuButton insertMenuButton;
 
     @FXML
-    private MenuItem insertSnippetMenuItem;
-
-    @FXML
     private MenuItem insertHorizontalRuleMenuItem;
 
     @FXML
@@ -160,7 +157,6 @@ public class EditorToolbarController extends AbstractController {
         heading6MenuItem.setOnAction(event -> onHeading6());
         bodyTextMenuItem.setOnAction(event -> onBodyText());
         quoteMenuItem.setOnAction(event -> onQuote());
-        insertSnippetMenuItem.setOnAction(event -> onInsertSnippet());
         insertHorizontalRuleMenuItem.setOnAction(event -> onInsertHorizontalRule());
         cutButton.setOnAction(event -> onCut());
         copyButton.setOnAction(event -> onCopy());
@@ -383,12 +379,6 @@ public class EditorToolbarController extends AbstractController {
 
     private void onQuote() {
         editor.paragraph(ParagraphType.QUOTE);
-        hide();
-        webView.requestFocus();
-    }
-
-    private void onInsertSnippet() {
-        System.out.println("Insert snippet clicked");
         hide();
         webView.requestFocus();
     }

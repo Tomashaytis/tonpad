@@ -73,15 +73,6 @@ public class MainController extends AbstractController {
     @FXML
     private Button showSnippetsButton;
 
-    @FXML
-    private Button showSettingsButton;
-
-    @FXML
-    private Button enableReadingViewButton;
-
-    @FXML
-    private Button enablePlainViewButton;
-
     private final TitleBarController titleBarController;
 
     private final TabController tabController;
