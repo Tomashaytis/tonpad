@@ -35,8 +35,6 @@ public class FileSystemServiceImpl implements FileSystemService {
 
     private final static String DIR_CREATE_ERROR = "Directory creation error";
 
-    private final static String FILE_READING_ERROR = "File reading error";
-
     private final static String FILE_ALREADY_EXISTS_ERROR = "File already exists";
 
     private final static String FILE_CREATE_ERROR = "File creation error";
@@ -462,7 +460,7 @@ public class FileSystemServiceImpl implements FileSystemService {
 
         @Override
         public @NotNull FileVisitResult visitFileFailed(Path file, @NotNull IOException exc) throws IOException {
-            log.error(FILE_READING_ERROR, exc);
+            log.error(FILE_READ_ERROR, exc);
             throw exc;
         }
 

@@ -29,6 +29,7 @@ import org.example.tonpad.core.files.FileTree;
 import org.example.tonpad.core.service.SearchService;
 import org.example.tonpad.core.service.crypto.Encryptor;
 import org.example.tonpad.core.service.crypto.EncryptorFactory;
+import org.example.tonpad.core.session.VaultSession;
 import org.example.tonpad.core.sort.SortKey;
 import org.example.tonpad.core.sort.SortOptions;
 import org.example.tonpad.ui.controllers.AbstractController;
@@ -40,6 +41,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -124,6 +126,8 @@ public class FileTreeController extends AbstractController {
     private final Map<String, Boolean> expandedState = new HashMap<>();
 
     private final SelectFileActionController selectFileActionController;
+
+    private final VaultSession vaultSession;
 
     private final EncryptorFactory encryptorFactory;
 
@@ -815,15 +819,32 @@ public class FileTreeController extends AbstractController {
 
         Path newAbs = parent.resolve(newName);
         Encryptor encoder = encryptorFactory.encryptorForKey();
-        if (encoder.isActionWithNoPasswordAllowed(oldAbs)) {
-            fileSystemService.rename(oldAbs.toString(), newAbs.toString());
-            refreshTree();
-            selectItem(newAbs, false);
-            noteRenameHandler.accept(oldAbs, newAbs);
+        if (Files.isDirectory(oldAbs)) {
+            executeRename(oldAbs, newAbs);
         }
         else {
-            throw new DecryptionException("Invalid password");
+            if (vaultSession.isOpendWithNoPassword()) {
+                if (encoder.isActionWithNoPasswordAllowed(oldAbs)) {
+                    executeRename(oldAbs, newAbs);
+                }
+            } else {
+                try {
+                    byte[] key = vaultSession.getKeyIfPresent().map(Key::getEncoded).orElse(null);
+                    encoder = encryptorFactory.encryptorForKey(key);
+                    encoder.decrypt(fileSystemService.readFile(oldAbs), null);
+                    executeRename(oldAbs, newAbs);
+                } catch (DecryptionException e) {
+                    throw new DecryptionException("Invalid password", e);
+                }
+            }
         }
+    }
+
+    private void executeRename(Path oldAbs, Path newAbs) {
+        fileSystemService.rename(oldAbs.toString(), newAbs.toString());
+        refreshTree();
+        selectItem(newAbs, false);
+        noteRenameHandler.accept(oldAbs, newAbs);
     }
 
     private static String norm(String s) {
