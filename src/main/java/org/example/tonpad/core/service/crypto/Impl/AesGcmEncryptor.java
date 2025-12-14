@@ -31,7 +31,7 @@ public class AesGcmEncryptor implements Encryptor {
 
     private static final Random rnd = new SecureRandom();
 
-    public static final String HEADER = "TOP::LARSENS::INC::LTD::WOODLANE::LONDON::ASTON::VANQUISH::V12\\n";
+    public static final String HEADER = "TOP::LARSENS::INC::LTD::WOODLANE::LONDON::ASTON::VANQUISH::V12";
     private static final byte[] HEADER_BYTES = HEADER.getBytes(StandardCharsets.US_ASCII);
 
     private final SecretKey key;
