@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -22,6 +23,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class VaultServiceImpl implements VaultService {
@@ -49,6 +51,8 @@ public class VaultServiceImpl implements VaultService {
     @Override
     public void initVault(Path path) {
         directoryService.createDir(path, "notes");
+        String welcomeNote = readWelcomeNote();
+        fileSystemService.writeFile(path.resolve("notes").resolve("Welcome.md"), welcomeNote);
         directoryService.createDir(path, "images");
         directoryService.createDir(path, "snippets");
         fileSystemService.makeFile(path.resolve(RecentTabsConfig.getRtConfigName()));
@@ -109,5 +113,19 @@ public class VaultServiceImpl implements VaultService {
     private String readScript(String changelogPath) throws IOException {
         Resource resource = new ClassPathResource(changelogPath);
         return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+
+    private String readWelcomeNote() {
+        ClassPathResource resource = new ClassPathResource("Welcome.md");
+
+        if (!resource.exists()) {
+            throw new CustomIOException("Welcome.md not found");
+        }
+
+        try (InputStream inputStream = resource.getInputStream()) {
+            return StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            throw new CustomIOException("File reading error");
+        }
     }
 }
